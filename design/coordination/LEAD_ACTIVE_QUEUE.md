@@ -5,59 +5,74 @@ Purpose: Immediate execution queue. `design/coordination/STATUS.md` remains auth
 
 ## Frozen System Foundation Constituents
 
-- D-002 Graph / Composite — FROZEN
+- D-002 Graph / Composite — FROZEN + Graph/Accounting Amendment 001
 - D-003 Runtime Orchestration — FROZEN
 - D-004 Capability / Resource / Effect Authority — FROZEN
-- D-005 Accounting / Recovery — FROZEN
+- D-005 Accounting / Recovery — FROZEN + Graph/Accounting Amendment 001
 - D-007 Distribution / Module Ecosystem — FROZEN
-- D-008 External Interfaces / Workspace — FROZEN + Amendment 001
+- D-008 External Interfaces / Workspace — FROZEN + External Interfaces Amendment 001
 - D-009 Human Interaction / Approval — FROZEN
-- D-010 Project / Workspace / Policy Context — FROZEN
+- D-010 Project / Workspace / Policy Context — FROZEN + PWP Amendment 001
+
+## First Claude Integrated Review
+
+Result: **FAIL**.
+
+Review record:
+- `design/reviews/NYRON-D-001_Claude_Integrated_Review_FAIL_2026-08-24.md`
+
+### F01 — accepted blocker
+
+Static AccountingScope reference resolution was not an explicit execution-eligibility gate.
 
 Frozen correction:
-- `design/amendments/External_Interfaces_Amendment_001_Fenced_Retry_Semantics.md`
+- `design/amendments/Graph_Accounting_Amendment_001_Static_Accounting_Scope_Resolution.md`
+- commit `a9a8ff9566246b57b338f134815888106ea21765`
 
-D-004 frozen baseline:
-- `design/Nyron_Capability_Resource_Effect_Authority_Frozen_Baseline_v0.1.md`
-- freeze commit `041d868c7d021d5610494c8e3cab50811837b45d`
+### F02 — premise overstated; ambiguity explicitly removed
 
-Targeted GPT re-review evidence:
-- `design/reviews/NYRON-D-004_GPT_Targeted_ReReview_PASS_Receipt_2026-08-24.md`
+D-010 already required historical resolution, but revision-class coverage was distributed/implicit.
 
-## Immediate Action — Final Integrated Review
+Frozen clarification-strength correction:
+- `design/amendments/PWP_Amendment_001_Historical_Revision_Retention.md`
+- commit `1c984217a16278bbb107fd5a425ef937b6a0e873`
 
-`NYRON-D-001-REVIEW-CLAUDE` is **READY FOR REVIEW**.
+## Immediate Action — Targeted Claude R2
+
+Reuse the same Claude conversation.
 
 Task:
-- `design/coordination/tasks/NYRON-D-001-REVIEW-CLAUDE.md`
+- `design/coordination/tasks/NYRON-D-001-REVIEW-CLAUDE-R2.md`
+- commit `58d01abc8b3acbeaac20148c00a7724422a34fdf`
 
-Manifest:
-- `design/reviews/NYRON-D-001_Integrated_Adversarial_Review_Manifest_DRAFT.md`
+Review only:
+1. F01 closure;
+2. F02 closure;
+3. correction-induced ownership/replay/admission regressions.
 
-Run one integrated Claude adversarial review against the complete frozen System Foundation plus Overall candidate.
+Do not repeat the entire A1-A15 review unless the amendments themselves create a new cross-system contradiction.
 
-Do not add another bounded DeepSeek review before this step.
-Do not create extra GPT design sessions unless a new finding genuinely requires substantial independent work.
+The D-004 GPT R2 PASS receipt that Claude previously could not fetch is explicitly linked by Raw URL in the R2 task.
 
-## Handling Claude Result
+## Handling R2 Result
 
-### On PASS
-1. validate Claude understood the actual frozen baselines/amendments and executed the mandatory attack areas;
-2. reject a materially misread PASS;
-3. record accepted integrated review evidence;
-4. if no blocking issue remains, create Overall System Architecture v0.1 Frozen Baseline in the same Lead wave;
-5. update STATUS/README and implementation gate state.
+### On valid PASS
+
+In the same Lead wave:
+1. record Claude targeted PASS evidence;
+2. create `Nyron Overall System Architecture v0.1` Frozen Baseline manifest pinning current Overall candidate + all frozen subsystem baselines/amendments;
+3. update STATUS/README;
+4. mark System Foundation architecture freeze complete;
+5. open implementation planning/gate work without starting detailed Product D-006 unless needed.
 
 ### On FAIL
-1. validate each finding against exact frozen/current text;
-2. classify as valid blocker, invalid/misread, non-blocking clarification, or frozen-baseline impact;
-3. correct only valid blockers through explicit clarification/amendment/superseding baseline;
-4. targeted re-review only affected scope unless the change is broad enough to require full integrated re-review.
+
+Validate only new/correction-related findings. Correct a valid blocker through explicit Amendment/clarification and re-review only that affected scope.
 
 ## Conversation Economy
 
-Do not create a new GPT conversation for every task. Reuse appropriate existing windows for bounded work. A dedicated window is justified only by substantial independent scope, context pressure, need for a clean independent context, or useful parallelism.
+No new Claude/GPT conversation is required for R2. Reuse existing review window.
 
 ## Stop Rule
 
-Continue while an unblocked action exists. The next external dependency is now the integrated Claude review result.
+Current external dependency is the targeted Claude R2 result. No unrelated design work should be invented merely to avoid this legitimate review gate.
