@@ -2,207 +2,319 @@
 
 ## 1. Purpose
 
-This directory is the authoritative home for all pre-implementation design of Nyron.
+`design/` is the authoritative home for Nyron pre-implementation architecture.
 
-Design documents define architecture, contracts, invariants, subsystem boundaries, dependency relationships, implementation gates, acceptance criteria, and architecture findings before code is allowed to establish those semantics implicitly.
+Design documents define canonical ownership, contracts, invariants, state/lifecycle semantics, cross-owner boundaries, replay/fencing rules, implementation gates, review evidence, Architecture Findings and frozen baselines before code is allowed to establish those semantics implicitly.
 
-The design layer is intentionally separated from implementation. Implementation may choose local technical details only where they do not change frozen observable semantics.
+GitHub is durable design memory. Chat windows are temporary working contexts.
+
+---
 
 ## 2. Design Authority
 
-Nyron uses a single Lead Design Authority for system-level consistency.
+Nyron uses one **Lead Design Authority** for system-level consistency and freeze decisions.
 
-The Lead Design Authority is responsible for:
+Lead owns:
+- Overall architecture;
+- subsystem decomposition;
+- canonical Owner assignment;
+- cross-subsystem integration;
+- task/review sequencing;
+- Architecture Finding disposition;
+- Amendment/superseding-baseline decisions;
+- final freeze.
 
-- maintaining the overall architecture and subsystem map;
-- deciding what must be designed before implementation;
-- deciding when a topic belongs in the main design thread or a dedicated design thread;
-- defining and freezing contracts, invariants, ownership, state boundaries, and cross-subsystem dependencies;
-- reviewing delegated design results before they become baseline;
-- preventing local subsystem designs from silently changing global semantics;
-- opening an Architecture Finding when implementation discovers a required semantic change;
-- maintaining this design index and the current design status.
+Dedicated specialist windows produce Candidates only.
+Independent reviewers provide advisory evidence only.
 
-The Lead Design Authority does **not** own implementation, coding style, framework choice, internal helpers, database indexes, or other local implementation details unless those choices affect architecture or observable contract semantics.
+A reviewer PASS is invalid if it materially misreads the actual design/frozen premises.
+
+---
 
 ## 3. Design Baseline Rules
 
-1. A design marked **FROZEN** is an implementation contract, not a suggestion.
-2. Implementation MUST NOT silently change a frozen Architecture Invariant, ownership rule, state model, authority boundary, failure semantic, or durable-history semantic.
-3. If implementation cannot satisfy a frozen design, it MUST stop at that boundary and raise an **Architecture Finding**.
-4. A later design document may refine an earlier document but MUST explicitly identify any changed contract or invariant.
-5. Cross-document conflicts are resolved by explicit design review; implementation order or code existence does not determine architectural authority.
-6. Historical implementation is evidence for migration, not authority over a Greenfield contract.
-7. User-facing product concepts do not automatically become Runtime primitives.
-8. Unknown past facts are never converted into convenient guessed truth.
+1. **FROZEN** design is an implementation contract.
+2. Frozen semantic change requires explicit Amendment or superseding frozen baseline.
+3. Silent reinterpretation is forbidden.
+4. Cross-owner state has exactly one authoritative Owner.
+5. Product-visible Node concepts do not automatically become Runtime/Kernel primitives.
+6. Unknown past facts are never guessed into convenient success/failure/non-dispatch/clearance.
+7. Cross-owner global atomic transactions are not assumed unless an explicit frozen contract says otherwise.
+8. Exact immutable execution definitions are never silently upgraded to latest/current versions.
+9. Implementation detail is free only where it does not alter frozen observable/canonical semantics.
 
-## 4. Current Frozen Baseline
+---
 
-### Module Subsystem
+## 4. Read This First
 
-- Document: `Universal_Runtime_Module_Design_Report_v0.1.md`
-- Status: **FROZEN MODULE ARCHITECTURE BASELINE**
-- Frozen scope: Module subsystem contract for **Phase 1–7**
-- Initial implementation gate: **Phase 1–2**
-- Re-open condition: an Architecture Finding requiring a change to the frozen contract or invariants
+For current project state:
 
-The Module baseline defines, among other things:
+1. `design/coordination/STATUS.md`
+2. the exact Task brief under `design/coordination/tasks/` if working on a delegated task
+3. only the minimum baseline/candidate documents listed by that Task
 
-- ModuleDefinition / ModuleInstanceRevision
-- Packet / Delivery / Activation / Run
-- Module execution ABI
-- Suspension / Continuation / Resume
-- Capability and Resource separation
-- Commit Fencing / Effect Fencing
-- EffectOperation
-- Resource Lease lifecycle
-- AccountingScope / BudgetReservation
-- ReconciliationCase
-- Module Host trust boundary
-- unresolved Module dependency handling
-- Module Architecture Invariants M-INV-01 through M-INV-18
+For Lead main-window immediate work:
+- `design/coordination/LEAD_ACTIVE_QUEUE.md`
 
-## 5. Planned Design Domains
+For reusable design-process rules:
+- `design/process/Nyron_Design_Operating_Model_v0.1.md`
 
-The following domains require system-level design before Nyron can be considered implementation-ready as a complete product. Their order may change when dependencies become clearer.
+Do not scan all historical task/review material unless a concrete integration issue requires it.
 
-### A. System Foundation
+---
 
-- System Architecture / Kernel boundary
-- Canonical State and durable event model
-- identity / reference / revision model
-- global ownership and authority rules
-- deterministic history and replay boundary
+## 5. Current Frozen Architecture
 
-### B. Graph and Workflow Definition
+### 5.1 Module Architecture — FROZEN
 
-- GraphRevision
-- Edge / Port topology
-- Composite
-- dependency manifest / package dependency rules
-- import / export / workflow sharing semantics
-- loops, branching, joins, and convergence semantics
+- `design/Universal_Runtime_Module_Design_Report_v0.1.md`
 
-### C. Runtime Orchestration
+Core frozen rules include:
+- Module is Runtime primitive; Product Node is not;
+- immutable ModuleDefinition@version;
+- Packet -> Delivery -> Activation -> Run;
+- explicit Suspension/Continuation/Resume;
+- Commit Fencing / Effect Fencing;
+- Capability / Resource / Packet separation;
+- ResourceLease lifecycle;
+- BudgetReservation / Accounting separation;
+- ReconciliationCase / UNKNOWN handling;
+- Module Host mediation/trust boundary.
 
-- scheduling and readiness
-- retry / replacement / cancellation
-- workflow lifecycle and terminal states
-- concurrency and conflict rules
-- execution fairness / priority where semantically relevant
+### 5.2 Module Amendment 001 — FROZEN
 
-### D. Authority, Effects, and Resources
+- `design/amendments/Module_Architecture_Amendment_001_EffectOperation_Prepared.md`
 
-- Capability policy and grant authority
-- Resource Manager
-- Resource affinity and lifecycle
-- EffectOperation control
-- Module Host isolation / trust levels
-- provider/tool/process/browser integration boundary
+Adds/clarifies:
+- `EffectOperation.PREPARED` before crash-ambiguous dispatch;
+- PREPARED does not prove dispatch happened;
+- uncertain recovered PREPARED cannot blind-retry;
+- EffectOperation is Kernel-visible canonical record whose domain lifecycle is Effect Authority-owned.
 
-### E. Accounting and Recovery
+### 5.3 Graph / Composite v0.1 — FROZEN
 
-- AccountingScope hierarchy
-- BudgetReservation and settlement
-- quota / cost / usage facts
-- ReconciliationCase
-- UNKNOWN / escalation semantics
-- crash recovery and repair boundaries
+- `design/Nyron_Graph_Composite_Frozen_Baseline_v0.1.md`
 
-### F. Product-Facing Runtime Model
+Core frozen rules include:
+- Graph logical identity / immutable GraphRevision execution identity;
+- exact Module/config/Port/Edge pinning;
+- Composite definition-time deterministic materialization;
+- persisted leaf topology is Runtime authority;
+- FEEDBACK is intentional-cycle marker only;
+- no hidden Loop/Branch/Join Runtime primitive;
+- exact dependency/import semantics;
+- broken definitions may be preserved but cannot execute.
 
-- user-facing Node abstraction
-- Composite presentation
-- Human Interaction / Approval
-- diagnostics and user-facing reason presentation
-- workflow validation and missing-module UX
+---
 
-### G. Distribution and Extensibility
+## 6. Current Consolidated Overall Candidate
 
-- Module package format
-- registry / installation / version resolution
-- dependency compatibility
-- trust / signing / provenance
-- offline bundle and workflow portability
+- `design/Nyron_Overall_System_Architecture_v0.1.md`
+- Status: **DRAFT — CONSOLIDATED INTEGRATED PRE-FREEZE CANDIDATE**
 
-### H. External Interfaces
+The current Overall candidate has closed the v0.1 canonical Owner gaps at Lead-integration level.
 
-- public Runtime API
-- CLI / automation interface
-- event ingress / egress
-- workspace/project boundary
-- observability / audit interface
+Integrated Owner domains:
+- Graph subsystem;
+- Module Registry / Distribution Owner;
+- Project / Workspace Context Owner (PWP Owner);
+- Runtime Orchestration;
+- Capability Authority;
+- Resource Manager;
+- Effect Authority;
+- Accounting Owner;
+- Recovery Owner;
+- Human Interaction Owner.
 
-## 6. Document Strategy
+Key Lead clarifications:
+- `design/clarifications/NYRON-D-001_Lead_Integration_Clarification_001.md`
+- `design/clarifications/NYRON-D-001_Lead_Integration_Clarification_002.md`
 
-Do not grow one universal document indefinitely.
+Final Overall freeze is still gated by subsystem independent reviews/freeze consolidation and integrated Claude adversarial review.
 
-Use one focused design document per architectural domain or tightly coupled contract family. A document should be split when any of the following becomes true:
+---
 
-- it develops its own object/state model;
-- it has independent Architecture Invariants;
-- it can block implementation independently;
-- it requires a dedicated review;
-- it has enough context that reviewing it together with unrelated domains reduces precision.
+## 7. Lead-Integrated Subsystem Candidates
 
-Cross-domain rules should be referenced rather than duplicated wherever possible.
+### Runtime Orchestration — D-003
 
-## 7. Design Thread Strategy
+- Candidate: `design/Nyron_Runtime_Orchestration_Design_Candidate_v0.1.md`
+- Lead result: PASS
+- Independent review: active
+- Important clarifications:
+  - `design/clarifications/NYRON-D-003_D-005_Lead_Integration_Clarification_001.md`
+  - `design/clarifications/NYRON-D-003_D-010_Lead_Integration_Clarification_002.md`
 
-The main design thread remains the system-level coordination thread.
+### Capability / Resource / Effect — D-004
 
-A dedicated design conversation should be opened when:
+- Candidate: `design/Nyron_Capability_Resource_Effect_Authority_Design_Candidate_v0.1.md`
+- Lead result: PASS with Frozen Amendment 001
+- Independent review: active
+- Integration clarification:
+  - `design/clarifications/NYRON-D-004_Lead_Integration_Clarification_002.md`
 
-- the topic is large enough to require sustained local reasoning;
-- the topic has a distinct contract/state machine;
-- keeping its details in the main thread would materially pollute context;
-- an independent review would benefit from a clean context window.
+### Accounting / Recovery — D-005
 
-A delegated design thread does not freeze architecture by itself. It returns a design result to the Lead Design Authority, which performs integration review and decides whether it becomes baseline.
+- Candidate: `design/Nyron_Accounting_Recovery_Design_Candidate_v0.1.md`
+- Lead result: PASS
+- Independent review: active
+- Important clarifications:
+  - `design/clarifications/NYRON-D-003_D-005_Lead_Integration_Clarification_001.md`
+  - `design/clarifications/NYRON-D-005_D-010_Lead_Integration_Clarification_002.md`
 
-When a new design conversation is required, the Lead Design Authority must provide the user with a complete handoff prompt containing:
+### Distribution / Module Ecosystem — D-007
 
-- role;
-- exact design target;
-- minimum required documents;
-- frozen constraints that must not be changed;
-- expected deliverable;
-- stop conditions / questions that must be escalated;
-- instruction not to perform implementation.
+- Candidate: `design/Nyron_Distribution_Module_Ecosystem_Design_Candidate_v0.1.md`
+- Lead result: PASS WITH CLARIFICATION
+- Independent review: ready
+- Clarification:
+  - `design/clarifications/NYRON-D-007_D-010_Lead_Integration_Clarification_001.md`
 
-## 8. Design Status Vocabulary
+### External Interfaces / Workspace Boundary — D-008
 
-- **DRAFT** — active design, not implementation authority.
-- **IN REVIEW** — candidate contract under review.
-- **FROZEN** — approved implementation baseline.
-- **ARCHITECTURE FINDING OPEN** — implementation or review discovered a required semantic change; affected scope is blocked.
-- **SUPERSEDED** — replaced by a newer explicit baseline.
+- Candidate: `design/Nyron_External_Interfaces_Workspace_Boundary_Design_Candidate_v0.1.md`
+- Lead result: PASS
+- Independent review: active
+- Clarifications:
+  - `design/clarifications/NYRON-D-008_Lead_Integration_Clarification_001.md`
+  - `design/clarifications/NYRON-D-008_D-010_Lead_Integration_Clarification_002.md`
 
-## 9. Current Design Status
+### Human Interaction / Approval Authority — D-009
 
-| Domain | Status | Baseline |
-| --- | --- | --- |
-| Module subsystem | FROZEN | `Universal_Runtime_Module_Design_Report_v0.1.md` |
-| Overall system architecture | DRAFT | `Nyron_Overall_System_Architecture_v0.1.md` |
-| Graph / Composite | NOT STARTED | — |
-| Runtime orchestration | NOT STARTED | — |
-| Capability / Resource system | PARTIALLY DEFINED by Module baseline | — |
-| Accounting / Recovery | PARTIALLY DEFINED by Module baseline | — |
-| Product-facing Node / UX semantics | PARTIALLY DEFINED by Module baseline | — |
-| Distribution / Module ecosystem | PARTIALLY DEFINED by Module baseline | — |
-| External interfaces | NOT STARTED | — |
+- Candidate: `design/Nyron_Human_Interaction_Approval_Authority_Design_Candidate_v0.1.md`
+- Lead result: PASS WITH CLARIFICATION
+- Independent review: ready
+- Clarification:
+  - `design/clarifications/NYRON-D-009_Lead_Integration_Clarification_001.md`
 
-## 10. Next Design Gate
+### Project / Workspace / Policy Context — D-010
 
-The **Nyron Overall System Architecture Baseline** is now in active DRAFT design.
+- Candidate: `design/Nyron_Project_Workspace_Policy_Context_Design_Candidate_v0.1.md`
+- Lead result: PASS; AF-PWP-001 resolved
+- Independent review: ready
+- Key clarifications:
+  - `design/clarifications/NYRON-D-010_D-001_Lead_Integration_Clarification_001.md`
+  - `design/clarifications/NYRON-D-007_D-010_Lead_Integration_Clarification_001.md`
+  - `design/clarifications/NYRON-D-008_D-010_Lead_Integration_Clarification_002.md`
+  - `design/clarifications/NYRON-D-003_D-010_Lead_Integration_Clarification_002.md`
+  - `design/clarifications/NYRON-D-005_D-010_Lead_Integration_Clarification_002.md`
 
-The draft must answer at minimum:
+---
 
-- what the Kernel owns and does not own;
-- the complete first-class subsystem map;
-- canonical truth ownership;
-- how Graph, Module, Runtime, Capability, Resource, Accounting, Recovery, Registry, Workspace, and Product/UI layers relate;
-- which contracts are global versus subsystem-local;
-- which design documents must be completed before each implementation gate opens.
+## 8. Product Node / Visual UX — D-006
 
-The existing Module baseline remains frozen while that system-level architecture is designed. Any discovered conflict must be raised explicitly rather than silently rewriting the Module contract.
+D-006 is currently **deferred and non-blocking for System Foundation freeze**.
+
+Reason:
+- Node remains Product Layer only;
+- Product Extension Envelope is already explicit;
+- Browser/Shell/File/HTTP/Provider/Human/etc. map through generic frozen/lead-integrated mechanisms;
+- no unresolved Product-only canonical Owner is required for current foundation correctness.
+
+If later Product design exposes a real architecture expressiveness gap, it must raise an Architecture Finding rather than invent a local Kernel/Runtime primitive.
+
+---
+
+## 9. Review Task Index
+
+Bounded DeepSeek review tasks:
+- `design/coordination/tasks/NYRON-D-003-REVIEW-DS.md`
+- `design/coordination/tasks/NYRON-D-004-REVIEW-DS.md`
+- `design/coordination/tasks/NYRON-D-005-REVIEW-DS.md`
+- `design/coordination/tasks/NYRON-D-007-REVIEW-DS.md`
+- `design/coordination/tasks/NYRON-D-008-REVIEW-DS.md`
+- `design/coordination/tasks/NYRON-D-009-REVIEW-DS.md`
+- `design/coordination/tasks/NYRON-D-010-REVIEW-DS.md`
+
+Prepared final integrated Claude review:
+- Manifest: `design/reviews/NYRON-D-001_Integrated_Adversarial_Review_Manifest_DRAFT.md`
+- Task: `design/coordination/tasks/NYRON-D-001-REVIEW-CLAUDE.md`
+- Gate: NOT OPEN until subsystem review/freeze closure is sufficient.
+
+---
+
+## 10. Core Cross-System Rules
+
+The current integrated system preserves:
+
+```text
+Packet -> Delivery -> Activation -> Run / Attempt
+```
+
+No API, Human, PWP, Adapter, Registry or Product path may create a second direct-Activation execution path.
+
+Generic workflow-start external ingress:
+
+```text
+PWP IngressRouteRevision
+-> adapter auth/validation/canonicalization
+-> Runtime-owned ExecutionIngressFact
+-> Runtime admission
+-> Trigger Packet
+-> Delivery
+-> Activation
+```
+
+Domain-specific external facts remain domain-owned:
+- HumanResponse -> Human Interaction;
+- billing/usage -> Accounting;
+- effect evidence -> Effect Authority;
+- Resource/Lease truth -> Resource Manager.
+
+Policy-context pattern:
+
+```text
+PWP immutable policy context
+-> domain Owner evaluation
+-> domain Owner commits decision truth
+```
+
+Package distribution separation:
+
+```text
+Import != Resolve != Install != Trust != Enable != CapabilityGrant != Runtime execution
+```
+
+Recovery separation:
+
+```text
+ReconciliationCase.RESOLVED
+!= subject truth known
+!= Effect/Resource/Capability conflict clearance
+```
+
+---
+
+## 11. Design Thread / Repository Rules
+
+Canonical specialist conversation name:
+
+```text
+NYRON-D-XXX
+```
+
+Every new specialist prompt must explicitly provide:
+- repository URL;
+- Task ID;
+- exact Task brief path;
+- design-only/no-freeze boundary;
+- required Candidate repository path;
+- commit SHA return requirement;
+- instruction to rename conversation to Task ID.
+
+Specialist Candidate output must normally be committed to repository. Chat-only output is not normal completion when write capability exists.
+
+---
+
+## 12. Current Next Gate
+
+Current work is no longer canonical Owner discovery.
+
+Next sequence:
+1. validate bounded independent review outputs;
+2. resolve valid findings/clarifications;
+3. freeze passing subsystem baselines/manifests;
+4. update final integrated review Manifest with exact frozen constituent identities;
+5. open Claude integrated adversarial review gate;
+6. resolve valid integrated findings;
+7. Lead-freeze Overall System Architecture v0.1.
