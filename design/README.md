@@ -2,17 +2,15 @@
 
 ## 1. Purpose
 
-`design/` is the authoritative home for Nyron pre-implementation architecture.
+`design/` is the authoritative home for Nyron pre-implementation architecture. GitHub is durable design memory; chat windows are temporary working contexts.
 
-GitHub is durable design memory. Chat windows are temporary working contexts.
-
-Design documents define canonical ownership, contracts, invariants, state/lifecycle semantics, cross-owner boundaries, replay/fencing rules, implementation gates, review evidence, Architecture Findings and frozen baselines before code is allowed to establish those semantics implicitly.
+Design documents define ownership, contracts, invariants, lifecycle semantics, cross-owner boundaries, replay/fencing rules, implementation gates, review evidence, Architecture Findings and frozen baselines before code may establish those semantics implicitly.
 
 ## 2. Authority
 
 Nyron uses one **Lead Design Authority** for system-level integration and freeze decisions.
 
-Specialist design work produces Candidates only. Independent reviewers provide advisory evidence only. A reviewer PASS is invalid if it materially misreads the actual candidate or frozen premises.
+Specialists produce Candidates only. Independent reviewers provide advisory evidence only. A reviewer PASS is invalid if it materially misreads the actual candidate or frozen premises.
 
 ## 3. Read This First
 
@@ -27,75 +25,47 @@ For Lead immediate execution queue:
 For reusable process rules:
 - `design/process/Nyron_Design_Operating_Model_v0.1.md`
 
-Do not scan all historical tasks/reviews unless a concrete integration issue requires it.
-
 ## 4. Frozen Architecture Baselines
 
-### Module Architecture
-- `design/Universal_Runtime_Module_Design_Report_v0.1.md`
-- **FROZEN MODULE ARCHITECTURE BASELINE**
+- Module Architecture — `design/Universal_Runtime_Module_Design_Report_v0.1.md`
+- Amendment 001 / EffectOperation PREPARED — `design/amendments/Module_Architecture_Amendment_001_EffectOperation_Prepared.md`
+- Graph / Composite — `design/Nyron_Graph_Composite_Frozen_Baseline_v0.1.md`
+- Runtime Orchestration — `design/Nyron_Runtime_Orchestration_Frozen_Baseline_v0.1.md`
+- Accounting / Recovery — `design/Nyron_Accounting_Recovery_Frozen_Baseline_v0.1.md`
+- Distribution / Module Ecosystem — `design/Nyron_Distribution_Module_Ecosystem_Frozen_Baseline_v0.1.md`
+- External Interfaces / Workspace Boundary — `design/Nyron_External_Interfaces_Workspace_Frozen_Baseline_v0.1.md`
+- Human Interaction / Approval Authority — `design/Nyron_Human_Interaction_Approval_Authority_Frozen_Baseline_v0.1.md`
+- Project / Workspace / Policy Context — `design/Nyron_Project_Workspace_Policy_Context_Frozen_Baseline_v0.1.md`
 
-### Amendment 001 — EffectOperation PREPARED
-- `design/amendments/Module_Architecture_Amendment_001_EffectOperation_Prepared.md`
-- **FROZEN MODULE ARCHITECTURE AMENDMENT**
-
-### Graph / Composite
-- `design/Nyron_Graph_Composite_Frozen_Baseline_v0.1.md`
-- **FROZEN GRAPH / COMPOSITE ARCHITECTURE BASELINE**
-
-### Runtime Orchestration — D-003
-- `design/Nyron_Runtime_Orchestration_Frozen_Baseline_v0.1.md`
-- **FROZEN RUNTIME ORCHESTRATION ARCHITECTURE BASELINE**
-
-### Accounting / Recovery — D-005
-- `design/Nyron_Accounting_Recovery_Frozen_Baseline_v0.1.md`
-- **FROZEN ACCOUNTING / RECOVERY ARCHITECTURE BASELINE**
-
-### External Interfaces / Workspace Boundary — D-008
-- `design/Nyron_External_Interfaces_Workspace_Frozen_Baseline_v0.1.md`
-- **FROZEN EXTERNAL INTERFACES / WORKSPACE BOUNDARY ARCHITECTURE BASELINE**
-
-The D-003/D-005/D-008 independent review PASS intake is recorded at:
+Accepted DeepSeek PASS evidence:
 - `design/reviews/NYRON-D-003_D-005_D-008_DeepSeek_PASS_Receipt_2026-08-24.md`
+- `design/reviews/NYRON-D-007_D-009_D-010_DeepSeek_Review_PASS_Receipt.md`
 
 ## 5. Current Overall System Candidate
 
 - `design/Nyron_Overall_System_Architecture_v0.1.md`
 - Status: **CONSOLIDATED INTEGRATED PRE-FREEZE CANDIDATE**
 
-Lead clarifications:
+Lead integration audit trail:
 - `design/clarifications/NYRON-D-001_Lead_Integration_Clarification_001.md`
 - `design/clarifications/NYRON-D-001_Lead_Integration_Clarification_002.md`
 
-Current v0.1 canonical Owner set is closed at Lead-integration level. Overall freeze still requires remaining subsystem review/freeze closure and one integrated Claude adversarial review.
+The v0.1 canonical Owner set is closed at Lead-integration level.
 
-## 6. Lead-Integrated Candidates Awaiting Freeze
+## 6. Only Remaining Subsystem Gate — D-004
 
-### D-004 — Capability / Resource / Effect Authority
-- `design/Nyron_Capability_Resource_Effect_Authority_Design_Candidate_v0.1.md`
-- Lead: PASS with Frozen Amendment 001
-- Independent review state: pending Lead closure
-
-### D-007 — Distribution / Module Ecosystem
-- `design/Nyron_Distribution_Module_Ecosystem_Design_Candidate_v0.1.md`
-- Lead: PASS WITH CLARIFICATION
-- DeepSeek review: **IN PROGRESS**
-
-### D-009 — Human Interaction / Approval Authority
-- `design/Nyron_Human_Interaction_Approval_Authority_Design_Candidate_v0.1.md`
-- Lead: PASS WITH CLARIFICATION
-- DeepSeek review: **IN PROGRESS**
-
-### D-010 — Project / Workspace / Policy Context
-- `design/Nyron_Project_Workspace_Policy_Context_Design_Candidate_v0.1.md`
-- Lead: PASS; AF-PWP-001 resolved
-- DeepSeek review: **IN PROGRESS**
+Capability / Resource / Effect Authority:
+- Candidate: `design/Nyron_Capability_Resource_Effect_Authority_Design_Candidate_v0.1.md`
+- Lead clarification: `design/clarifications/NYRON-D-004_Lead_Integration_Clarification_002.md`
+- Frozen dependency: Amendment 001
+- Lead result: PASS
+- Remaining gate: accept the D-004 bounded DeepSeek review result and freeze on valid PASS.
 
 ## 7. Product Node / Visual UX — D-006
 
 D-006 is deferred and **not a System Foundation freeze blocker**.
 
-Product concepts remain wrappers over generic Module / Graph / Runtime / Capability / Resource / Effect / Human Interaction / Accounting mechanisms. If later Product work exposes a real expressiveness or ownership gap, raise an Architecture Finding instead of inventing a local Kernel/Runtime primitive.
+Product concepts remain wrappers over generic Module / Graph / Runtime / Capability / Resource / Effect / Human Interaction / Accounting mechanisms. If Product work later exposes a real expressiveness or ownership gap, raise an Architecture Finding instead of inventing a local Kernel/Runtime primitive.
 
 ## 8. Core Cross-System Rules
 
@@ -104,8 +74,6 @@ Single execution path:
 ```text
 Packet -> Delivery -> Activation -> Run / Attempt
 ```
-
-No API, Human, PWP, Adapter, Registry or Product path may create a second direct-Activation execution path.
 
 Generic workflow-start external ingress:
 
@@ -119,7 +87,7 @@ PWP IngressRouteRevision
 -> Activation
 ```
 
-Package distribution separation:
+Distribution separation:
 
 ```text
 Import != Resolve != Install != Trust != Enable != CapabilityGrant != Runtime execution
@@ -135,49 +103,21 @@ ReconciliationCase.RESOLVED
 
 ## 9. Conversation / Task Economy
 
-A new GPT conversation is **not** created for every task.
+Do not create a new GPT conversation for every task.
 
-Prefer the existing appropriate conversation for:
-- small bounded design follow-ups;
-- clarifications;
-- minor integration work;
-- short reviews/checks;
-- work that does not materially pollute context.
+Use an existing appropriate window for bounded follow-ups, clarifications, integration and short checks. Open a dedicated GPT window only when substantial independent scope, context pressure, clean independent reasoning or meaningful parallelism justifies it.
 
-Open a dedicated GPT conversation only when it provides a real benefit, especially:
-- substantial independent subsystem design;
-- current context is already large/noisy;
-- a clean independent reasoning context is important;
-- meaningful parallel work is useful.
+If opened, canonical specialist conversation name is exactly `NYRON-D-XXX`, and the launch prompt must provide repository URL, Task ID, exact Task brief path, design-only/no-freeze boundary, repository write-back and commit SHA return requirements.
 
-When a dedicated specialist conversation is opened, its canonical name is exactly:
-
-```text
-NYRON-D-XXX
-```
-
-The launch prompt must explicitly provide repository URL, Task ID, exact Task brief path, design-only/no-freeze boundary, repository write-back requirement and commit SHA return requirement.
-
-## 10. Review Index
-
-Bounded DeepSeek review tasks:
-- `design/coordination/tasks/NYRON-D-003-REVIEW-DS.md` — completed PASS
-- `design/coordination/tasks/NYRON-D-004-REVIEW-DS.md`
-- `design/coordination/tasks/NYRON-D-005-REVIEW-DS.md` — completed PASS
-- `design/coordination/tasks/NYRON-D-007-REVIEW-DS.md` — issued
-- `design/coordination/tasks/NYRON-D-008-REVIEW-DS.md` — completed PASS
-- `design/coordination/tasks/NYRON-D-009-REVIEW-DS.md` — issued
-- `design/coordination/tasks/NYRON-D-010-REVIEW-DS.md` — issued
+## 10. Final Review
 
 Prepared final integrated Claude review:
 - Manifest: `design/reviews/NYRON-D-001_Integrated_Adversarial_Review_Manifest_DRAFT.md`
 - Task: `design/coordination/tasks/NYRON-D-001-REVIEW-CLAUDE.md`
 
-## 11. Next Gate
-
-1. Accept/reject D-007/D-009/D-010 DeepSeek results as they arrive and freeze each valid PASS independently.
-2. Close D-004 review state and freeze on valid PASS.
-3. Update the integrated Claude review Manifest with exact frozen constituent identities.
-4. Run one integrated Claude adversarial review.
-5. Resolve valid findings/re-review if required.
-6. Lead-freeze Overall System Architecture v0.1.
+Next gate:
+1. close/freeze D-004;
+2. update Manifest with all exact frozen constituent identities;
+3. run one integrated Claude adversarial review;
+4. resolve valid findings/re-review if necessary;
+5. Lead-freeze Overall System Architecture v0.1.
