@@ -28,36 +28,17 @@ Process model:
 - Module Amendment 001 / EffectOperation PREPARED — `design/amendments/Module_Architecture_Amendment_001_EffectOperation_Prepared.md`
 - Graph / Composite — `design/Nyron_Graph_Composite_Frozen_Baseline_v0.1.md`
 - Runtime Orchestration — `design/Nyron_Runtime_Orchestration_Frozen_Baseline_v0.1.md`
+- Capability / Resource / Effect Authority — `design/Nyron_Capability_Resource_Effect_Authority_Frozen_Baseline_v0.1.md`
 - Accounting / Recovery — `design/Nyron_Accounting_Recovery_Frozen_Baseline_v0.1.md`
 - Distribution / Module Ecosystem — `design/Nyron_Distribution_Module_Ecosystem_Frozen_Baseline_v0.1.md`
 - External Interfaces / Workspace Boundary — `design/Nyron_External_Interfaces_Workspace_Frozen_Baseline_v0.1.md`
-- **External Interfaces Amendment 001 / FENCED retry semantics** — `design/amendments/External_Interfaces_Amendment_001_Fenced_Retry_Semantics.md`
+- External Interfaces Amendment 001 / FENCED retry semantics — `design/amendments/External_Interfaces_Amendment_001_Fenced_Retry_Semantics.md`
 - Human Interaction / Approval Authority — `design/Nyron_Human_Interaction_Approval_Authority_Frozen_Baseline_v0.1.md`
 - Project / Workspace / Policy Context — `design/Nyron_Project_Workspace_Policy_Context_Frozen_Baseline_v0.1.md`
 
-## 5. Current Overall System Candidate
+## 5. D-004 Review / Freeze Closure
 
-- `design/Nyron_Overall_System_Architecture_v0.1.md`
-- Status: **CONSOLIDATED INTEGRATED PRE-FREEZE CANDIDATE**
-
-The v0.1 canonical Owner set is closed at Lead-integration level.
-
-## 6. Only Remaining Subsystem Gate — D-004
-
-Capability / Resource / Effect Authority is **corrected but not frozen**.
-
-Corrected bundle:
-- `design/Nyron_Capability_Resource_Effect_Authority_Design_Candidate_v0.1.md`
-- `design/amendments/Module_Architecture_Amendment_001_EffectOperation_Prepared.md`
-- `design/clarifications/NYRON-D-004_Lead_Integration_Clarification_002.md`
-- `design/clarifications/NYRON-D-004_Lead_Integration_Clarification_003.md`
-- `design/clarifications/NYRON-D-004_Lead_Integration_Clarification_004.md`
-- `design/amendments/External_Interfaces_Amendment_001_Fenced_Retry_Semantics.md`
-
-Independent GPT adversarial FAIL record:
-- `design/reviews/NYRON-D-004_GPT_Adversarial_Review_FAIL_2026-08-24.md`
-
-Accepted blockers/corrections:
+Independent GPT adversarial review found and Lead accepted two blockers:
 
 ```text
 FENCED active/conflict clearance
@@ -72,9 +53,25 @@ plain authority check-then-use is forbidden
 actual authority consumption must linearize against replacement/revoke
 ```
 
-Targeted re-review:
-- `design/coordination/tasks/NYRON-D-004-REVIEW-GPT-R2.md`
-- reuse the same GPT review conversation; do not open another GPT window.
+Corrections:
+- `design/clarifications/NYRON-D-004_Lead_Integration_Clarification_003.md`
+- `design/clarifications/NYRON-D-004_Lead_Integration_Clarification_004.md`
+- `design/amendments/External_Interfaces_Amendment_001_Fenced_Retry_Semantics.md`
+
+Targeted GPT re-review: **PASS**.
+
+Review receipt:
+- `design/reviews/NYRON-D-004_GPT_Targeted_ReReview_PASS_Receipt_2026-08-24.md`
+
+D-004 frozen baseline:
+- `design/Nyron_Capability_Resource_Effect_Authority_Frozen_Baseline_v0.1.md`
+
+## 6. Current Overall System Candidate
+
+- `design/Nyron_Overall_System_Architecture_v0.1.md`
+- Status: **INTEGRATED PRE-FREEZE CANDIDATE — FINAL CLAUDE REVIEW READY**
+
+The v0.1 canonical Owner set is closed and all System Foundation subsystem freeze gates required for final integrated review are complete.
 
 ## 7. Product Node / Visual UX — D-006
 
@@ -125,7 +122,7 @@ FENCED
 Authority race rule:
 
 ```text
-revoke/replacement wins admission race -> reject new use
+revoke/replacement wins authority-consumption admission -> reject new use
 exact use admission wins -> durable pre-revoke in-flight work
 cached validation cannot cross that boundary
 ```
@@ -136,15 +133,18 @@ Do not create a new GPT conversation for every task.
 
 Use an existing appropriate window for bounded follow-ups, clarifications, integration and re-review. Open a dedicated window only when substantial independent scope, context pressure, clean independent reasoning or meaningful parallelism justifies it.
 
-## 10. Final Review
+## 10. Final Integrated Review — READY
 
-Prepared integrated Claude review:
-- Manifest: `design/reviews/NYRON-D-001_Integrated_Adversarial_Review_Manifest_DRAFT.md`
-- Task: `design/coordination/tasks/NYRON-D-001-REVIEW-CLAUDE.md`
+Claude review task:
+- `design/coordination/tasks/NYRON-D-001-REVIEW-CLAUDE.md`
 
-Next gate:
-1. targeted GPT re-review of corrected D-004;
-2. freeze D-004 on valid PASS;
-3. update final Manifest with D-004 + External Interfaces Amendment 001;
-4. run integrated Claude adversarial review;
-5. resolve findings and Lead-freeze Overall System Architecture v0.1.
+Manifest:
+- `design/reviews/NYRON-D-001_Integrated_Adversarial_Review_Manifest_DRAFT.md`
+
+Current gate: **READY FOR REVIEW**.
+
+Next sequence:
+1. run one integrated Claude adversarial review;
+2. Lead validates premises/findings;
+3. resolve valid blockers and targeted re-review if needed;
+4. on valid PASS, Lead-freeze Overall System Architecture v0.1.
