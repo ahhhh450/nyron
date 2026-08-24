@@ -22,11 +22,12 @@ Lead queue:
 Process model:
 - `design/process/Nyron_Design_Operating_Model_v0.1.md`
 
-## 4. Frozen Architecture Baselines
+## 4. Frozen Architecture Baselines / Amendments
 
 - Module Architecture — `design/Universal_Runtime_Module_Design_Report_v0.1.md`
 - Module Amendment 001 / EffectOperation PREPARED — `design/amendments/Module_Architecture_Amendment_001_EffectOperation_Prepared.md`
 - Graph / Composite — `design/Nyron_Graph_Composite_Frozen_Baseline_v0.1.md`
+- **Graph / Accounting Amendment 001 / Static AccountingScope Resolution** — `design/amendments/Graph_Accounting_Amendment_001_Static_Accounting_Scope_Resolution.md`
 - Runtime Orchestration — `design/Nyron_Runtime_Orchestration_Frozen_Baseline_v0.1.md`
 - Capability / Resource / Effect Authority — `design/Nyron_Capability_Resource_Effect_Authority_Frozen_Baseline_v0.1.md`
 - Accounting / Recovery — `design/Nyron_Accounting_Recovery_Frozen_Baseline_v0.1.md`
@@ -35,43 +36,48 @@ Process model:
 - External Interfaces Amendment 001 / FENCED retry semantics — `design/amendments/External_Interfaces_Amendment_001_Fenced_Retry_Semantics.md`
 - Human Interaction / Approval Authority — `design/Nyron_Human_Interaction_Approval_Authority_Frozen_Baseline_v0.1.md`
 - Project / Workspace / Policy Context — `design/Nyron_Project_Workspace_Policy_Context_Frozen_Baseline_v0.1.md`
+- **PWP Amendment 001 / Historical Revision Retention** — `design/amendments/PWP_Amendment_001_Historical_Revision_Retention.md`
 
-## 5. D-004 Review / Freeze Closure
+## 5. Integrated Claude Review — first pass
 
-Independent GPT adversarial review found and Lead accepted two blockers:
+The first complete Claude integrated adversarial review returned **FAIL** with two findings.
 
-```text
-FENCED active/conflict clearance
-!= historical outcome certainty
-!= semantic retry clearance
-```
+Review record:
+- `design/reviews/NYRON-D-001_Claude_Integrated_Review_FAIL_2026-08-24.md`
 
-and:
+### F01 — valid blocker
 
-```text
-plain authority check-then-use is forbidden
-actual authority consumption must linearize against replacement/revoke
-```
+Static `ModuleInstanceRevision.static_accounting_scope_ref` lacked one explicit frozen cross-owner execution-eligibility rule.
 
-Corrections:
-- `design/clarifications/NYRON-D-004_Lead_Integration_Clarification_003.md`
-- `design/clarifications/NYRON-D-004_Lead_Integration_Clarification_004.md`
-- `design/amendments/External_Interfaces_Amendment_001_Fenced_Retry_Semantics.md`
+Correction:
+- `design/amendments/Graph_Accounting_Amendment_001_Static_Accounting_Scope_Resolution.md`
 
-Targeted GPT re-review: **PASS**.
+Current rule:
+- unresolved accounting affiliation may be stored/imported but is non-executable;
+- Runtime admission fails closed until Accounting Owner resolves/validates all static scope refs and required ancestry;
+- missing scope never means unbounded/no-budget authority.
 
-Review receipt:
-- `design/reviews/NYRON-D-004_GPT_Targeted_ReReview_PASS_Receipt_2026-08-24.md`
+### F02 — premise overstated, ambiguity removed
 
-D-004 frozen baseline:
-- `design/Nyron_Capability_Resource_Effect_Authority_Frozen_Baseline_v0.1.md`
+Frozen D-010 already required historical resolution and retention of superseded revisions while referenced by canonical history.
+
+Correction-strength Amendment makes the coverage explicit for every PWP revision class:
+- `design/amendments/PWP_Amendment_001_Historical_Revision_Retention.md`
+
+Covered explicitly:
+- ProjectConfigRevision;
+- WorkspaceConfigRevision;
+- PolicyContextRevision;
+- EnvironmentBindingRevision;
+- IngressRouteRevision;
+- stable Project/Workspace/IngressRoute identities required to resolve them.
 
 ## 6. Current Overall System Candidate
 
 - `design/Nyron_Overall_System_Architecture_v0.1.md`
-- Status: **INTEGRATED PRE-FREEZE CANDIDATE — FINAL CLAUDE REVIEW READY**
+- Status: **INTEGRATED PRE-FREEZE CANDIDATE — TARGETED CLAUDE R2 READY**
 
-The v0.1 canonical Owner set is closed and all System Foundation subsystem freeze gates required for final integrated review are complete.
+The correctness-critical Owner set remains closed.
 
 ## 7. Product Node / Visual UX — D-006
 
@@ -85,66 +91,47 @@ Single execution path:
 Packet -> Delivery -> Activation -> Run / Attempt
 ```
 
-Generic workflow-start ingress:
-
-```text
-PWP IngressRouteRevision
--> authentication/validation/canonicalization
--> Runtime-owned ExecutionIngressFact
--> Runtime admission
--> Trigger Packet
--> Delivery
--> Activation
-```
-
 Distribution separation:
 
 ```text
 Import != Resolve != Install != Trust != Enable != CapabilityGrant != Runtime execution
 ```
 
-Recovery separation:
-
-```text
-ReconciliationCase.RESOLVED
-!= subject truth known
-!= Effect/Resource/Capability conflict clearance
-```
-
 Effect retry separation:
 
 ```text
-FENCED
-!= no prior consequence
-!= safe semantic replay
+FENCED != no prior consequence != safe semantic replay
 ```
 
-Authority race rule:
+Accounting resolution rule:
 
 ```text
-revoke/replacement wins authority-consumption admission -> reject new use
-exact use admission wins -> durable pre-revoke in-flight work
-cached validation cannot cross that boundary
+unresolved static_accounting_scope_ref
+-> definition may remain stored/imported
+-> Runtime execution admission denied
+```
+
+PWP history rule:
+
+```text
+retained canonical history pins PWP revision
+-> that exact revision remains semantically resolvable
 ```
 
 ## 9. Conversation / Task Economy
 
-Do not create a new GPT conversation for every task.
+Do not create a new GPT conversation for every task. Reuse an existing appropriate window for bounded follow-ups, clarifications, integration and re-review.
 
-Use an existing appropriate window for bounded follow-ups, clarifications, integration and re-review. Open a dedicated window only when substantial independent scope, context pressure, clean independent reasoning or meaningful parallelism justifies it.
+## 10. Current Final Gate
 
-## 10. Final Integrated Review — READY
+Targeted Claude re-review:
+- `design/coordination/tasks/NYRON-D-001-REVIEW-CLAUDE-R2.md`
 
-Claude review task:
-- `design/coordination/tasks/NYRON-D-001-REVIEW-CLAUDE.md`
-
-Manifest:
+Current Manifest:
 - `design/reviews/NYRON-D-001_Integrated_Adversarial_Review_Manifest_DRAFT.md`
 
-Current gate: **READY FOR REVIEW**.
-
 Next sequence:
-1. run one integrated Claude adversarial review;
-2. Lead validates premises/findings;
-3. resolve valid blockers and targeted re-review if needed;
-4. on valid PASS, Lead-freeze Overall System Architecture v0.1.
+1. run targeted Claude R2 in the same Claude conversation;
+2. validate its premises/result;
+3. on valid PASS, record review evidence and Lead-freeze Overall System Architecture v0.1 immediately;
+4. only if a correction-induced blocker remains, amend that narrow scope and re-review it.
