@@ -13,18 +13,19 @@ Purpose: Maintain the single current source of truth for parallel design tasks, 
 6. If a task discovers a conflict with a frozen baseline, it must stop at that boundary and raise an Architecture Finding.
 7. This file must be updated whenever a design task is opened, completed, blocked, superseded, integrated, or moved into independent review.
 8. Stable decisions should be written to repository documents before a conversation is intentionally replaced or context is compressed.
+9. Bounded subsystem consistency reviews should prefer a lower-cost independent reviewer such as DeepSeek; Claude is reserved for broader adversarial architecture review after multiple subsystem candidates have been integrated, unless a high-risk local finding justifies earlier Claude review.
 
 ## Current Tasks
 
 | Task ID | Conversation Name | Topic | Mode | Depends On | Status | Gate / Return Condition |
 | --- | --- | --- | --- | --- | --- | --- |
 | NYRON-D-001 | Nyron设计-总设计调度 | Overall System Architecture v0.1 | Main design thread | Frozen Module baseline | IN PROGRESS | Integrate subsystem candidates and produce reviewable System Foundation baseline |
-| NYRON-D-002 | Nyron设计-NYRON-D-002-Graph-Composite | Graph / Composite Design Candidate v0.1 | Dedicated parallel design thread | NYRON-D-001 draft + frozen Module baseline | INDEPENDENT REVIEW READY | Lead integration review passed; independent review required before freeze |
+| NYRON-D-002 | Nyron设计-NYRON-D-002-Graph-Composite | Graph / Composite Design Candidate v0.1 | Dedicated parallel design thread | NYRON-D-001 draft + frozen Module baseline | DEEPSEEK REVIEW READY | Lead integration review passed; DeepSeek consistency review required before local freeze consideration |
 | NYRON-D-003 | Nyron设计-NYRON-D-003-Runtime-Orchestration | Runtime Orchestration Design | Dedicated parallel design thread | NYRON-D-002 execution-facing semantics + Module baseline | READY FOR PARALLELIZATION | May open now; must treat Graph candidate as review-pending and escalate any conflict |
 | NYRON-D-004 | Nyron设计-NYRON-D-004-Capability-Resource-Effect | Capability / Resource / Effect Authority Design | Dedicated parallel design thread | NYRON-D-001 ownership model + Module baseline | IN PROGRESS / DELEGATED | Return complete candidate, invariants, open questions, findings |
 | NYRON-D-005 | Nyron设计-NYRON-D-005-Accounting-Recovery | Accounting / Recovery Design | Dedicated parallel design thread | NYRON-D-001 + Module baseline + NYRON-D-004 lifecycle inputs | PARTIALLY BLOCKED | Open after NYRON-D-004 candidate stabilizes effect/resource lifecycle boundaries |
 | NYRON-D-006 | Nyron设计-NYRON-D-006-Product-Node-UX | Product Node Taxonomy / Visual Workflow UX | Product design thread with user | NYRON-D-002 expressive envelope | UNBLOCKED / NOT STARTED | May begin when user/product discussion is useful; must not alter runtime primitives |
-| NYRON-D-007 | Nyron设计-NYRON-D-007-Distribution-Module-Ecosystem | Distribution / Module Ecosystem | Dedicated design thread | NYRON-D-002 dependency/import semantics + Module registry semantics | READY / NOT STARTED | Can open after Graph independent review or earlier if it treats Graph semantics as candidate |
+| NYRON-D-007 | Nyron设计-NYRON-D-007-Distribution-Module-Ecosystem | Distribution / Module Ecosystem | Dedicated design thread | NYRON-D-002 dependency/import semantics + Module registry semantics | READY / NOT STARTED | Can open after Graph review or earlier if it treats Graph semantics as candidate |
 | NYRON-D-008 | Nyron设计-NYRON-D-008-External-Interfaces-Workspace | External Interfaces / Workspace Boundary | Dedicated design thread | Kernel ownership + NYRON-D-004 authority/resource foundation | BLOCKED | Open after NYRON-D-004 foundation |
 
 ## NYRON-D-002 Integration Result
@@ -40,11 +41,16 @@ Clarifications incorporated:
 
 No blocking Architecture Finding against the frozen Module baseline was identified.
 
+Independent review assignment:
+- Reviewer: DeepSeek
+- Review style: bounded architecture consistency / contradiction / correctness review
+- Claude review: deferred to integrated multi-subsystem adversarial architecture review unless DeepSeek or Lead Review surfaces a high-risk finding.
+
 ## Current Parallelization Decision
 
 Safe now:
 - NYRON-D-001 — continue in main thread.
-- NYRON-D-002 — independent review only; no further speculative redesign unless review finds an issue.
+- NYRON-D-002 — DeepSeek independent review only; no further speculative redesign unless review finds an issue.
 - NYRON-D-003 — may now start as a dedicated Runtime Orchestration thread.
 - NYRON-D-004 — continue in dedicated authority/resource/effect thread.
 - NYRON-D-006 — product discussion is unblocked, but may be deferred until the user wants to define visible nodes.
@@ -52,6 +58,20 @@ Safe now:
 Do not open yet:
 - NYRON-D-005 Accounting / Recovery, until NYRON-D-004 establishes candidate lifecycle boundaries.
 - NYRON-D-008 External Interfaces / Workspace, until NYRON-D-004 authority foundation is stable enough.
+
+## Review Strategy
+
+### Subsystem Review
+Use a bounded independent reviewer, normally DeepSeek, to check:
+- frozen-baseline compatibility;
+- internal contradiction;
+- ownership/identity ambiguity;
+- replay/recovery holes;
+- missing invariants;
+- unsafe cross-subsystem assumptions.
+
+### Integrated Architecture Review
+After major subsystem candidates are integrated into the Overall System Architecture candidate, use Claude for an Independent Adversarial Architecture Review with freedom to challenge assumptions and propose alternatives, while retaining no authority to modify or freeze the baseline directly.
 
 ## Main Thread Responsibility While Parallel Tasks Run
 
