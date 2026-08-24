@@ -21,7 +21,7 @@ Purpose: Single current source of truth for active design state, frozen baseline
 | `NYRON-D-001` | Overall System Architecture v0.1 | **CONSOLIDATED PRE-FREEZE CANDIDATE** | Close D-004, then open integrated Claude adversarial review |
 | `NYRON-D-002` | Graph / Composite | **FROZEN** | Complete |
 | `NYRON-D-003` | Runtime Orchestration | **FROZEN** | Complete |
-| `NYRON-D-004` | Capability / Resource / Effect Authority | **LEAD PASS / INDEPENDENT REVIEW RESULT STILL REQUIRED** | Accept valid DeepSeek result, then freeze |
+| `NYRON-D-004` | Capability / Resource / Effect Authority | **LEAD RE-REVIEW PASS / INDEPENDENT REVIEW REQUIRED** | Run updated DeepSeek task against Clarification 003, then freeze on valid PASS |
 | `NYRON-D-005` | Accounting / Recovery | **FROZEN** | Complete |
 | `NYRON-D-006` | Product Node / Visual Workflow UX | **DEFERRED NON-BLOCKER** | Post-foundation unless product work exposes architecture gap |
 | `NYRON-D-007` | Distribution / Module Ecosystem | **FROZEN** | Complete |
@@ -47,9 +47,33 @@ Accepted bounded DeepSeek PASS evidence:
 - D-003 / D-005 / D-008 — `design/reviews/NYRON-D-003_D-005_D-008_DeepSeek_PASS_Receipt_2026-08-24.md`
 - D-007 / D-009 / D-010 — `design/reviews/NYRON-D-007_D-009_D-010_DeepSeek_Review_PASS_Receipt.md`
 
-D-004 remains the only subsystem review result not yet closed in Lead state.
+D-004 Lead re-review:
+- `design/reviews/NYRON-D-004_Lead_ReReview_2026-08-24.md`
+- Result: **PASS AFTER REQUIRED CLARIFICATION**
 
-## 5. Overall Architecture State
+D-004 remains the only subsystem requiring independent review closure.
+
+## 5. D-004 Re-review Result
+
+Candidate:
+- `design/Nyron_Capability_Resource_Effect_Authority_Design_Candidate_v0.1.md`
+- blob: `77cc1994368fd0b847278e3c5f6e548272912684`
+
+Existing integration clarification:
+- `design/clarifications/NYRON-D-004_Lead_Integration_Clarification_002.md`
+- blob: `97f1fe428a3afa1d7783687576c73c125be05c6b`
+
+New required Lead clarification:
+- `design/clarifications/NYRON-D-004_Lead_Integration_Clarification_003.md`
+
+Clarification 003 resolves two correctness issues found by Lead:
+1. removes the D-004 §20 exception that could allow crash-ambiguous external dispatch before durable Nyron `EffectOperation(PREPARED)` identity; external/provider idempotency identity is additional evidence only;
+2. closes `OQ-03` at the safety level through deterministic versioned `EffectConflictScope`, where unproven disjointness fails closed and overlapping PREPARED remains conflict-relevant until Effect Authority establishes safe owner-authoritative state.
+
+Updated independent review task:
+- `design/coordination/tasks/NYRON-D-004-REVIEW-DS.md`
+
+## 6. Overall Architecture State
 
 Primary consolidated candidate:
 - `design/Nyron_Overall_System_Architecture_v0.1.md`
@@ -60,20 +84,25 @@ Lead integration audit trail:
 
 The current v0.1 canonical Owner set has no correctness-critical placeholder. D-006 detailed Product UX is not a System Foundation freeze blocker unless it later exposes a real architecture defect.
 
-## 6. Remaining Hard Gate
+## 7. Remaining Hard Gate
 
 Only one subsystem closure remains before the final integrated review gate can open:
 
 `NYRON-D-004-REVIEW-DS`
 
-D-004 exact freeze candidate set is already pinned operationally:
-- Candidate blob: `77cc1994368fd0b847278e3c5f6e548272912684`
-- Lead clarification blob: `97f1fe428a3afa1d7783687576c73c125be05c6b`
-- Frozen Amendment 001 is mandatory.
+The review MUST use:
+- D-004 Candidate;
+- Frozen Amendment 001;
+- Clarification 002;
+- Clarification 003;
+- current frozen D-003/D-005/D-007/D-008/D-009/D-010 boundaries.
 
-On a valid PASS, Lead should immediately create the D-004 frozen baseline, update the integrated review Manifest, and mark `NYRON-D-001-REVIEW-CLAUDE` READY.
+On a valid PASS, Lead should immediately:
+1. create the D-004 frozen baseline pinning Candidate + Clarification 002 + Clarification 003 + Amendment 001;
+2. update the integrated Claude review Manifest;
+3. mark `NYRON-D-001-REVIEW-CLAUDE` READY.
 
-## 7. Final Review Preparation
+## 8. Final Review Preparation
 
 Prepared:
 - Manifest: `design/reviews/NYRON-D-001_Integrated_Adversarial_Review_Manifest_DRAFT.md`
