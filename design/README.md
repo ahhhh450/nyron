@@ -183,7 +183,7 @@ When a new design conversation is required, the Lead Design Authority must provi
 | Domain | Status | Baseline |
 | --- | --- | --- |
 | Module subsystem | FROZEN | `Universal_Runtime_Module_Design_Report_v0.1.md` |
-| Overall system architecture | NOT STARTED | — |
+| Overall system architecture | DRAFT | `Nyron_Overall_System_Architecture_v0.1.md` |
 | Graph / Composite | NOT STARTED | — |
 | Runtime orchestration | NOT STARTED | — |
 | Capability / Resource system | PARTIALLY DEFINED by Module baseline | — |
@@ -194,9 +194,9 @@ When a new design conversation is required, the Lead Design Authority must provi
 
 ## 10. Next Design Gate
 
-Before broad implementation begins, the next system-level task is to establish the **Nyron Overall System Architecture Baseline**.
+The **Nyron Overall System Architecture Baseline** is now in active DRAFT design.
 
-That baseline should answer at minimum:
+The draft must answer at minimum:
 
 - what the Kernel owns and does not own;
 - the complete first-class subsystem map;
