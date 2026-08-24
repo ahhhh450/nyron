@@ -20,16 +20,16 @@ Purpose: Single current source of truth for design tasks, frozen baselines, revi
 
 | Task ID | Topic | Status | Current Gate |
 | --- | --- | --- | --- |
-| `NYRON-D-001` | Overall System Architecture v0.1 | **IN PROGRESS — INTEGRATED CANDIDATE** | Await current subsystem reviews + D-007/D-009/D-010 candidates, then integrated Claude review |
+| `NYRON-D-001` | Overall System Architecture v0.1 | **IN PROGRESS — INTEGRATED CANDIDATE** | Await current subsystem reviews + D-009/D-010 Owner-gap closure; D-007 integrates in parallel; then integrated Claude review |
 | `NYRON-D-002` | Graph / Composite | **FROZEN** | Frozen baseline manifest committed |
-| `NYRON-D-003` | Runtime Orchestration | **LEAD REVIEW PASS / INDEPENDENT REVIEW READY** | DeepSeek bounded consistency review |
+| `NYRON-D-003` | Runtime Orchestration | **LEAD REVIEW PASS / INDEPENDENT REVIEW IN PROGRESS** | DeepSeek bounded consistency review |
 | `NYRON-D-004` | Capability / Resource / Effect Authority | **LEAD REVIEW PASS / INDEPENDENT REVIEW IN PROGRESS** | DeepSeek bounded consistency review; Amendment 001 frozen |
-| `NYRON-D-005` | Accounting / Recovery | **LEAD REVIEW PASS / INDEPENDENT REVIEW READY** | DeepSeek bounded consistency review |
+| `NYRON-D-005` | Accounting / Recovery | **LEAD REVIEW PASS / INDEPENDENT REVIEW IN PROGRESS** | DeepSeek bounded consistency review |
 | `NYRON-D-006` | Product Node / Visual Workflow UX | **UNBLOCKED / NOT STARTED** | Product-layer work may be deferred until foundation stabilizes |
-| `NYRON-D-007` | Distribution / Module Ecosystem | **READY / TASK BRIEF CREATED** | Open specialist thread; consume frozen Graph dependency/import semantics |
-| `NYRON-D-008` | External Interfaces / Workspace | **LEAD REVIEW PASS / INDEPENDENT REVIEW READY** | DeepSeek bounded consistency review |
-| `NYRON-D-009` | Human Interaction / Approval Authority | **READY / TASK BRIEF CREATED** | Open specialist thread; define HumanRequest/HumanResponse Owner and approval evidence boundary |
-| `NYRON-D-010` | Project / Workspace / Policy Context | **READY / TASK BRIEF CREATED** | Open specialist thread; close Workspace/Project/policy/ingress-route Owner gap |
+| `NYRON-D-007` | Distribution / Module Ecosystem | **DELEGATED / IN PROGRESS** | Candidate must be written to repository; consumes frozen Graph dependency/import semantics |
+| `NYRON-D-008` | External Interfaces / Workspace | **LEAD REVIEW PASS / INDEPENDENT REVIEW IN PROGRESS** | DeepSeek bounded consistency review |
+| `NYRON-D-009` | Human Interaction / Approval Authority | **DELEGATED / IN PROGRESS** | Candidate must close HumanRequest/HumanResponse Owner and approval evidence boundary |
+| `NYRON-D-010` | Project / Workspace / Policy Context | **DELEGATED / IN PROGRESS** | Candidate must close Workspace/Project/policy/ingress-route Owner gap |
 
 ## 3. Frozen Architecture Baselines
 
@@ -83,22 +83,28 @@ Lead result: **PASS WITH EXPLICIT FROZEN AMENDMENT 001**.
 
 Current gate: DeepSeek bounded consistency review.
 
-## 6. New Parallel Task Briefs
+## 6. Active Parallel Design Threads
 
 ### NYRON-D-007 — Distribution / Module Ecosystem
 - Task: `design/coordination/tasks/NYRON-D-007.md`
 - Required output: `design/Nyron_Distribution_Module_Ecosystem_Design_Candidate_v0.1.md`
+- Status: **DELEGATED / IN PROGRESS**
 - Purpose: close package/registry/install/trust/signing/distribution semantics while preserving exact dependency and import != trust rules.
+- Blocking role: does not block D-003/D-004/D-005/D-008 subsystem freeze; integrates before final Overall distribution/registry baseline closure.
 
 ### NYRON-D-009 — Human Interaction / Approval Authority
 - Task: `design/coordination/tasks/NYRON-D-009.md`
 - Required output: `design/Nyron_Human_Interaction_Approval_Authority_Design_Candidate_v0.1.md`
+- Status: **DELEGATED / IN PROGRESS**
 - Purpose: assign HumanRequest/HumanResponse canonical ownership and approval evidence/suspension/recovery boundaries.
+- Blocking role: **Overall Architecture freeze blocker** because HumanRequest/HumanResponse canonical ownership is currently intentionally unresolved.
 
 ### NYRON-D-010 — Project / Workspace / Policy Context
 - Task: `design/coordination/tasks/NYRON-D-010.md`
 - Required output: `design/Nyron_Project_Workspace_Policy_Context_Design_Candidate_v0.1.md`
+- Status: **DELEGATED / IN PROGRESS**
 - Purpose: close Project/Workspace identity, config/policy ownership, environment binding, active-execution pinning and ingress-route registry ownership.
+- Blocking role: **Overall Architecture freeze blocker** because Workspace/Project/policy/ingress-route canonical ownership is currently intentionally unresolved.
 
 ## 7. D-001 Mandatory Integration Items
 
@@ -114,9 +120,9 @@ Already integrated in current D-001 draft:
 9. Kernel Foundation remains generic, not subsystem business state machine owner.
 
 Still needing candidate/freeze closure:
-10. Human Interaction canonical Owner and request/response semantics — D-009.
-11. Workspace/Project identity/config/policy and ingress route Owner — D-010.
-12. Module/package distribution/trust ecosystem — D-007 if required before Overall freeze.
+10. Human Interaction canonical Owner and request/response semantics — D-009 (**blocking Overall freeze**).
+11. Workspace/Project identity/config/policy and ingress route Owner — D-010 (**blocking Overall freeze**).
+12. Module/package distribution/trust ecosystem — D-007 (integrates before final Overall distribution section closure; not a blocker for other subsystem freezes).
 
 ## 8. Current Parallel Work
 
@@ -126,7 +132,7 @@ Still needing candidate/freeze closure:
 - `NYRON-D-005-REVIEW-DS`
 - `NYRON-D-008-REVIEW-DS`
 
-### New design threads
+### Active design threads
 - `NYRON-D-007`
 - `NYRON-D-009`
 - `NYRON-D-010`
@@ -138,10 +144,11 @@ Parallelism constraints:
 
 ## 9. Next Lead Sequence
 
-1. Validate incoming D-004/D-003/D-005/D-008 reviews.
-2. Apply valid clarifications and freeze passing subsystem baselines.
-3. Integrate D-007/D-009/D-010 candidates as they return.
-4. Decide whether D-006 Product Node / Visual UX is required before overall freeze; current presumption: foundation can freeze before detailed product taxonomy if Product Extension Envelope remains sufficient.
-5. Produce final integrated Overall Architecture Candidate.
-6. Send integrated candidate + frozen baseline manifests to Claude for Independent Adversarial Architecture Review.
-7. Resolve findings / re-review / freeze Overall System Architecture.
+1. Validate incoming D-004/D-003/D-005/D-008 reviews as they arrive; do not block unrelated work waiting for them.
+2. Apply valid clarifications and freeze each passing subsystem independently.
+3. Integrate D-009 and D-010 immediately when they return because they close the remaining Overall canonical Owner gaps.
+4. Integrate D-007 in parallel and decide its freeze gate independently from core runtime/authority/accounting subsystems.
+5. Decide whether D-006 Product Node / Visual UX is required before overall freeze; current presumption: foundation can freeze before detailed product taxonomy if Product Extension Envelope remains sufficient.
+6. Produce final integrated Overall Architecture Candidate.
+7. Send integrated candidate + frozen baseline manifests to Claude for Independent Adversarial Architecture Review.
+8. Resolve findings / re-review / freeze Overall System Architecture.
