@@ -1,101 +1,79 @@
 # Nyron Lead Active Queue
 
 Authority: Lead Design Authority
-Purpose: Explicit immediate execution queue for the main design window. This is operational state; `design/coordination/STATUS.md` remains authoritative task state.
+Purpose: Immediate execution queue for the main design window. `design/coordination/STATUS.md` remains authoritative task state.
 
-## Completed This Wave
+## Completed / Frozen This Wave
 
 - D-002 Graph / Composite — **FROZEN**.
-- D-003 Runtime — Lead review PASS; ingress/PWP/recovery clarifications integrated.
-- D-004 Capability/Resource/Effect — Lead review PASS; Amendment 001 frozen; later Human/PWP/Recovery/Distribution clarification integrated.
-- D-005 Accounting/Recovery — Lead review PASS; PWP/accounting ancestry and Human admin boundaries integrated.
-- D-007 Distribution — Candidate received; Lead review PASS; trust ownership resolved.
-- D-008 External Interfaces — Lead review PASS; Workspace/PWP/Ingress ownership resolved.
-- D-009 Human Interaction — Candidate received; Lead review PASS; response-policy/authorization boundary clarified.
-- D-010 Project/Workspace/Policy — Candidate received; Lead review PASS; AF-PWP-001 generic ingress ownership resolved.
-- D-001 canonical Owner gaps — **CLOSED at Lead integration level**.
-- D-001 Overall main document — rewritten as consolidated integrated pre-freeze Candidate.
-- Design Operating Model — updated with validated multi-session/review/freeze/continuous-execution rules.
-- Design README — refreshed to current repository truth.
-- Final integrated Claude review Manifest + Task — prepared, gate remains closed.
+- D-003 Runtime Orchestration — **FROZEN** after Lead PASS + DeepSeek PASS.
+- D-005 Accounting / Recovery — **FROZEN** after Lead PASS + DeepSeek PASS.
+- D-008 External Interfaces / Workspace Boundary — **FROZEN** after Lead PASS + DeepSeek PASS.
+- D-007 Distribution — Lead PASS; trust ownership clarified.
+- D-009 Human Interaction — Lead PASS; response aggregation vs responder authorization clarified.
+- D-010 PWP Context — Lead PASS; AF-PWP-001 resolved.
+- D-001 canonical Owner gaps — closed at Lead integration level.
+- D-001 Overall main document — consolidated integrated pre-freeze Candidate.
+- Design README/STATUS/process rules — repository-backed.
+- Final Claude review Manifest + Task — prepared, gate closed pending remaining subsystem freeze closure.
 
-## Current Hard Dependency Lane — Independent Reviews
+## Current Hard Dependency Lane
 
-### Already issued / in progress
+### Review issued / awaiting result
 
-1. `NYRON-D-003-REVIEW-DS`
-   - current task file: `design/coordination/tasks/NYRON-D-003-REVIEW-DS.md`
-   - includes D-003/D-010 ingress clarification.
-
-2. `NYRON-D-004-REVIEW-DS`
-   - durable task now persisted: `design/coordination/tasks/NYRON-D-004-REVIEW-DS.md`
-   - review must include Amendment 001 + D-004 integration clarification.
-
-3. `NYRON-D-005-REVIEW-DS`
-   - current task file: `design/coordination/tasks/NYRON-D-005-REVIEW-DS.md`
-   - includes PWP/accounting integration clarification.
-
-4. `NYRON-D-008-REVIEW-DS`
-   - current task file: `design/coordination/tasks/NYRON-D-008-REVIEW-DS.md`
-   - includes D-008/D-010 Workspace/Ingress ownership clarification.
-
-### Ready to issue
-
-5. `NYRON-D-007-REVIEW-DS`
+1. `NYRON-D-007-REVIEW-DS`
    - `design/coordination/tasks/NYRON-D-007-REVIEW-DS.md`
+   - on valid PASS: freeze D-007 immediately.
 
-6. `NYRON-D-009-REVIEW-DS`
+2. `NYRON-D-009-REVIEW-DS`
    - `design/coordination/tasks/NYRON-D-009-REVIEW-DS.md`
+   - on valid PASS: freeze D-009 immediately.
 
-7. `NYRON-D-010-REVIEW-DS`
+3. `NYRON-D-010-REVIEW-DS`
    - `design/coordination/tasks/NYRON-D-010-REVIEW-DS.md`
+   - on valid PASS: freeze D-010 immediately.
 
-## Immediate Handling Rule For Any Incoming Review
+### D-004 closure
 
-For each D-003/D-004/D-005/D-007/D-008/D-009/D-010 review result:
+4. `NYRON-D-004-REVIEW-DS`
+   - `design/coordination/tasks/NYRON-D-004-REVIEW-DS.md`
+   - Lead PASS already exists; Amendment 001 is frozen.
+   - close returned review result when available; freeze on valid PASS.
 
-1. verify reviewer understood the actual Candidate + current clarifications;
-2. reject PASS as review-invalid if it uses superseded premises or material misreads;
-3. if FAIL, classify each finding:
-   - valid blocking correctness finding;
-   - non-blocking clarification;
-   - invalid/misread finding;
-   - Frozen Baseline impact;
-4. write accepted review evidence to `design/reviews/`;
-5. apply only valid normative clarifications;
-6. if no blocker remains, create exact subsystem Frozen Baseline/manifest pinning Candidate + accepted clarification content;
-7. update STATUS immediately;
-8. do not wait for unrelated subsystem reviews before freezing an independently clean subsystem.
+## Incoming Review Handling
+
+For any D-004/D-007/D-009/D-010 review result:
+1. verify actual Candidate + current clarification understanding;
+2. reject a materially misread PASS as review-invalid;
+3. classify findings as blocking / non-blocking / invalid / frozen-baseline impact;
+4. record accepted review evidence;
+5. apply only valid clarification;
+6. create exact frozen baseline manifest immediately when clean;
+7. update STATUS without waiting for unrelated reviews.
 
 ## Overall Lane
 
-D-001 current main candidate:
+Current Overall Candidate:
 - `design/Nyron_Overall_System_Architecture_v0.1.md`
 
-Overall integration clarifications/audit trail:
-- `design/clarifications/NYRON-D-001_Lead_Integration_Clarification_001.md`
-- `design/clarifications/NYRON-D-001_Lead_Integration_Clarification_002.md`
-
-Prepared final review:
+Prepared final integrated review:
 - Manifest: `design/reviews/NYRON-D-001_Integrated_Adversarial_Review_Manifest_DRAFT.md`
 - Claude task: `design/coordination/tasks/NYRON-D-001-REVIEW-CLAUDE.md`
 
-Claude gate remains CLOSED until subsystem review/freeze closure is sufficient.
+Once D-004/D-007/D-009/D-010 freeze closure is sufficient:
+1. pin exact frozen constituent identities in Manifest;
+2. open one integrated Claude adversarial review;
+3. resolve valid findings;
+4. Lead-freeze Overall v0.1.
 
-## D-006
+## Conversation Economy Rule
 
-D-006 Product Node / Visual UX is deferred and non-blocking for System Foundation freeze unless later Product design exposes a genuine architecture expressiveness/ownership gap.
+Do not create a new GPT conversation for every task.
 
-## Operating Rule
+Use the current appropriate window for small bounded work, clarifications, integration and short checks. Open a dedicated GPT conversation only when the topic is substantial, context is becoming large/noisy, an independent clean context materially improves review quality, or meaningful parallelism is useful.
 
-When a concrete unblocked action is available, execute it in the same turn.
+## Stop Rule
 
-A commit/status update is not a stopping condition.
+Continue executing while an unblocked action exists. Stop only for a real decision, hard external dependency, blocking Architecture Finding, or when all currently executable work is complete.
 
-Lead should stop only when:
-- a real architecture decision requires user/Lead choice;
-- a hard external dependency is unavailable;
-- an Architecture Finding blocks safe continuation;
-- all currently executable work in this wave is complete.
-
-At the current state, **subsystem freeze is now genuinely blocked on independent review evidence**, not on missing Lead design work.
+At the current moment the remaining freeze work is genuinely waiting on external review results (plus D-004 result intake), not on unresolved Lead design work.
