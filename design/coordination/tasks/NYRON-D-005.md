@@ -57,6 +57,24 @@ It must NOT redefine Runtime Attempt replacement, EffectOperation lifecycle, Res
 
 If UNKNOWN handling requires changing frozen Effect/Resource semantics, raise an `ARCHITECTURE FINDING` instead of silently absorbing the state into Accounting.
 
+## Repository Deliverable — REQUIRED
+The completed candidate MUST be written to the repository at:
+
+`design/Nyron_Accounting_Recovery_Design_Candidate_v0.1.md`
+
+Requirements:
+- write the complete candidate, not a summary;
+- do not modify frozen baselines or other subsystem candidates;
+- commit the candidate to the repository;
+- after writing, return the repository path and commit SHA;
+- printing the document only in chat does not satisfy task completion.
+
+If repository write capability is unavailable, return:
+
+`REPOSITORY_WRITE_UNAVAILABLE`
+
+followed by the complete candidate for Lead integration.
+
 ## Output
 Return a complete `Nyron Accounting / Recovery Design Candidate v0.1` with object/state models, ownership, cross-owner contracts, crash/replay semantics, invariants, open questions, findings and implementation gates.
 
