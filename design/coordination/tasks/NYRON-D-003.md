@@ -57,6 +57,24 @@ It must NOT define Recovery policy for UNKNOWN, Accounting settlement, Capabilit
 
 If a required Runtime rule contradicts D-002, D-004, Amendment 001, or the frozen Module baseline, stop at that boundary and raise an explicit `ARCHITECTURE FINDING`.
 
+## Repository Deliverable — REQUIRED
+The completed candidate MUST be written to the repository at:
+
+`design/Nyron_Runtime_Orchestration_Design_Candidate_v0.1.md`
+
+Requirements:
+- write the complete candidate, not a summary;
+- do not modify frozen baselines or other subsystem candidates;
+- commit the new/updated candidate to the repository;
+- after the write, return the repository path and commit SHA to the orchestrator;
+- the task is not considered complete merely because the candidate was printed in chat.
+
+If repository write capability is unavailable, do not claim completion. Return:
+
+`REPOSITORY_WRITE_UNAVAILABLE`
+
+followed by the complete candidate so the Lead Design Authority can integrate it.
+
 ## Output
 Return a complete `Nyron Runtime Orchestration Design Candidate v0.1` with:
 - object/state model;
