@@ -45,6 +45,24 @@ D-008 consumes D-004. It must NOT redefine CapabilityGrant, Resource/ResourceLea
 ## Product Mapping Requirement
 The design must support future Browser, Shell, File, HTTP, Claude/Codex/provider, Tool, Remote Worker and External Event nodes through generic Module + Capability + Resource + Effect mechanisms. None may become a Kernel primitive merely because it is user-visible.
 
+## Repository Deliverable — REQUIRED
+The completed candidate MUST be written to the repository at:
+
+`design/Nyron_External_Interfaces_Workspace_Boundary_Design_Candidate_v0.1.md`
+
+Requirements:
+- write the complete candidate, not a summary;
+- do not modify frozen baselines or other subsystem candidates;
+- commit the candidate to the repository;
+- after writing, return the repository path and commit SHA;
+- printing the document only in chat does not satisfy task completion.
+
+If repository write capability is unavailable, return:
+
+`REPOSITORY_WRITE_UNAVAILABLE`
+
+followed by the complete candidate for Lead integration.
+
 ## Output
 Return a complete `Nyron External Interfaces / Workspace Boundary Design Candidate v0.1`, including object/boundary model, operation mappings, trust assumptions, crash/UNKNOWN cases, invariants, open questions, findings and implementation gates.
 
