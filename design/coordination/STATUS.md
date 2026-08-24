@@ -1,160 +1,171 @@
 # Nyron Design Coordination Status
 
 Authority: Lead Design Authority
-Purpose: Maintain the single current source of truth for parallel design tasks, dependencies, gates, conversation names, and integration status.
+Purpose: Single current source of truth for design tasks, frozen baselines, review gates, dependencies, and integration state.
 
-## Rules
+## 1. Operating Rules
 
-1. Every active design thread receives one unique Task ID and one planned conversation name.
-2. A delegated design thread may produce a candidate design but may not freeze architecture.
-3. The Lead Design Authority owns dependency ordering, integration review, Architecture Findings, and final baseline status.
-4. Parallel design is allowed only when tasks do not require simultaneous changes to the same unresolved semantic boundary.
-5. Results from delegated threads return to the main design thread for integration before becoming authoritative.
-6. If a task discovers a conflict with a frozen baseline, it must stop at that boundary and raise an Architecture Finding.
-7. This file must be updated whenever a design task is opened, completed, blocked, superseded, integrated, or moved into independent review.
-8. Stable decisions should be written to repository documents before a conversation is intentionally replaced or context is compressed.
-9. Bounded subsystem consistency reviews should prefer a lower-cost independent reviewer such as DeepSeek; Claude is reserved for broader adversarial architecture review after multiple subsystem candidates have been integrated, unless a high-risk local finding justifies earlier Claude review.
-10. Reviewer conclusions are advisory. A PASS is not accepted when the returned review materially misstates the candidate or frozen baseline; the Lead Design Authority must mark that review invalid and request a corrected review.
-11. A frozen baseline may only be changed through an explicit amendment or superseding baseline that identifies the exact affected contract. Silent reinterpretation is forbidden.
-12. Delegated design tasks must write their complete candidate deliverable to the repository at the path specified in the task brief and return the commit SHA. Printing a candidate only in chat is not task completion. If repository writing is unavailable, the task must explicitly return `REPOSITORY_WRITE_UNAVAILABLE` plus the complete candidate for Lead integration.
-13. Every new specialist conversation must receive a self-contained launch message that states at minimum: the repository name and URL, that the task belongs to the Nyron design project, the Task ID, the exact task-brief path to read first, the design-only/no-freeze authority boundary, and the requirement to write the final candidate back to the repository and return the commit SHA. A new window must not be expected to infer repository location or prior conversation context.
-14. Specialist conversation names use the Task ID only, for example `NYRON-D-005`. Launch instructions must explicitly ask the new window to rename the conversation to that Task ID.
+1. Every design thread has one unique Task ID.
+2. Specialist conversation name = Task ID only, e.g. `NYRON-D-005`.
+3. Every new specialist launch message must state: Nyron project, repository URL, Task ID, exact task brief path, design-only/no-freeze boundary, mandatory repository write-back path, commit SHA return requirement, and instruction to rename the conversation to the Task ID.
+4. Delegated specialists produce Candidates only; only Lead Design Authority may freeze architecture.
+5. Delegated Candidates must be written to the repository. Chat-only output is not completion. If write access is unavailable, return `REPOSITORY_WRITE_UNAVAILABLE` plus the full Candidate.
+6. Frozen architecture may change only through an explicit Amendment or superseding frozen baseline. Silent reinterpretation is forbidden.
+7. Cross-task conflicts are returned to Lead as explicit `ARCHITECTURE FINDING`; one specialist must not rewrite another Owner's contract.
+8. Reviewer output is evidence, not authority. A PASS that materially misreads the design is invalid.
+9. Bounded subsystem reviews normally use DeepSeek. Claude is reserved for integrated adversarial architecture review unless a high-risk local finding justifies earlier use.
+10. Repository design truth should be written before context compaction or conversation replacement.
 
-## Current Tasks
+## 2. Current Tasks
 
-| Task ID | Conversation Name | Topic | Mode | Depends On | Status | Gate / Return Condition |
-| --- | --- | --- | --- | --- | --- | --- |
-| NYRON-D-001 | NYRON-D-001 | Overall System Architecture v0.1 | Main design thread | Frozen Module baseline + explicit amendments | IN PROGRESS | Integrate subsystem candidates and produce reviewable System Foundation baseline |
-| NYRON-D-002 | NYRON-D-002 | Graph / Composite Design Candidate v0.1 | Dedicated parallel design thread | NYRON-D-001 draft + frozen Module baseline | FREEZE READY | Valid targeted DeepSeek re-review passed; Lead Clarification 001 accepted; final Lead consolidation/freeze remains |
-| NYRON-D-003 | NYRON-D-003 | Runtime Orchestration Design | Dedicated parallel design thread | NYRON-D-002 execution-facing semantics + Module baseline + Amendment 001 | CANDIDATE RECEIVED / LEAD REVIEW PENDING | Candidate committed at `design/Nyron_Runtime_Orchestration_Design_Candidate_v0.1.md`; Lead integration review required |
-| NYRON-D-004 | NYRON-D-004 | Capability / Resource / Effect Authority Design | Dedicated parallel design thread | NYRON-D-001 ownership model + Module baseline + Amendment 001 | INDEPENDENT REVIEW READY | Bounded consistency review required before freeze consideration |
-| NYRON-D-005 | NYRON-D-005 | Accounting / Recovery Design | Dedicated parallel design thread | NYRON-D-001 + Module baseline + NYRON-D-004 candidate | CANDIDATE RECEIVED / LEAD REVIEW PENDING | Candidate committed at `design/Nyron_Accounting_Recovery_Design_Candidate_v0.1.md`; Lead integration review required |
-| NYRON-D-006 | NYRON-D-006 | Product Node Taxonomy / Visual Workflow UX | Product design thread with user | NYRON-D-002 expressive envelope | UNBLOCKED / NOT STARTED | Begin when visible-node/product discussion is useful; must not alter runtime primitives |
-| NYRON-D-007 | NYRON-D-007 | Distribution / Module Ecosystem | Dedicated design thread | NYRON-D-002 dependency/import semantics + Module registry semantics | READY / NOT STARTED | Can open later while Graph remains candidate if exact-version/import semantics remain review-pending |
-| NYRON-D-008 | NYRON-D-008 | External Interfaces / Workspace Boundary | Dedicated design thread | Kernel ownership + NYRON-D-004 authority/resource foundation | CANDIDATE RECEIVED / LEAD REVIEW PENDING | Candidate committed at `design/Nyron_External_Interfaces_Workspace_Boundary_Design_Candidate_v0.1.md`; Lead integration review required |
+| Task ID | Topic | Status | Current Gate |
+| --- | --- | --- | --- |
+| `NYRON-D-001` | Overall System Architecture v0.1 | **IN PROGRESS — LEAD INTEGRATION** | Integrate frozen/reviewed subsystem boundaries, then prepare integrated Claude adversarial review |
+| `NYRON-D-002` | Graph / Composite | **FROZEN** | Frozen baseline manifest committed; implementation remains gated by overall design program |
+| `NYRON-D-003` | Runtime Orchestration | **LEAD REVIEW PASS / INDEPENDENT REVIEW READY** | DeepSeek bounded consistency review |
+| `NYRON-D-004` | Capability / Resource / Effect Authority | **LEAD REVIEW PASS / INDEPENDENT REVIEW IN PROGRESS** | DeepSeek bounded consistency review; Amendment 001 already frozen |
+| `NYRON-D-005` | Accounting / Recovery | **LEAD REVIEW PASS / INDEPENDENT REVIEW READY** | DeepSeek bounded consistency review |
+| `NYRON-D-006` | Product Node / Visual Workflow UX | **UNBLOCKED / NOT STARTED** | Start when product-node design becomes useful; may not alter frozen primitives |
+| `NYRON-D-007` | Distribution / Module Ecosystem | **READY / NOT STARTED** | May start after current review wave or when distribution work is prioritized |
+| `NYRON-D-008` | External Interfaces / Workspace | **LEAD REVIEW PASS / INDEPENDENT REVIEW READY** | DeepSeek bounded consistency review |
 
-## Active Task Briefs
+## 3. Frozen Architecture Baselines
 
-- `design/coordination/tasks/NYRON-D-003.md`
-- `design/coordination/tasks/NYRON-D-005.md`
-- `design/coordination/tasks/NYRON-D-008.md`
+### Module Architecture
 
-Each specialist window should read its task brief first and then only the minimum repository context listed there. Each brief contains a mandatory repository deliverable path.
+- `design/Universal_Runtime_Module_Design_Report_v0.1.md`
+- Status: **FROZEN MODULE ARCHITECTURE BASELINE**
 
-## Frozen Module Amendments
+### Module Amendment 001 — EffectOperation PREPARED
 
-### Amendment 001 — EffectOperation PREPARED
-
-Document:
 - `design/amendments/Module_Architecture_Amendment_001_EffectOperation_Prepared.md`
+- Status: **FROZEN MODULE ARCHITECTURE AMENDMENT**
+- Adds PREPARED durable intent before crash-ambiguous dispatch and clarifies EffectOperation domain lifecycle ownership by Effect Authority while remaining Kernel-visible.
 
-Status: **FROZEN MODULE ARCHITECTURE AMENDMENT**
+### Graph / Composite v0.1
 
-Resolution:
-- adds `PREPARED` to the frozen EffectOperation lifecycle;
-- requires durable operation identity before crash-ambiguous external dispatch;
-- PREPARED does not prove dispatch occurred;
-- recovered PREPARED with uncertain dispatch history must reconcile or become UNKNOWN rather than blind-retry;
-- clarifies EffectOperation as Kernel-visible internal canonical record whose domain lifecycle is owned by Effect Authority, while Kernel Foundation owns only generic correctness primitives.
+- `design/Nyron_Graph_Composite_Frozen_Baseline_v0.1.md`
+- Status: **FROZEN GRAPH / COMPOSITE ARCHITECTURE BASELINE**
+- Freezes exact Candidate + Lead Clarification blobs.
+- Includes deterministic ordinal rules, concrete-Port single source of truth, stable Composite placement identity, deterministic materialization, FEEDBACK semantics, and GraphRevision execution pinning.
 
-## NYRON-D-002 Integration Result
+## 4. Lead-Integrated Candidates Awaiting Independent Review
 
-Lead integration review: PASS.
+### NYRON-D-003 — Runtime Orchestration
 
-Repository candidate:
-- `design/Nyron_Graph_Composite_Design_Candidate_v0.1.md`
+Candidate:
+- `design/Nyron_Runtime_Orchestration_Design_Candidate_v0.1.md`
 
-Lead pre-freeze clarification:
-- `design/clarifications/NYRON-D-002_Lead_Integration_Clarification_001.md`
+Lead clarification:
+- `design/clarifications/NYRON-D-003_D-005_Lead_Integration_Clarification_001.md`
 
-Valid targeted independent review record:
-- `design/reviews/NYRON-D-002_DeepSeek_Targeted_ReReview.md`
+Lead result: **PASS**.
 
-Accepted clarification set:
-1. Composite materialization output — leaf identities and topology — is persisted as authoritative immutable GraphRevision content. Runtime never re-flattens or regenerates these identities.
-2. FEEDBACK is an intentional-cycle definition marker only; it does not alter Delivery ordering, activation semantics, attempt identity, or scheduling semantics.
-3. `edge_ordinal` and concrete input-port ordinals must have collision-free normative scope sufficient for deterministic Delivery projection; non-canonical row/UI/arrival ordering is forbidden as semantic authority.
-4. concrete Port objects are the materialized single source of truth for `ModuleInstanceRevision` input/output port contracts.
-5. Composite placement uses stable `composite_instance_ref` identity for binding/provenance.
-6. Composite materialization is deterministic for identical immutable materialization inputs; persisted GraphRevision output remains execution authority.
-7. Added candidate invariants: `G-INV-20` deterministic Delivery projection inputs and `G-INV-21` deterministic Composite materialization.
+Frozen-facing conclusions accepted:
+- Packet -> Delivery -> Activation -> Run/Attempt remains the only execution path.
+- Retry/replacement create new Attempt; resume stays in same Attempt.
+- one current Attempt per Run, canonically fenced.
+- stale Attempt cannot commit/resume/start new effects.
+- FEEDBACK has no special Runtime semantics.
+- terminal state is canonical quiescence/directive result, not queue emptiness.
+- top-level execution ingress must become Trigger Packet -> Delivery; direct Activation ingress is forbidden.
 
-D-002 is now **FREEZE READY**. Final freeze requires Lead consolidation of Candidate + Clarification 001 into the frozen Graph / Composite baseline.
+Review task:
+- `design/coordination/tasks/NYRON-D-003-REVIEW-DS.md`
 
-D-001 follow-up from review: add `EffectOperation -> Effect Authority` to the Overall Architecture canonical Owner table.
+### NYRON-D-005 — Accounting / Recovery
 
-## NYRON-D-004 Integration Result
+Candidate:
+- `design/Nyron_Accounting_Recovery_Design_Candidate_v0.1.md`
 
-Lead integration review: **PASS WITH ONE EXPLICIT FROZEN AMENDMENT**.
+Lead clarification:
+- `design/clarifications/NYRON-D-003_D-005_Lead_Integration_Clarification_001.md`
 
-Repository candidate:
+Lead result: **PASS**.
+
+Accepted conclusions:
+- EffectOperation / ResourceLease / CapabilityGrant / BudgetReservation remain orthogonal.
+- full static AccountingScope ancestry reservation is atomic within Accounting Owner.
+- actual usage is never capped or rewritten to satisfy budget policy.
+- UNKNOWN is not zero/success/failure.
+- ReconciliationCase coordinates bounded investigation but never owns subject truth.
+- `ReconciliationCase.RESOLVED` is not universal Runtime/effect clearance.
+- a Recovery administrative disposition may permit Runtime closure while a subject remains UNKNOWN, but only the authoritative Effect/Resource/Capability Owner can clear conflicting new external authority.
+
+Review task:
+- `design/coordination/tasks/NYRON-D-005-REVIEW-DS.md`
+
+### NYRON-D-008 — External Interfaces / Workspace
+
+Candidate:
+- `design/Nyron_External_Interfaces_Workspace_Boundary_Design_Candidate_v0.1.md`
+
+Lead clarification:
+- `design/clarifications/NYRON-D-008_Lead_Integration_Clarification_001.md`
+
+Lead result: **PASS**.
+
+Accepted conclusions:
+- Browser/Shell/File/HTTP/Provider/Tool/Remote Worker/Event are not Kernel primitives.
+- Workspace identity != live Workspace Handle Resource.
+- D-008 does not claim WorkspaceIdentity canonical ownership before a Workspace/Project Owner is frozen.
+- resolved filesystem containment, symlink/mount policy and isolation claims must be enforceable/testable.
+- kill/cancel/timeout/disconnect/absence is not proof of fencing or non-dispatch.
+- external ingress must be authenticated/validated/canonicalized, then enter Runtime through Trigger Packet -> Delivery -> Activation; adapter cannot create Activation directly.
+- observation classification is fail-closed when provider semantics are billable/stateful/crash-ambiguous/consequential.
+
+Review task:
+- `design/coordination/tasks/NYRON-D-008-REVIEW-DS.md`
+
+## 5. NYRON-D-004 Current Review State
+
+Candidate:
 - `design/Nyron_Capability_Resource_Effect_Authority_Design_Candidate_v0.1.md`
 
-Accepted integration points:
-1. Capability Authority, Resource Manager and Effect Authority are separate canonical Owners.
-2. CapabilityGrant is authority; Resource is a managed stateful handle; EffectOperation is external-effect history/tracking truth. They remain orthogonal.
-3. EffectOperation gains PREPARED through explicit Frozen Amendment 001, not silent reinterpretation.
-4. `EffectOperation` is Kernel-visible internal canonical state but its domain lifecycle belongs to Effect Authority; Kernel Foundation remains generic.
-5. Attempt replacement immediately removes old commit/new-effect authority, while already-dispatched external effects require explicit completion/fencing/UNKNOWN handling.
-6. Conflicting replacement authority waits for durable effect/resource clearance; non-conflicting work may proceed.
-7. Module Host is mediation/isolation infrastructure, not a canonical semantic Owner.
-8. EffectOperation and BudgetReservation remain separate Owners and lifecycles.
+Lead result: **PASS WITH EXPLICIT FROZEN AMENDMENT 001**.
 
-No other blocking Architecture Finding is open.
+Accepted model:
+- Capability Authority owns CapabilityGrant.
+- Resource Manager owns Resource/ResourceLease.
+- Effect Authority owns EffectOperation domain lifecycle.
+- Module Host is mediation/isolation infrastructure, not canonical semantic Owner.
+- Attempt replacement immediately removes old future commit/new-effect authority; already-dispatched effects require completion/fencing/UNKNOWN handling.
+- EffectOperation and BudgetReservation remain independent.
 
-## Current Candidate Intake
+Current gate: DeepSeek bounded consistency review.
 
-Received and repository-verified:
-- `NYRON-D-003` — `design/Nyron_Runtime_Orchestration_Design_Candidate_v0.1.md`
-- `NYRON-D-005` — `design/Nyron_Accounting_Recovery_Design_Candidate_v0.1.md`
-- `NYRON-D-008` — `design/Nyron_External_Interfaces_Workspace_Boundary_Design_Candidate_v0.1.md`
+## 6. D-001 Mandatory Integration Items
 
-Lead review order:
-1. D-003 Runtime Orchestration — because it owns Attempt/retry/replacement/cancellation semantics consumed by other runtime-facing design.
-2. D-005 Accounting / Recovery — cross-check against D-003 Attempt facts and D-004 Effect/Resource ownership.
-3. D-008 External Interfaces / Workspace — cross-check adapter mappings after authority/recovery boundaries are stable enough.
+Before Overall System Architecture can become freeze-ready, Lead must integrate at least:
 
-## Current Parallelization Decision
+1. `EffectOperation -> Effect Authority` into the canonical Owner table.
+2. Frozen Graph/Composite baseline reference rather than Candidate-only reference.
+3. Top-level execution ingress rule: no direct Activation path; all workflow start/external trigger execution enters as Runtime Trigger Packet -> Delivery -> Activation against immutable GraphRevision ingress binding.
+4. Runtime current-Attempt/fencing ownership from D-003.
+5. Recovery disposition distinction: administrative Runtime closure permission != subject truth resolution != Effect/Resource conflict clearance.
+6. Accounting Owner / Recovery Owner split and static accounting membership reference semantics.
+7. External ingress canonicalization boundary and explicit route target Owner requirement.
+8. Workspace identity ownership remains unresolved until Workspace/Project configuration Owner is selected; D-008 consumes stable `workspace_ref` but does not own it.
+9. Kernel Foundation remains generic: identity/durability/transactions/ownership/fencing/causality, not subsystem business state machines.
 
-Active now:
-- NYRON-D-001 — Overall Architecture integration in main thread.
-- NYRON-D-003 — Lead integration review.
-- NYRON-D-004 — bounded DeepSeek consistency review.
-- NYRON-D-005 — Lead integration review after/alongside D-003.
-- NYRON-D-008 — Lead integration review after authority/runtime cross-check.
+## 7. Current Review Wave
 
-Freeze-ready / awaiting Lead consolidation:
-- NYRON-D-002 — Graph / Composite.
+Run independently, in parallel where available:
 
-Deferred:
-- NYRON-D-006 — Product Node / Visual UX until product discussion is useful.
-- NYRON-D-007 — Distribution / Module Ecosystem until current candidate review wave settles.
+- `NYRON-D-004-REVIEW-DS`
+- `NYRON-D-003-REVIEW-DS`
+- `NYRON-D-005-REVIEW-DS`
+- `NYRON-D-008-REVIEW-DS`
 
-Parallelism constraints:
-- D-003 owns Runtime Attempt/retry/replacement/cancellation lifecycle.
-- D-005 owns Accounting settlement, UNKNOWN recovery policy and ReconciliationCase mechanics; it must not redefine Attempt lifecycle or EffectOperation lifecycle.
-- D-008 owns external-boundary mappings and trust assumptions; it must consume, not redefine, D-004 Capability/Resource/Effect ownership.
-- Cross-task conflicts return to the Lead Design Authority as explicit Architecture Findings rather than being locally resolved by changing another task's contract.
+Reviewers must use the exact task files under `design/coordination/tasks/` and return only PASS/non-blocking clarifications or true blocking findings.
 
-## Review Strategy
+## 8. Next Lead Sequence
 
-### Subsystem Review
-Use a bounded independent reviewer, normally DeepSeek, to check frozen-baseline compatibility, contradiction, owner/identity ambiguity, replay/recovery holes, missing invariants and unsafe cross-subsystem assumptions.
-
-Reviewer output is evidence, not authority. A positive result is rejected if it materially misunderstands the design.
-
-### Integrated Architecture Review
-After major subsystem candidates are integrated into the Overall System Architecture candidate, use Claude for an Independent Adversarial Architecture Review with freedom to challenge assumptions and propose alternatives, while retaining no authority to modify or freeze the baseline directly.
-
-## Main Thread Responsibility While Parallel Tasks Run
-
-The main design thread continues only globally useful work that does not pre-decide delegated subsystem semantics:
-- refine Kernel / Canonical Truth / Ownership boundaries;
-- maintain global invariant candidates;
-- integrate incoming candidate designs;
-- resolve Architecture Findings through explicit amendments or superseding baselines;
-- decide independent review / freeze gates;
-- keep this STATUS file synchronized;
-- periodically update the design operating model with reusable multi-session design practices.
-
-The main thread must not duplicate detailed work already delegated to active specialist threads.
+1. Receive/validate D-004, D-003, D-005, D-008 DeepSeek reviews.
+2. Apply only valid non-blocking clarifications; reject review results that materially misread contracts.
+3. Freeze subsystem baselines that pass.
+4. Integrate D-002/003/004/005/008 into D-001 Overall System Architecture.
+5. Decide whether D-006 Product Node / Visual UX and D-007 Distribution need design before overall architecture freeze.
+6. Produce integrated Overall Architecture Candidate.
+7. Send integrated architecture to Claude for Independent Adversarial Architecture Review.
+8. Resolve findings / re-review / freeze overall design baseline.
