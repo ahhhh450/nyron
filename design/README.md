@@ -18,6 +18,25 @@ For implementation/design work:
 3. the exact subsystem frozen baseline/amendment relevant to the task
 4. only then the minimum supporting Candidate/clarification documents needed for detail
 
+### Historical Candidate rule
+
+A historical `Candidate` is **not standalone implementation authority** after a Frozen Baseline or Amendment exists.
+
+Implementation and review MUST resolve semantics in this order:
+
+```text
+Overall Frozen Baseline
+-> subsystem Frozen Baseline
+-> accepted Amendments
+-> normative Lead clarifications pinned by the baseline
+-> historical Candidate for remaining supporting detail only
+```
+
+If historical Candidate wording conflicts with an accepted Amendment, the Amendment controls. Do not reconstruct correctness from the Candidate alone or treat older wording as current merely because it remains visible in the repository.
+
+Known documentation supersession notice:
+- D-008 retry safety / `FENCED` wording — `design/errata/NYRON-D-008_Candidate_Supersession_Notice.md`
+
 Process model:
 - `design/process/Nyron_Design_Operating_Model_v0.1.md`
 
@@ -65,6 +84,9 @@ F02 closure: PASS
 Additional blocking findings: None
 Freeze recommendation: YES
 ```
+
+Non-blocking documentation hygiene record:
+- `design/reviews/NYRON-D-008_Documentation_Hygiene_Observation_2026-08-25.md`
 
 ## 7. Core Frozen Cross-System Rules
 
