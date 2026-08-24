@@ -3,76 +3,56 @@
 Authority: Lead Design Authority
 Purpose: Immediate execution queue. `design/coordination/STATUS.md` remains authoritative task state.
 
-## Frozen System Foundation Constituents
+## System Foundation Architecture Wave — COMPLETE
 
-- D-002 Graph / Composite — FROZEN + Graph/Accounting Amendment 001
-- D-003 Runtime Orchestration — FROZEN
-- D-004 Capability / Resource / Effect Authority — FROZEN
-- D-005 Accounting / Recovery — FROZEN + Graph/Accounting Amendment 001
-- D-007 Distribution / Module Ecosystem — FROZEN
-- D-008 External Interfaces / Workspace — FROZEN + External Interfaces Amendment 001
-- D-009 Human Interaction / Approval — FROZEN
-- D-010 Project / Workspace / Policy Context — FROZEN + PWP Amendment 001
+Overall frozen baseline:
+- `design/Nyron_Overall_System_Architecture_Frozen_Baseline_v0.1.md`
+- freeze commit: `28f7f62ac9f269a7a510a037131e938c3b7f44a2`
 
-## First Claude Integrated Review
+All System Foundation constituent domains required for v0.1 implementation are frozen, including the accepted amendments discovered during adversarial review.
 
-Result: **FAIL**.
+## Final Review Closure
 
-Review record:
-- `design/reviews/NYRON-D-001_Claude_Integrated_Review_FAIL_2026-08-24.md`
+First integrated Claude review: FAIL with two findings.
 
-### F01 — accepted blocker
+Corrections:
+- Graph / Accounting Amendment 001 — static AccountingScope execution resolution.
+- PWP Amendment 001 — explicit historical revision retention coverage.
 
-Static AccountingScope reference resolution was not an explicit execution-eligibility gate.
+Targeted Claude R2:
 
-Frozen correction:
-- `design/amendments/Graph_Accounting_Amendment_001_Static_Accounting_Scope_Resolution.md`
-- commit `a9a8ff9566246b57b338f134815888106ea21765`
+```text
+RE-REVIEW RESULT: PASS
+F01 closure: PASS
+F02 closure: PASS
+Additional blocking findings: None
+Freeze recommendation: YES
+```
 
-### F02 — premise overstated; ambiguity explicitly removed
+Accepted receipt:
+- `design/reviews/NYRON-D-001_Claude_Targeted_ReReview_PASS_2026-08-24.md`
 
-D-010 already required historical resolution, but revision-class coverage was distributed/implicit.
+No System Foundation architecture blocker remains open.
 
-Frozen clarification-strength correction:
-- `design/amendments/PWP_Amendment_001_Historical_Revision_Retention.md`
-- commit `1c984217a16278bbb107fd5a425ef937b6a0e873`
+## Implementation Gate
 
-## Immediate Action — Targeted Claude R2
+**OPEN**
 
-Reuse the same Claude conversation.
+Implementation work must use:
+1. `design/Nyron_Overall_System_Architecture_Frozen_Baseline_v0.1.md`;
+2. the relevant frozen subsystem baseline/amendment;
+3. exact task-specific minimum context.
 
-Task:
-- `design/coordination/tasks/NYRON-D-001-REVIEW-CLAUDE-R2.md`
-- commit `58d01abc8b3acbeaac20148c00a7724422a34fdf`
+Any implementation requirement that changes frozen ownership, execution path, identity/version semantics, fencing, UNKNOWN/retry behavior, accounting scope resolution or PWP historical resolvability must STOP and raise an Architecture Finding.
 
-Review only:
-1. F01 closure;
-2. F02 closure;
-3. correction-induced ownership/replay/admission regressions.
+## Next Eligible Design Lane
 
-Do not repeat the entire A1-A15 review unless the amendments themselves create a new cross-system contradiction.
+D-006 Product Node / Visual Workflow UX is now eligible to proceed on top of the frozen System Foundation, but it is not required before implementation of the foundation itself.
 
-The D-004 GPT R2 PASS receipt that Claude previously could not fetch is explicitly linked by Raw URL in the R2 task.
+Do not create a new GPT conversation for routine bounded follow-up. Open a dedicated conversation only if scope/context/independence materially justifies it.
 
-## Handling R2 Result
+## Queue State
 
-### On valid PASS
+There is currently **no external review dependency** and no open System Foundation Architecture Finding.
 
-In the same Lead wave:
-1. record Claude targeted PASS evidence;
-2. create `Nyron Overall System Architecture v0.1` Frozen Baseline manifest pinning current Overall candidate + all frozen subsystem baselines/amendments;
-3. update STATUS/README;
-4. mark System Foundation architecture freeze complete;
-5. open implementation planning/gate work without starting detailed Product D-006 unless needed.
-
-### On FAIL
-
-Validate only new/correction-related findings. Correct a valid blocker through explicit Amendment/clarification and re-review only that affected scope.
-
-## Conversation Economy
-
-No new Claude/GPT conversation is required for R2. Reuse existing review window.
-
-## Stop Rule
-
-Current external dependency is the targeted Claude R2 result. No unrelated design work should be invented merely to avoid this legitimate review gate.
+The next queue item should be created only when implementation planning, D-006 Product UX design, or a newly discovered Architecture Finding actually begins.
