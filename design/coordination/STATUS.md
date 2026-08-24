@@ -18,19 +18,20 @@ Purpose: Maintain the single current source of truth for parallel design tasks, 
 11. A frozen baseline may only be changed through an explicit amendment or superseding baseline that identifies the exact affected contract. Silent reinterpretation is forbidden.
 12. Delegated design tasks must write their complete candidate deliverable to the repository at the path specified in the task brief and return the commit SHA. Printing a candidate only in chat is not task completion. If repository writing is unavailable, the task must explicitly return `REPOSITORY_WRITE_UNAVAILABLE` plus the complete candidate for Lead integration.
 13. Every new specialist conversation must receive a self-contained launch message that states at minimum: the repository name and URL, that the task belongs to the Nyron design project, the Task ID, the exact task-brief path to read first, the design-only/no-freeze authority boundary, and the requirement to write the final candidate back to the repository and return the commit SHA. A new window must not be expected to infer repository location or prior conversation context.
+14. Specialist conversation names use the Task ID only, for example `NYRON-D-005`. Launch instructions must explicitly ask the new window to rename the conversation to that Task ID.
 
 ## Current Tasks
 
 | Task ID | Conversation Name | Topic | Mode | Depends On | Status | Gate / Return Condition |
 | --- | --- | --- | --- | --- | --- | --- |
-| NYRON-D-001 | Nyron设计-总设计调度 | Overall System Architecture v0.1 | Main design thread | Frozen Module baseline + explicit amendments | IN PROGRESS | Integrate subsystem candidates and produce reviewable System Foundation baseline |
-| NYRON-D-002 | Nyron设计-NYRON-D-002-Graph-Composite | Graph / Composite Design Candidate v0.1 | Dedicated parallel design thread | NYRON-D-001 draft + frozen Module baseline | FREEZE READY | Valid targeted DeepSeek re-review passed; Lead Clarification 001 accepted; final Lead consolidation/freeze remains |
-| NYRON-D-003 | Nyron设计-NYRON-D-003-Runtime-Orchestration | Runtime Orchestration Design | Dedicated parallel design thread | NYRON-D-002 execution-facing semantics + Module baseline + Amendment 001 | DELEGATED / IN PROGRESS | Must write `design/Nyron_Runtime_Orchestration_Design_Candidate_v0.1.md` and return commit SHA |
-| NYRON-D-004 | Nyron设计-NYRON-D-004-Capability-Resource-Effect | Capability / Resource / Effect Authority Design | Dedicated parallel design thread | NYRON-D-001 ownership model + Module baseline + Amendment 001 | INDEPENDENT REVIEW READY | Bounded consistency review required before freeze consideration |
-| NYRON-D-005 | Nyron设计-NYRON-D-005-Accounting-Recovery | Accounting / Recovery Design | Dedicated parallel design thread | NYRON-D-001 + Module baseline + NYRON-D-004 candidate | DELEGATED / IN PROGRESS | Must write `design/Nyron_Accounting_Recovery_Design_Candidate_v0.1.md` and return commit SHA |
-| NYRON-D-006 | Nyron设计-NYRON-D-006-Product-Node-UX | Product Node Taxonomy / Visual Workflow UX | Product design thread with user | NYRON-D-002 expressive envelope | UNBLOCKED / NOT STARTED | Begin when visible-node/product discussion is useful; must not alter runtime primitives |
-| NYRON-D-007 | Nyron设计-NYRON-D-007-Distribution-Module-Ecosystem | Distribution / Module Ecosystem | Dedicated design thread | NYRON-D-002 dependency/import semantics + Module registry semantics | READY / NOT STARTED | Can open later while Graph remains candidate if exact-version/import semantics remain review-pending |
-| NYRON-D-008 | Nyron设计-NYRON-D-008-External-Interfaces-Workspace | External Interfaces / Workspace Boundary | Dedicated design thread | Kernel ownership + NYRON-D-004 authority/resource foundation | DELEGATED / IN PROGRESS | Must write `design/Nyron_External_Interfaces_Workspace_Boundary_Design_Candidate_v0.1.md` and return commit SHA |
+| NYRON-D-001 | NYRON-D-001 | Overall System Architecture v0.1 | Main design thread | Frozen Module baseline + explicit amendments | IN PROGRESS | Integrate subsystem candidates and produce reviewable System Foundation baseline |
+| NYRON-D-002 | NYRON-D-002 | Graph / Composite Design Candidate v0.1 | Dedicated parallel design thread | NYRON-D-001 draft + frozen Module baseline | FREEZE READY | Valid targeted DeepSeek re-review passed; Lead Clarification 001 accepted; final Lead consolidation/freeze remains |
+| NYRON-D-003 | NYRON-D-003 | Runtime Orchestration Design | Dedicated parallel design thread | NYRON-D-002 execution-facing semantics + Module baseline + Amendment 001 | CANDIDATE RECEIVED / LEAD REVIEW PENDING | Candidate committed at `design/Nyron_Runtime_Orchestration_Design_Candidate_v0.1.md`; Lead integration review required |
+| NYRON-D-004 | NYRON-D-004 | Capability / Resource / Effect Authority Design | Dedicated parallel design thread | NYRON-D-001 ownership model + Module baseline + Amendment 001 | INDEPENDENT REVIEW READY | Bounded consistency review required before freeze consideration |
+| NYRON-D-005 | NYRON-D-005 | Accounting / Recovery Design | Dedicated parallel design thread | NYRON-D-001 + Module baseline + NYRON-D-004 candidate | CANDIDATE RECEIVED / LEAD REVIEW PENDING | Candidate committed at `design/Nyron_Accounting_Recovery_Design_Candidate_v0.1.md`; Lead integration review required |
+| NYRON-D-006 | NYRON-D-006 | Product Node Taxonomy / Visual Workflow UX | Product design thread with user | NYRON-D-002 expressive envelope | UNBLOCKED / NOT STARTED | Begin when visible-node/product discussion is useful; must not alter runtime primitives |
+| NYRON-D-007 | NYRON-D-007 | Distribution / Module Ecosystem | Dedicated design thread | NYRON-D-002 dependency/import semantics + Module registry semantics | READY / NOT STARTED | Can open later while Graph remains candidate if exact-version/import semantics remain review-pending |
+| NYRON-D-008 | NYRON-D-008 | External Interfaces / Workspace Boundary | Dedicated design thread | Kernel ownership + NYRON-D-004 authority/resource foundation | CANDIDATE RECEIVED / LEAD REVIEW PENDING | Candidate committed at `design/Nyron_External_Interfaces_Workspace_Boundary_Design_Candidate_v0.1.md`; Lead integration review required |
 
 ## Active Task Briefs
 
@@ -38,7 +39,7 @@ Purpose: Maintain the single current source of truth for parallel design tasks, 
 - `design/coordination/tasks/NYRON-D-005.md`
 - `design/coordination/tasks/NYRON-D-008.md`
 
-Each specialist window should read its task brief first and then only the minimum repository context listed there. Each brief now contains a mandatory repository deliverable path.
+Each specialist window should read its task brief first and then only the minimum repository context listed there. Each brief contains a mandatory repository deliverable path.
 
 ## Frozen Module Amendments
 
@@ -78,8 +79,6 @@ Accepted clarification set:
 6. Composite materialization is deterministic for identical immutable materialization inputs; persisted GraphRevision output remains execution authority.
 7. Added candidate invariants: `G-INV-20` deterministic Delivery projection inputs and `G-INV-21` deterministic Composite materialization.
 
-First DeepSeek PASS remains recorded as review-invalid due to material misreads. The corrected targeted re-review explicitly verified the corrected premises and returned a valid PASS with only non-blocking clarifications.
-
 D-002 is now **FREEZE READY**. Final freeze requires Lead consolidation of Candidate + Clarification 001 into the frozen Graph / Composite baseline.
 
 D-001 follow-up from review: add `EffectOperation -> Effect Authority` to the Overall Architecture canonical Owner table.
@@ -103,21 +102,33 @@ Accepted integration points:
 
 No other blocking Architecture Finding is open.
 
+## Current Candidate Intake
+
+Received and repository-verified:
+- `NYRON-D-003` — `design/Nyron_Runtime_Orchestration_Design_Candidate_v0.1.md`
+- `NYRON-D-005` — `design/Nyron_Accounting_Recovery_Design_Candidate_v0.1.md`
+- `NYRON-D-008` — `design/Nyron_External_Interfaces_Workspace_Boundary_Design_Candidate_v0.1.md`
+
+Lead review order:
+1. D-003 Runtime Orchestration — because it owns Attempt/retry/replacement/cancellation semantics consumed by other runtime-facing design.
+2. D-005 Accounting / Recovery — cross-check against D-003 Attempt facts and D-004 Effect/Resource ownership.
+3. D-008 External Interfaces / Workspace — cross-check adapter mappings after authority/recovery boundaries are stable enough.
+
 ## Current Parallelization Decision
 
-Active in parallel now:
+Active now:
 - NYRON-D-001 — Overall Architecture integration in main thread.
-- NYRON-D-003 — Runtime Orchestration design.
-- NYRON-D-004 — bounded consistency review only.
-- NYRON-D-005 — Accounting / Recovery design.
-- NYRON-D-008 — External Interfaces / Workspace design.
+- NYRON-D-003 — Lead integration review.
+- NYRON-D-004 — bounded DeepSeek consistency review.
+- NYRON-D-005 — Lead integration review after/alongside D-003.
+- NYRON-D-008 — Lead integration review after authority/runtime cross-check.
 
 Freeze-ready / awaiting Lead consolidation:
 - NYRON-D-002 — Graph / Composite.
 
 Deferred:
 - NYRON-D-006 — Product Node / Visual UX until product discussion is useful.
-- NYRON-D-007 — Distribution / Module Ecosystem until current three-line design wave returns or earlier only if capacity is clearly available.
+- NYRON-D-007 — Distribution / Module Ecosystem until current candidate review wave settles.
 
 Parallelism constraints:
 - D-003 owns Runtime Attempt/retry/replacement/cancellation lifecycle.
