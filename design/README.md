@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-`design/` is the authoritative home for Nyron pre-implementation architecture. GitHub is durable design memory; chat windows are temporary working contexts.
+`design/` is the authoritative home for Nyron architecture. GitHub is durable design memory; chat windows are temporary working contexts.
 
 ## 2. Authority
 
@@ -12,22 +12,31 @@ Specialists/reviewers provide Candidates/evidence only. Frozen semantics change 
 
 ## 3. Read This First
 
+For implementation/design work:
 1. `design/coordination/STATUS.md`
-2. exact Task brief under `design/coordination/tasks/` when one exists
-3. only the minimum baselines/candidates listed by that Task
-
-Lead queue:
-- `design/coordination/LEAD_ACTIVE_QUEUE.md`
+2. `design/Nyron_Overall_System_Architecture_Frozen_Baseline_v0.1.md`
+3. the exact subsystem frozen baseline/amendment relevant to the task
+4. only then the minimum supporting Candidate/clarification documents needed for detail
 
 Process model:
 - `design/process/Nyron_Design_Operating_Model_v0.1.md`
 
-## 4. Frozen Architecture Baselines / Amendments
+## 4. Overall System Architecture — FROZEN
+
+Authoritative implementation baseline:
+- `design/Nyron_Overall_System_Architecture_Frozen_Baseline_v0.1.md`
+- freeze commit: `28f7f62ac9f269a7a510a037131e938c3b7f44a2`
+
+The frozen manifest pins the exact Overall candidate content, D-001 clarifications, all frozen subsystem baselines and all accepted amendments.
+
+**System Foundation implementation gate: OPEN.**
+
+## 5. Frozen Architecture Baselines / Amendments
 
 - Module Architecture — `design/Universal_Runtime_Module_Design_Report_v0.1.md`
 - Module Amendment 001 / EffectOperation PREPARED — `design/amendments/Module_Architecture_Amendment_001_EffectOperation_Prepared.md`
 - Graph / Composite — `design/Nyron_Graph_Composite_Frozen_Baseline_v0.1.md`
-- **Graph / Accounting Amendment 001 / Static AccountingScope Resolution** — `design/amendments/Graph_Accounting_Amendment_001_Static_Accounting_Scope_Resolution.md`
+- Graph / Accounting Amendment 001 — `design/amendments/Graph_Accounting_Amendment_001_Static_Accounting_Scope_Resolution.md`
 - Runtime Orchestration — `design/Nyron_Runtime_Orchestration_Frozen_Baseline_v0.1.md`
 - Capability / Resource / Effect Authority — `design/Nyron_Capability_Resource_Effect_Authority_Frozen_Baseline_v0.1.md`
 - Accounting / Recovery — `design/Nyron_Accounting_Recovery_Frozen_Baseline_v0.1.md`
@@ -36,102 +45,76 @@ Process model:
 - External Interfaces Amendment 001 / FENCED retry semantics — `design/amendments/External_Interfaces_Amendment_001_Fenced_Retry_Semantics.md`
 - Human Interaction / Approval Authority — `design/Nyron_Human_Interaction_Approval_Authority_Frozen_Baseline_v0.1.md`
 - Project / Workspace / Policy Context — `design/Nyron_Project_Workspace_Policy_Context_Frozen_Baseline_v0.1.md`
-- **PWP Amendment 001 / Historical Revision Retention** — `design/amendments/PWP_Amendment_001_Historical_Revision_Retention.md`
+- PWP Amendment 001 / Historical Revision Retention — `design/amendments/PWP_Amendment_001_Historical_Revision_Retention.md`
 
-## 5. Integrated Claude Review — first pass
+## 6. Final Review Evidence
 
-The first complete Claude integrated adversarial review returned **FAIL** with two findings.
+D-004 independent adversarial review/re-review:
+- `design/reviews/NYRON-D-004_GPT_Adversarial_Review_FAIL_2026-08-24.md`
+- `design/reviews/NYRON-D-004_GPT_Targeted_ReReview_PASS_Receipt_2026-08-24.md`
 
-Review record:
-- `design/reviews/NYRON-D-001_Claude_Integrated_Review_FAIL_2026-08-24.md`
+Integrated Claude review:
+- first pass FAIL: `design/reviews/NYRON-D-001_Claude_Integrated_Review_FAIL_2026-08-24.md`
+- targeted R2 PASS: `design/reviews/NYRON-D-001_Claude_Targeted_ReReview_PASS_2026-08-24.md`
 
-### F01 — valid blocker
+Final R2 result:
 
-Static `ModuleInstanceRevision.static_accounting_scope_ref` lacked one explicit frozen cross-owner execution-eligibility rule.
+```text
+F01 closure: PASS
+F02 closure: PASS
+Additional blocking findings: None
+Freeze recommendation: YES
+```
 
-Correction:
-- `design/amendments/Graph_Accounting_Amendment_001_Static_Accounting_Scope_Resolution.md`
-
-Current rule:
-- unresolved accounting affiliation may be stored/imported but is non-executable;
-- Runtime admission fails closed until Accounting Owner resolves/validates all static scope refs and required ancestry;
-- missing scope never means unbounded/no-budget authority.
-
-### F02 — premise overstated, ambiguity removed
-
-Frozen D-010 already required historical resolution and retention of superseded revisions while referenced by canonical history.
-
-Correction-strength Amendment makes the coverage explicit for every PWP revision class:
-- `design/amendments/PWP_Amendment_001_Historical_Revision_Retention.md`
-
-Covered explicitly:
-- ProjectConfigRevision;
-- WorkspaceConfigRevision;
-- PolicyContextRevision;
-- EnvironmentBindingRevision;
-- IngressRouteRevision;
-- stable Project/Workspace/IngressRoute identities required to resolve them.
-
-## 6. Current Overall System Candidate
-
-- `design/Nyron_Overall_System_Architecture_v0.1.md`
-- Status: **INTEGRATED PRE-FREEZE CANDIDATE — TARGETED CLAUDE R2 READY**
-
-The correctness-critical Owner set remains closed.
-
-## 7. Product Node / Visual UX — D-006
-
-D-006 is deferred and **not a System Foundation freeze blocker** unless later Product work reveals a genuine architecture defect.
-
-## 8. Core Cross-System Rules
-
-Single execution path:
+## 7. Core Frozen Cross-System Rules
 
 ```text
 Packet -> Delivery -> Activation -> Run / Attempt
 ```
 
-Distribution separation:
+No second direct-Activation execution path.
 
 ```text
-Import != Resolve != Install != Trust != Enable != CapabilityGrant != Runtime execution
+CapabilityGrant != ResourceLease != EffectOperation != BudgetReservation
 ```
-
-Effect retry separation:
 
 ```text
 FENCED != no prior consequence != safe semantic replay
 ```
 
-Accounting resolution rule:
-
 ```text
-unresolved static_accounting_scope_ref
--> definition may remain stored/imported
--> Runtime execution admission denied
+unknown overlap -> conflicting
 ```
 
-PWP history rule:
-
 ```text
-retained canonical history pins PWP revision
--> that exact revision remains semantically resolvable
+revoke/replacement wins authority-consumption race -> reject new use
+exact use admission wins -> durable pre-revoke in-flight work
 ```
 
-## 9. Conversation / Task Economy
+```text
+unresolved static_accounting_scope_ref -> execution admission denied
+```
 
-Do not create a new GPT conversation for every task. Reuse an existing appropriate window for bounded follow-ups, clarifications, integration and re-review.
+```text
+retained canonical history pins PWP revision -> exact revision remains resolvable
+```
 
-## 10. Current Final Gate
+## 8. Product Node / Visual UX — D-006
 
-Targeted Claude re-review:
-- `design/coordination/tasks/NYRON-D-001-REVIEW-CLAUDE-R2.md`
+D-006 remains outside the System Foundation freeze and may now proceed on top of the frozen architecture.
 
-Current Manifest:
-- `design/reviews/NYRON-D-001_Integrated_Adversarial_Review_Manifest_DRAFT.md`
+Product work must consume the frozen generic Module / Graph / Runtime / Capability / Resource / Effect / Accounting / Human / PWP mechanisms. If Product design exposes a real expressiveness gap, raise an Architecture Finding instead of inventing a local Kernel primitive.
 
-Next sequence:
-1. run targeted Claude R2 in the same Claude conversation;
-2. validate its premises/result;
-3. on valid PASS, record review evidence and Lead-freeze Overall System Architecture v0.1 immediately;
-4. only if a correction-induced blocker remains, amend that narrow scope and re-review it.
+## 9. Change Control
+
+Implementation may refine storage, schemas, APIs, diagnostics and UX where observable frozen semantics do not change.
+
+Any required semantic change must follow:
+
+```text
+Architecture Finding
+-> Lead review
+-> explicit Amendment or superseding baseline
+-> targeted review when warranted
+-> affected implementation gate re-open
+```
