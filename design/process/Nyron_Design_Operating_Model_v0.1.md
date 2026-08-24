@@ -1,224 +1,369 @@
 # Nyron Design Operating Model v0.1
 
 Status: DRAFT
-Purpose: Capture reusable design methods, multi-session coordination patterns, context-management rules, review/freeze discipline, and workflow lessons learned during Nyron design. This document is intended to evolve from project-specific practice into a reusable client-project design workflow.
+Purpose: Capture reusable design methods, multi-session coordination patterns, context-management rules, review/freeze discipline, and workflow lessons learned during Nyron design. This document evolves only from practices demonstrated in real project work.
 
 ## 1. Core Principle
 
 GitHub is the durable project truth. Chat sessions are temporary working contexts.
 
-Stable design conclusions, task state, contracts, invariants, architecture findings, review results, and handoff information should be committed to repository documents before a session becomes too large or is retired.
+Stable design conclusions, task state, contracts, invariants, architecture findings, review results, clarifications, freeze manifests, and handoff information should be committed to repository documents before a session becomes too large or is retired.
+
+The design process must not depend on one chat window remembering everything.
 
 ## 2. Roles
 
 ### Lead Design Authority
 
-Owns system-level architecture consistency, subsystem boundaries, contracts, design arbitration, integration review, freeze decisions, and design-task coordination.
+Owns:
+- system-level architecture consistency;
+- subsystem boundaries;
+- contract/invariant integration;
+- design arbitration;
+- task decomposition and dependency ordering;
+- review acceptance/rejection;
+- frozen-baseline amendments;
+- final freeze decisions.
 
 ### Dedicated Design Session
 
-Owns one bounded design topic only. It may analyze and propose a candidate design, but cannot freeze architecture independently.
+Owns one bounded design topic only. It may analyze and produce a Candidate, but cannot freeze architecture independently.
+
+A specialist must not silently rewrite another task's canonical Owner or frozen contract. Cross-boundary conflicts return to Lead as explicit Architecture Findings.
 
 ### Independent Reviewer
 
-Reviews a candidate or frozen-boundary change from a clean context and returns blocking issues, risks, or approval recommendation. It does not silently rewrite the design authority model.
+Reviews a bounded candidate or integrated architecture from a cleaner context.
+
+Reviewer output is advisory evidence, not design authority. A reviewer cannot freeze, amend or silently rewrite the baseline.
 
 ## 3. Multi-Session Coordination
 
 Every substantial design session should have:
-
 - a unique Task ID;
-- a fixed conversation name;
+- a conversation name equal to the Task ID only;
 - one exact design target;
 - explicit dependencies;
-- frozen constraints that must not be changed;
-- a defined deliverable;
+- frozen constraints that must not change;
+- a defined repository deliverable;
 - stop/escalation conditions;
-- a return path to the Lead Design Authority.
+- a return path to Lead Design Authority.
 
-Recommended conversation naming:
+Conversation naming rule:
 
-`Nyron设计-[Task ID]-[Topic]`
+```text
+NYRON-D-XXX
+```
 
-The main coordination conversation remains:
+Examples:
+- `NYRON-D-003`
+- `NYRON-D-005`
+- `NYRON-D-010`
 
-`Nyron设计-总设计调度`
+The main coordination/design-authority conversation is `NYRON-D-001`.
+
+Do not add topic suffixes or decorative prefixes to canonical conversation names.
 
 ## 4. Parallel Design Rules
 
-Parallel sessions are allowed when their ownership boundaries are sufficiently independent.
+Parallel sessions are allowed when ownership boundaries are sufficiently independent.
 
 Parallel work is appropriate when:
-
-- the topics have distinct state/object models;
-- neither task needs to mutate the other's canonical contract while in progress;
+- topics have distinct state/object models;
+- neither task must mutate the other's unresolved canonical contract;
 - dependencies are explicit;
 - shared global constraints are already documented;
-- integration review can resolve remaining cross-topic assumptions.
+- integration review can resolve remaining assumptions.
 
 Parallel work should be blocked when:
+- two tasks define the same canonical Owner;
+- one task requires unresolved semantics from another before it can be correct;
+- both tasks would amend the same frozen contract;
+- a global ownership/identity decision is still unresolved.
 
-- two tasks are defining the same canonical owner;
-- one task depends on unresolved semantics from another;
-- both tasks are changing the same frozen contract;
-- a global architecture decision has not yet been made.
+When two parallel tasks touch the same boundary from different sides, Lead should define which side owns the semantic decision and which side only consumes the contract.
 
 ## 5. Task Coordination Record
 
 `design/coordination/STATUS.md` is the single current design-task status table.
 
 For each task it should track at minimum:
+- Task ID;
+- topic;
+- dependency;
+- status;
+- current gate;
+- expected repository deliverable;
+- review/freeze state;
+- blockers / Architecture Findings.
 
-- Task ID
-- conversation name
-- topic
-- owner/session
-- dependencies
-- status
-- design gate
-- expected deliverable
-- blockers / architecture findings
-- integration/review state
+The main design conversation updates STATUS when tasks are created, delegated, completed, blocked, superseded, integrated, reviewed or frozen.
 
-The main design conversation must update this record when tasks are created, completed, blocked, split, superseded, or moved into review.
+Process history does not belong indefinitely in STATUS. Once a state transition is durably captured elsewhere, STATUS should be compacted back to current truth.
 
 ## 6. Context Hygiene
 
 Do not use one conversation as an infinite archive.
 
 Before a session becomes context-heavy:
+1. commit stable conclusions to GitHub;
+2. update task state and open questions;
+3. write any normative clarification/amendment needed for later reconstruction;
+4. produce a minimal handoff summary when replacing the window;
+5. move deep subsystem reasoning out of the main coordination session.
 
-1. Commit stable conclusions to GitHub.
-2. Update task status and open questions.
-3. Produce a minimal handoff summary.
-4. Move detailed local reasoning out of the main coordination session.
-5. Open a new dedicated session when the topic has its own state model, contract family, or sustained reasoning burden.
+A new session loads only the minimum required documents listed by its Task brief.
 
-A new session should load only the minimum required documents.
+Do not copy entire historical chats into a new session unless absolutely necessary.
 
-Do not copy complete historical conversations into a new session unless absolutely necessary.
+## 7. Specialist Launch Contract
 
-## 7. Session Handoff Contract
+A new specialist window has no obligation to infer project context from prior conversations.
 
-Every handoff prompt should contain:
+Every launch prompt MUST explicitly include:
+- Nyron project identity;
+- repository URL;
+- Task ID;
+- instruction to rename the current conversation to the Task ID;
+- exact Task-brief repository path to read first;
+- design-only / no-implementation boundary;
+- no-freeze authority boundary;
+- mandatory repository write-back requirement;
+- commit SHA return requirement;
+- Architecture Finding return condition.
 
-- Role
-- Task ID
-- Conversation name
-- Exact design target
-- Repository path
-- Minimum required documents
-- Frozen constraints
-- In-scope questions
-- Out-of-scope topics
-- Expected deliverable
-- Architecture Finding stop condition
-- Return format
+Canonical minimal launch form:
 
-The target session should not independently expand scope unless it raises the expansion as an explicit dependency or finding.
+```text
+请将当前对话名称修改为：NYRON-D-XXX
+
+你现在负责 Nyron 项目的独立设计专题 NYRON-D-XXX。
+仓库：https://github.com/ahhhh450/nyron
+
+请首先读取：
+design/coordination/tasks/NYRON-D-XXX.md
+
+然后严格按照 Task 文件规定的最小上下文、设计边界和输出要求完成任务。
+本窗口只做设计，不实现代码，不拥有冻结权。
+最终必须将完整 Candidate 写入 Task 指定 GitHub 路径并 commit。
+最后只返回：结果状态、文件路径、commit SHA、Architecture Finding（如有）。
+```
+
+If repository write capability is unavailable, the specialist must return:
+
+```text
+REPOSITORY_WRITE_UNAVAILABLE
+```
+
+plus the complete Candidate so Lead can integrate it. Chat-only output is not considered normal task completion when repository write capability exists.
 
 ## 8. Design State Vocabulary
 
 - DRAFT — active design, not implementation authority.
-- IN REVIEW — candidate design under formal review.
+- CANDIDATE — coherent proposed subsystem/system design.
+- LEAD REVIEW PASS — Lead integration found no blocking contradiction.
+- INDEPENDENT REVIEW — bounded external review active.
+- FREEZE READY — review/integration gates are complete enough for Lead freeze consolidation.
 - FROZEN — approved implementation baseline.
-- ARCHITECTURE FINDING OPEN — a required semantic change or unresolved conflict blocks the affected scope.
-- SUPERSEDED — replaced by a newer explicit baseline.
+- ARCHITECTURE FINDING OPEN — semantic conflict blocks affected scope.
+- SUPERSEDED — replaced by an explicit newer baseline.
+
+Task status and architecture-document status should not be conflated. A task can be complete while its Candidate remains unfrozen.
 
 ## 9. Freeze Discipline
 
-A dedicated session cannot declare a system-level design frozen.
+A dedicated session or reviewer cannot declare a system-level baseline frozen.
 
-Freeze flow:
+Default flow:
 
-Candidate Design
-→ Lead Design Authority integration review
-→ independent review when warranted
-→ blocking issues resolved
-→ explicit freeze decision
-→ repository status updated
+```text
+Candidate
+-> Lead integration review
+-> independent review when warranted
+-> valid findings resolved
+-> Lead consolidation
+-> explicit Frozen Baseline / manifest commit
+```
 
 Frozen design is an implementation contract, not an implementation suggestion.
 
-## 10. When to Use Independent Review
+If a frozen semantic lifecycle/state/invariant changes, the change MUST occur through:
+- an explicit Amendment identifying the affected frozen contract; or
+- an explicit superseding frozen baseline.
+
+Silent reinterpretation is forbidden even when the new design appears "compatible".
+
+## 10. Independent Review Acceptance Rule
+
+Independent review is useful only when the reviewer actually understood the reviewed design.
+
+A returned `PASS` is invalid if the reviewer materially misstates:
+- formal object names;
+- ownership;
+- frozen lifecycle states;
+- Graph/Runtime semantics;
+- accepted amendments;
+- corrected review premises.
+
+Lead MUST reject such a PASS as `review-invalid` and request corrected bounded re-review.
+
+Reviewer output is evidence, not authority.
+
+## 11. Repository Visibility vs Reviewer Environment Access
+
+Repository visibility and reviewer network/tool access are different facts.
+
+A public GitHub repository does not prove a given reviewer runtime can access GitHub.
+
+When a reviewer reports missing repository files, distinguish:
+
+1. repository does not exist / is private / path is wrong;
+2. reviewer environment has no network/browser/Git capability;
+3. reviewer failed to clone/fetch/read the repository.
+
+A reviewer without network access should report an environment limitation such as:
+
+```text
+ENVIRONMENT_NETWORK_UNAVAILABLE
+```
+
+It must not claim the repository itself is unavailable without evidence.
+
+When repository access is genuinely unavailable to the reviewer, Lead may use **Review Packet mode**: provide only the minimum frozen baseline/candidate/clarifications/questions required for that review. The reviewer must return `INSUFFICIENT REVIEW EVIDENCE` rather than invent missing facts.
+
+## 12. When to Use Independent Review
 
 Independent review is most valuable after a coherent contract boundary exists, not during early brainstorming.
 
-Good review points include:
+Good review points:
+- complete system-foundation candidate;
+- subsystem object/state model + invariant set;
+- cross-owner contract;
+- amendment to frozen baseline;
+- gate before implementation begins.
 
-- a complete system-foundation candidate;
-- a subsystem state machine and invariant set;
-- a cross-owner contract;
-- a proposed change to a frozen baseline;
-- a design gate before implementation begins.
+Avoid spending review effort on unstable fragments still being actively reshaped.
 
-Avoid spending review effort on unstable fragments that are still being actively reshaped.
+Bounded subsystem consistency review should normally use a lower-cost independent reviewer.
+Broad integrated adversarial review should be reserved for the integrated architecture where cross-subsystem assumptions can be challenged together.
 
-## 11. Product-to-Architecture Translation Pattern
+## 13. Review Scope Construction
 
-The product owner may primarily describe desired user-facing nodes, workflows, behaviors, and future extension needs.
+A bounded review should state:
+- exact candidate;
+- exact frozen baselines/amendments;
+- corrected premises from earlier invalid reviews;
+- blocking criteria;
+- non-blocking clarification category;
+- required output format.
 
-The Lead Design Authority translates those requests into architecture without requiring the product owner to understand low-level mechanics.
+Reviewers should not FAIL merely because they can imagine a more elaborate design. A blocking finding should identify a correctness, ownership, replay, fencing, authority, frozen-baseline or convergence defect.
+
+## 14. Product-to-Architecture Translation Pattern
+
+The product owner may primarily describe desired user-facing nodes, workflows, behaviors and future extension needs.
+
+Lead translates them into architecture without requiring the product owner to understand low-level mechanics.
 
 Pattern:
 
+```text
 Product requirement
-→ identify required generic capabilities
-→ map to Module / Composite / Graph / Runtime / Capability / Resource / State / Event / Human Interaction / Accounting / Suspension
-→ verify existing contracts can express it
-→ add generic extension point only if necessary
-→ avoid creating product-specific Kernel primitives
+-> identify generic capability/state/interaction needs
+-> map to Module / Composite / Graph / Runtime / Capability / Resource / Effect / State / Event / Human Interaction / Accounting / Suspension
+-> verify frozen contracts can express it
+-> add a generic extension point only if necessary
+-> avoid product-specific Kernel primitives
+```
 
-## 12. Product Extension Envelope
+## 15. Product Extension Envelope
 
-For each future user-facing node, evaluate whether the architecture can express:
+For each future user-facing Node, evaluate whether the architecture can express:
+- Input;
+- Output;
+- Configuration;
+- Capability;
+- Resource;
+- Effect;
+- State;
+- Event;
+- Human Interaction;
+- Accounting;
+- Suspension / Resume;
+- Composite composition.
 
-- Input
-- Output
-- Configuration
-- Capability
-- Resource
-- State
-- Event
-- Human Interaction
-- Accounting
-- Suspension / Resume
-- Composite composition
+Not every Node needs every dimension. The purpose is to avoid sealing off future extension paths.
 
-Not every node needs every dimension. The purpose is to avoid accidentally sealing off future extension paths.
+Detailed product-node taxonomy does not have to block System Foundation freeze if this envelope remains sufficient and no unresolved canonical Owner is required for correctness.
 
-## 13. Documentation Strategy
+## 16. Documentation Strategy
 
-Separate documents when a topic develops:
-
+Separate a topic into its own document when it develops:
 - its own object/state model;
 - independent invariants;
 - independent implementation gate;
 - dedicated review needs;
-- enough complexity to pollute unrelated design context.
+- enough complexity to pollute unrelated context.
 
-Cross-domain rules should be referenced, not duplicated where possible.
+Cross-domain rules should be referenced rather than duplicated where practical.
 
-## 14. Repository as Design Memory
+Use small normative clarification documents when a Candidate is sound but requires precise integration tightening. Do not rewrite a large Candidate merely to fix a small cross-subsystem contract unless consolidation is required for freeze.
+
+## 17. Frozen Baseline Manifest Pattern
+
+When a Candidate + accepted clarification together form the frozen architecture, Lead may freeze them through an explicit manifest/baseline document that pins the exact authoritative content identities.
+
+A manifest should identify:
+- baseline name/version;
+- exact constituent paths;
+- exact immutable content/commit/blob references when available;
+- accepted clarifications/amendments;
+- review evidence;
+- Lead freeze decision.
+
+This prevents later edits to a Candidate path from silently changing what was actually frozen.
+
+## 18. Repository as Design Memory
 
 The repository should progressively contain:
-
 - overall architecture baseline;
 - focused subsystem designs;
 - contracts;
 - invariants;
-- architecture decisions;
+- amendments;
+- clarifications;
 - architecture findings;
+- task briefs;
 - coordination status;
 - review outcomes;
+- frozen manifests;
 - implementation gates;
-- design operating model.
+- design operating model;
+- Lead active queue where useful.
 
 This reduces dependence on long-lived model memory or one specific chat session.
 
-## 15. Client-Project Reuse Goal
+## 19. Lead Active Queue and Continuous Execution Rule
 
-The Nyron process should eventually be abstracted into a reusable customer-facing development workflow with phases such as:
+`design/coordination/LEAD_ACTIVE_QUEUE.md` may be used as the main design window's operational scratch queue.
+
+It is not canonical architecture truth; STATUS remains the authoritative task-state table.
+
+When Lead states a concrete next action and the action is currently executable, Lead should execute it in the same turn instead of stopping after announcing it.
+
+Lead should stop only when:
+- user/Lead architecture decision is genuinely required;
+- a hard dependency is unavailable;
+- an Architecture Finding blocks safe continuation;
+- all currently executable work for the wave is complete.
+
+A commit/status update is not by itself a valid stopping condition if another unblocked queue item is immediately executable.
+
+This rule was added after repeated coordination stalls where the design process stopped at an administrative checkpoint despite available work.
+
+## 20. Client-Project Reuse Goal
+
+The Nyron process should eventually be abstracted into a reusable customer-facing development workflow:
 
 1. Product intent capture
 2. System boundary definition
@@ -229,36 +374,43 @@ The Nyron process should eventually be abstracted into a reusable customer-facin
 7. Implementation gate opening
 8. Multi-agent implementation coordination
 9. Review / re-review
-10. Integration / test / release
+10. Integration / fault testing / release
 11. Design-memory consolidation
 12. Project handoff / maintenance baseline
 
-The reusable workflow must separate customer-facing requirements from internal architecture complexity while preserving traceable decisions and clean agent handoffs.
+The reusable workflow separates customer-facing requirements from architecture complexity while preserving traceable decisions and clean agent handoffs.
 
-## 16. Lessons-Learned Update Rule
+## 21. Lessons-Learned Update Rule
 
-This document should be updated only when a design-process lesson has been demonstrated in practice or when a recurring coordination failure reveals a missing rule.
+Update this document only when a process lesson has been demonstrated in practice or a recurring coordination failure reveals a missing rule.
 
 Do not record every incidental conversation detail.
 
-Good candidates for inclusion:
-
+Good candidates:
 - a multi-session pattern that worked reliably;
-- a context-cleaning technique that reduced ambiguity;
-- a failed delegation pattern and the corrective rule;
+- a context-cleaning technique;
+- a failed delegation pattern and corrective rule;
 - a review gate that caught a real architecture defect;
-- a reusable method for translating product-node requests into generic architecture;
-- a task/status convention that prevented parallel-work conflicts.
+- a freeze/amendment pattern that prevented ambiguity;
+- a task/status convention that prevented parallel conflicts.
 
-## 17. Current Initial Lessons
+## 22. Current Demonstrated Lessons
 
-1. Keep the main design session focused on global decisions and coordination.
-2. Move deep subsystem state-machine work into dedicated sessions.
-3. Give every session a stable Task ID and conversation name.
-4. Maintain one repository-backed status table for all design tasks.
-5. Commit stable design before replacing or cleaning a context window.
-6. Let specialist sessions propose; let the Lead Design Authority integrate and freeze.
-7. Use independent review after a coherent candidate exists.
-8. Treat user-facing nodes as product abstractions, not automatic Runtime or Kernel primitives.
-9. Preserve future node extensibility through generic capability/resource/state/event envelopes.
-10. Evolve project-specific practice into a reusable customer-project workflow only from tested patterns, not theory alone.
+1. GitHub should carry durable design memory; chats should carry only active reasoning context.
+2. Keep the main design session focused on ownership, integration, freeze and task coordination.
+3. Move deep subsystem state-machine work into dedicated sessions.
+4. Give every specialist one stable Task ID and name the conversation exactly that Task ID.
+5. New windows need explicit repository URL + Task path; never assume they know where project files live.
+6. Require specialist Candidates to be committed to the repository and return commit SHA.
+7. Maintain one compact repository-backed STATUS table for current design truth.
+8. Let specialists propose; let Lead integrate/freeze.
+9. Reviewer PASS is invalid when the reviewer materially misread the design.
+10. Distinguish public repository visibility from reviewer environment network/tool access.
+11. Use Review Packet mode when a reviewer cannot directly access the repository.
+12. Frozen semantic changes require explicit Amendment/superseding baseline, not friendly reinterpretation.
+13. Small cross-subsystem precision issues can be captured as normative Lead clarifications before freeze.
+14. Exact frozen manifests are useful when Candidate + clarification together define the actual baseline.
+15. User-facing Nodes remain product abstractions rather than automatic Runtime/Kernel primitives.
+16. Preserve future extensibility through generic capability/resource/effect/state/event envelopes.
+17. Main coordination should continue executing available queue items; administrative checkpoints are not automatic stopping points.
+18. Evolve reusable methodology only from tested project behavior, not theory alone.
