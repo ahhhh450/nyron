@@ -14,13 +14,14 @@ Purpose: Maintain the single current source of truth for parallel design tasks, 
 7. This file must be updated whenever a design task is opened, completed, blocked, superseded, integrated, or moved into independent review.
 8. Stable decisions should be written to repository documents before a conversation is intentionally replaced or context is compressed.
 9. Bounded subsystem consistency reviews should prefer a lower-cost independent reviewer such as DeepSeek; Claude is reserved for broader adversarial architecture review after multiple subsystem candidates have been integrated, unless a high-risk local finding justifies earlier Claude review.
+10. Reviewer conclusions are advisory. A PASS is not accepted when the returned review materially misstates the candidate or frozen baseline; the Lead Design Authority must mark that review invalid and request a corrected review.
 
 ## Current Tasks
 
 | Task ID | Conversation Name | Topic | Mode | Depends On | Status | Gate / Return Condition |
 | --- | --- | --- | --- | --- | --- | --- |
 | NYRON-D-001 | Nyron设计-总设计调度 | Overall System Architecture v0.1 | Main design thread | Frozen Module baseline | IN PROGRESS | Integrate subsystem candidates and produce reviewable System Foundation baseline |
-| NYRON-D-002 | Nyron设计-NYRON-D-002-Graph-Composite | Graph / Composite Design Candidate v0.1 | Dedicated parallel design thread | NYRON-D-001 draft + frozen Module baseline | DEEPSEEK REVIEW READY | Lead integration review passed; DeepSeek consistency review required before local freeze consideration |
+| NYRON-D-002 | Nyron设计-NYRON-D-002-Graph-Composite | Graph / Composite Design Candidate v0.1 | Dedicated parallel design thread | NYRON-D-001 draft + frozen Module baseline | TARGETED RE-REVIEW REQUIRED | First DeepSeek PASS was rejected as review-invalid due to material misreads; corrected bounded re-review required before freeze consideration |
 | NYRON-D-003 | Nyron设计-NYRON-D-003-Runtime-Orchestration | Runtime Orchestration Design | Dedicated parallel design thread | NYRON-D-002 execution-facing semantics + Module baseline | READY FOR PARALLELIZATION | May open now; must treat Graph candidate as review-pending and escalate any conflict |
 | NYRON-D-004 | Nyron设计-NYRON-D-004-Capability-Resource-Effect | Capability / Resource / Effect Authority Design | Dedicated parallel design thread | NYRON-D-001 ownership model + Module baseline | IN PROGRESS / DELEGATED | Return complete candidate, invariants, open questions, findings |
 | NYRON-D-005 | Nyron设计-NYRON-D-005-Accounting-Recovery | Accounting / Recovery Design | Dedicated parallel design thread | NYRON-D-001 + Module baseline + NYRON-D-004 lifecycle inputs | PARTIALLY BLOCKED | Open after NYRON-D-004 candidate stabilizes effect/resource lifecycle boundaries |
@@ -41,17 +42,26 @@ Clarifications incorporated:
 
 No blocking Architecture Finding against the frozen Module baseline was identified.
 
-Independent review assignment:
-- Reviewer: DeepSeek
-- Review style: bounded architecture consistency / contradiction / correctness review
-- Claude review: deferred to integrated multi-subsystem adversarial architecture review unless DeepSeek or Lead Review surfaces a high-risk finding.
+### First DeepSeek Review Result
+
+Returned result: PASS.
+Lead acceptance: REJECTED AS REVIEW-INVALID.
+
+Material misreads in the returned review:
+1. It treated `GraphComposite` as if it were a formal object in the Candidate; the Candidate defines `Graph`, `GraphRevision`, `Composite`, and `CompositeRevision`, not a `GraphComposite` runtime/history object.
+2. It claimed FEEDBACK was a standard control operation in the frozen Module baseline. The Candidate defines FEEDBACK as an Edge role / intentional-cycle declaration and explicitly forbids it from introducing special Runtime semantics.
+3. It claimed static validation guarantees a DAG, while the Candidate intentionally allows directed cycles when at least one Edge in the cycle is declared FEEDBACK.
+
+Because these are material misunderstandings of the reviewed design, the PASS does not satisfy the independent-review gate.
+
+Required next action: targeted DeepSeek re-review using explicit corrected premises and a narrower question set. Claude remains deferred to integrated adversarial review unless a high-risk local issue appears.
 
 ## Current Parallelization Decision
 
 Safe now:
 - NYRON-D-001 — continue in main thread.
-- NYRON-D-002 — DeepSeek independent review only; no further speculative redesign unless review finds an issue.
-- NYRON-D-003 — may now start as a dedicated Runtime Orchestration thread.
+- NYRON-D-002 — targeted re-review only; no speculative redesign unless a valid review finds an issue.
+- NYRON-D-003 — may now start as a dedicated Runtime Orchestration thread, treating Graph semantics as candidate and review-pending.
 - NYRON-D-004 — continue in dedicated authority/resource/effect thread.
 - NYRON-D-006 — product discussion is unblocked, but may be deferred until the user wants to define visible nodes.
 
@@ -69,6 +79,8 @@ Use a bounded independent reviewer, normally DeepSeek, to check:
 - replay/recovery holes;
 - missing invariants;
 - unsafe cross-subsystem assumptions.
+
+Reviewer output is evidence, not authority. A superficially positive result must be rejected if it demonstrates material misunderstanding of the design under review.
 
 ### Integrated Architecture Review
 After major subsystem candidates are integrated into the Overall System Architecture candidate, use Claude for an Independent Adversarial Architecture Review with freedom to challenge assumptions and propose alternatives, while retaining no authority to modify or freeze the baseline directly.
