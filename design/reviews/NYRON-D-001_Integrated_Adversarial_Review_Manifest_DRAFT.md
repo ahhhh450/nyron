@@ -1,267 +1,312 @@
 # NYRON-D-001 — Integrated Adversarial Architecture Review Manifest
 
-**Status:** DRAFT — DO NOT ISSUE FINAL REVIEW YET
-**Owner:** Nyron Lead Design Authority
-**Purpose:** Pre-build the exact reading set and attack surface for the final integrated architecture review so the review can start immediately once pending subsystem gates close.
+**Status:** DRAFT — FINAL REVIEW GATE NOT OPEN  
+**Owner:** Nyron Lead Design Authority  
+**Purpose:** Define the exact integrated reading set, mandatory attack surface, and gate for the final independent adversarial architecture review.
 
 ---
 
 ## 1. Final Review Goal
 
-The final independent reviewer is not asked to redesign Nyron from scratch.
-
-The reviewer must adversarially test whether the integrated v0.1 architecture can be frozen without hidden contradictions across:
-- immutable definition semantics;
+Adversarially test whether Nyron v0.1 System Foundation can be frozen without hidden contradictions across:
+- frozen Module semantics;
+- frozen Graph/Composite semantics;
 - Runtime execution/fencing;
 - Capability/Resource/Effect authority;
 - Accounting/Recovery;
+- Distribution/package trust;
 - External World mediation;
-- Module distribution/trust;
-- Human interaction/approval;
+- Human Interaction/approval;
 - Project/Workspace/policy context;
+- generic/domain external ingress;
 - cross-owner crash/replay/UNKNOWN behavior.
 
-The reviewer may challenge assumptions and propose alternatives, but cannot directly modify or freeze the architecture.
+The reviewer may challenge assumptions but cannot mutate repository or freeze architecture.
 
 ---
 
 ## 2. Frozen Inputs — Mandatory
 
-### FROZEN Module Architecture
+### Module Architecture
 - `design/Universal_Runtime_Module_Design_Report_v0.1.md`
 
-### FROZEN Amendment 001
+### Amendment 001 — EffectOperation PREPARED
 - `design/amendments/Module_Architecture_Amendment_001_EffectOperation_Prepared.md`
 
-### FROZEN Graph / Composite
+### Graph / Composite
 - `design/Nyron_Graph_Composite_Frozen_Baseline_v0.1.md`
 
-These are frozen dependencies. Any reviewer recommendation that contradicts them must be labeled:
+Any recommendation contradicting a frozen dependency must be labeled:
 
 `ARCHITECTURE FINDING — FROZEN BASELINE IMPACT`
 
-and must identify the exact frozen contract requiring amendment/supersession.
+with the exact affected frozen contract.
 
 ---
 
 ## 3. Integrated Overall Candidate — Mandatory
 
+Primary consolidated document:
 - `design/Nyron_Overall_System_Architecture_v0.1.md`
+
+Supporting Lead integration history/clarifications:
 - `design/clarifications/NYRON-D-001_Lead_Integration_Clarification_001.md`
+- `design/clarifications/NYRON-D-001_Lead_Integration_Clarification_002.md`
 
-Final review must treat the Overall document + accepted Lead clarification(s) as one integrated candidate set.
+The consolidated Overall document already incorporates the current Lead-approved ownership closures, but the clarification documents remain audit evidence for how those decisions were reached.
 
 ---
 
-## 4. Subsystem Inputs — Mandatory Once Frozen/Accepted
+## 4. Subsystem Inputs
 
-### Runtime Orchestration — D-003
+### D-003 — Runtime Orchestration
 - Candidate: `design/Nyron_Runtime_Orchestration_Design_Candidate_v0.1.md`
-- Clarification: `design/clarifications/NYRON-D-003_D-005_Lead_Integration_Clarification_001.md`
-- Independent review: PENDING
+- Clarifications:
+  - `design/clarifications/NYRON-D-003_D-005_Lead_Integration_Clarification_001.md`
+  - `design/clarifications/NYRON-D-003_D-010_Lead_Integration_Clarification_002.md`
+- Independent review: IN PROGRESS
 - Frozen baseline/manifest: PENDING
 
-### Capability / Resource / Effect — D-004
+### D-004 — Capability / Resource / Effect Authority
 - Candidate: `design/Nyron_Capability_Resource_Effect_Authority_Design_Candidate_v0.1.md`
-- Amendment dependency: Amendment 001
-- Independent review: PENDING
+- Frozen Amendment dependency: Amendment 001
+- Clarification:
+  - `design/clarifications/NYRON-D-004_Lead_Integration_Clarification_002.md`
+- Independent review: IN PROGRESS
 - Frozen baseline/manifest: PENDING
 
-### Accounting / Recovery — D-005
+### D-005 — Accounting / Recovery
 - Candidate: `design/Nyron_Accounting_Recovery_Design_Candidate_v0.1.md`
-- Clarification: `design/clarifications/NYRON-D-003_D-005_Lead_Integration_Clarification_001.md`
-- Independent review: PENDING
+- Clarifications:
+  - `design/clarifications/NYRON-D-003_D-005_Lead_Integration_Clarification_001.md`
+  - `design/clarifications/NYRON-D-005_D-010_Lead_Integration_Clarification_002.md`
+- Independent review: IN PROGRESS
 - Frozen baseline/manifest: PENDING
 
-### Distribution / Module Ecosystem — D-007
-- Candidate: PENDING (`design/Nyron_Distribution_Module_Ecosystem_Design_Candidate_v0.1.md`)
-- Lead integration: PENDING
+### D-007 — Distribution / Module Ecosystem
+- Candidate: `design/Nyron_Distribution_Module_Ecosystem_Design_Candidate_v0.1.md`
+- Clarification:
+  - `design/clarifications/NYRON-D-007_D-010_Lead_Integration_Clarification_001.md`
+- Lead integration: PASS
+- Independent review: READY / NOT YET ACCEPTED
+- Frozen baseline/manifest: PENDING
 
-### External Interfaces / Workspace Boundary — D-008
+### D-008 — External Interfaces / Workspace Boundary
 - Candidate: `design/Nyron_External_Interfaces_Workspace_Boundary_Design_Candidate_v0.1.md`
-- Clarification: `design/clarifications/NYRON-D-008_Lead_Integration_Clarification_001.md`
-- Independent review: PENDING
+- Clarifications:
+  - `design/clarifications/NYRON-D-008_Lead_Integration_Clarification_001.md`
+  - `design/clarifications/NYRON-D-008_D-010_Lead_Integration_Clarification_002.md`
+- Independent review: IN PROGRESS
 - Frozen baseline/manifest: PENDING
 
-### Human Interaction / Approval Authority — D-009
-- Candidate: PENDING (`design/Nyron_Human_Interaction_Approval_Authority_Design_Candidate_v0.1.md`)
-- Lead integration: PENDING
+### D-009 — Human Interaction / Approval Authority
+- Candidate: `design/Nyron_Human_Interaction_Approval_Authority_Design_Candidate_v0.1.md`
+- Clarification:
+  - `design/clarifications/NYRON-D-009_Lead_Integration_Clarification_001.md`
+- Lead integration: PASS
+- Independent review: READY / NOT YET ACCEPTED
+- Frozen baseline/manifest: PENDING
 
-### Project / Workspace / Policy Context — D-010
-- Candidate: PENDING (`design/Nyron_Project_Workspace_Policy_Context_Design_Candidate_v0.1.md`)
-- Lead integration: PENDING
+### D-010 — Project / Workspace / Policy Context
+- Candidate: `design/Nyron_Project_Workspace_Policy_Context_Design_Candidate_v0.1.md`
+- Clarifications:
+  - `design/clarifications/NYRON-D-010_D-001_Lead_Integration_Clarification_001.md`
+  - `design/clarifications/NYRON-D-007_D-010_Lead_Integration_Clarification_001.md`
+  - `design/clarifications/NYRON-D-008_D-010_Lead_Integration_Clarification_002.md`
+  - `design/clarifications/NYRON-D-003_D-010_Lead_Integration_Clarification_002.md`
+  - `design/clarifications/NYRON-D-005_D-010_Lead_Integration_Clarification_002.md`
+- Lead integration: PASS
+- `AF-PWP-001`: RESOLVED
+- Independent review: READY / NOT YET ACCEPTED
+- Frozen baseline/manifest: PENDING
 
 ---
 
-## 5. Review Must Not Start Until
+## 5. Owner-Gap State
+
+Canonical Owner discovery for the current v0.1 System Foundation is closed at Lead-integration level.
+
+Integrated set:
+- GraphRevision/topology -> Graph subsystem;
+- ModuleDefinition registration/package/install/trust/governance -> Module Registry / Distribution Owner;
+- Project/Workspace/config/policy/binding/IngressRoute config -> PWP Owner;
+- generic workflow ExecutionIngressFact -> Runtime Orchestration;
+- execution state -> Runtime Orchestration;
+- CapabilityGrant -> Capability Authority;
+- Resource/ResourceLease -> Resource Manager;
+- EffectOperation -> Effect Authority;
+- Accounting state -> Accounting Owner;
+- ReconciliationCase/Recovery disposition -> Recovery Owner;
+- HumanRequest/accepted HumanResponse/HumanDecisionEvidence -> Human Interaction Owner.
+
+No correctness-relevant `future owner` placeholder remains in the current Overall candidate.
+
+---
+
+## 6. Final Review Must Not Start Until
 
 All must be true:
 
-1. D-003 / D-004 / D-005 / D-008 independent review results have been assessed by Lead.
-2. Any valid blocking findings from those reviews are resolved.
-3. D-003 / D-004 / D-005 / D-008 are frozen or explicitly consolidated into an accepted pre-freeze subsystem set.
-4. D-009 closes HumanRequest/HumanResponse/approval-evidence ownership.
-5. D-010 closes Project/Workspace/policy/ingress-route ownership.
-6. D-007 either closes Module distribution/install/trust semantics or Lead explicitly defers a non-critical portion outside v0.1 freeze.
-7. Overall Owner table contains no correctness-relevant `future owner` placeholder.
-8. `design/coordination/STATUS.md` reflects the actual gates.
+1. D-003 / D-004 / D-005 / D-007 / D-008 / D-009 / D-010 bounded independent review results have been assessed by Lead or an explicit Lead disposition substitutes for a review with documented reason.
+2. Any valid blocking subsystem findings are resolved.
+3. Passing subsystem Candidates + accepted clarifications are frozen/consolidated into exact subsystem baselines/manifests.
+4. `design/Nyron_Overall_System_Architecture_v0.1.md` contains no stale pre-integration owner placeholders or superseded semantics.
+5. This Manifest is updated with exact frozen constituent identities/refs.
+6. `design/coordination/STATUS.md` marks `NYRON-D-001-REVIEW-CLAUDE` READY FOR REVIEW.
+
+D-006 Product Node / Visual UX does not block this gate unless it reveals a new architecture-level expressiveness/ownership defect.
 
 ---
 
-## 6. Required Adversarial Attack Areas
+## 7. Mandatory Adversarial Attack Areas
 
 ### A1 — Owner Collision / Owner Gap
 Try to find:
 - one canonical state class with two Owners;
-- one correctness-critical state with no Owner;
-- Adapter/Host/UI/DB accidentally becoming de-facto Owner;
-- references that silently transfer mutation authority.
+- one correctness-critical class with no Owner;
+- Adapter/Host/PWP/UI/DB becoming de-facto foreign Owner;
+- references silently transferring mutation authority.
 
 ### A2 — Hidden Second Execution Path
-Try to find any path that bypasses:
+Try to bypass:
 
 ```text
 Packet -> Delivery -> Activation -> Run / Attempt
 ```
 
-including:
-- API direct Activation;
-- Human approval direct Run;
-- external webhook direct Module invocation;
-- Composite hidden runtime nesting;
-- Registry/install hook directly executing Module.
+Attack API, Human, webhook, PWP ingress, Composite, Registry/install and Product paths.
 
-### A3 — Attempt/Fencing Race
+### A3 — Attempt / Fencing Race
+Attack R1 -> R2 while R1 is active/suspended/orphaned:
+- stale effect attempt;
+- late Completed;
+- stale Continuation resume;
+- stale cached Grant/Lease;
+- old remote/provider job result.
+
+### A4 — PREPARED Crash Window
 Attack:
-- R1 replaced by R2 while R1 is active/suspended/orphaned;
-- stale R1 attempts new effect;
-- late R1 Completed arrives;
-- old continuation resumes after replacement;
-- stale grant/lease/cache authorizes work after fencing.
-
-### A4 — PREPARED / Crash Window
-Attack every external-effect flow around:
 
 ```text
-PREPARED -> dispatch -> ack/evidence -> ACTIVE/COMPLETED
+PREPARED -> dispatch -> evidence -> ACTIVE/COMPLETED
 ```
 
-Look for:
-- dispatch without durable operation identity;
-- PREPARED incorrectly proving non-dispatch;
-- blind retry after crash;
-- timeout mapped to failure;
-- cancellation request mapped directly to FENCED.
+Look for dispatch without durable identity, blind retry, timeout-as-failure, cancel-request-as-FENCED, or PREPARED incorrectly proving non-dispatch.
 
 ### A5 — UNKNOWN Fabrication
-Try to make Runtime, Recovery, Accounting, Resource or Product UX turn UNKNOWN into:
+Try to turn UNKNOWN into:
 - zero cost;
-- failed operation;
-- successful operation;
-- safe effect clearance;
-- released resource;
-- retry permission.
+- failed/successful effect;
+- safe conflict clearance;
+- released Resource;
+- retry permission;
+- workflow completion.
 
 ### A6 — Recovery Overreach
 Verify:
 - ReconciliationCase does not own subject truth;
-- `RESOLVED` is not a universal safety token;
-- administrative disposition can permit scoped closure without claiming historical certainty;
-- subject Owner remains final authority for subject transition/clearance.
+- RESOLVED is not universal clearance;
+- administrative closure disposition can coexist with UNKNOWN;
+- subject Owner remains final authority for subject state/conflict clearance.
 
 ### A7 — Accounting Orthogonality
-Attack combinations such as:
+Attack:
 - Effect COMPLETED + Budget RECONCILING;
 - Effect UNKNOWN + Budget RESERVED;
-- Lease UNKNOWN + known provider bill;
+- Lease UNKNOWN + known billing;
 - late bill after RELEASED;
-- actual cost > reservation.
+- actual > reserved;
+- PWP context changes after admission.
 
-Verify no owner rewrites another truth to make settlement convenient.
+### A8 — Project / Workspace / Environment Drift
+Try to make:
+- workspace_ref become raw path/Resource;
+- current Project/Workspace policy reinterpret historical execution;
+- EnvironmentBindingRevision prove live resource existence;
+- import/rebind widen local authority;
+- archive destroy historical context resolution.
 
-### A8 — Workspace / Environment Authority
-Try to find:
-- workspace_ref treated as raw path or Resource;
-- mutable project/workspace policy reinterpreting past executions;
-- imported workflow silently gaining broader local workspace/network authority;
-- live environment bindings embedded as portable definition truth.
+### A9 — Generic vs Domain Ingress Confusion
+Try to make:
+- PWP/Adapter own target business truth;
+- generic workflow trigger bypass Runtime ExecutionIngressFact;
+- duplicate webhook create duplicate non-repeatable execution;
+- HumanResponse/billing callback get incorrectly re-owned by Runtime;
+- mutable route/Graph current pointer reinterpret committed ingress.
 
-### A9 — Human Approval Authority Escalation
-Try to make a HumanResponse/Approval:
-- become Capability itself;
-- mutate a foreign Owner directly;
+### A10 — Human Approval Authority Escalation
+Try to make HumanResponse/approval:
+- become CapabilityGrant;
+- mutate foreign Owner directly;
 - bypass current Attempt/fencing;
-- bypass target Owner decision;
-- resume a stale continuation;
-- be trusted without authenticated canonicalization.
+- resume stale Continuation;
+- count unauthorized/duplicate responses;
+- use quorum semantics to invent role authority;
+- become trusted without canonical auth/authz evidence.
 
-### A10 — Registry / Trust / Distribution Confusion
+### A11 — Registry / Trust / Distribution Confusion
 Try to make:
 - import imply install;
 - install imply trust;
-- trust imply Capability;
-- module package update rewrite historical ModuleDefinition semantics;
-- `latest` silently replace an exact version in an admitted GraphRevision;
-- embedded package provenance become execution authority.
+- trust imply enable/Capability/Runtime admission;
+- package update rewrite exact ModuleDefinition semantics;
+- latest replace exact Graph dependency;
+- PWP trust-policy context become PackageTrustDecision;
+- cache/mirror/outage change semantic identity.
 
-### A11 — Cross-Owner Delivery / Duplication
-Assume at-least-once delivery and arbitrary delay.
+### A12 — Cross-Owner Duplicate / Delay
+Assume at-least-once, arbitrary delay/reordering.
 
 Try to create:
 - duplicate Activation;
-- duplicate usage charge;
-- duplicate reservation;
-- duplicate external effect;
-- duplicate Human response consumption;
-- replay ordering dependence on message-bus arrival time.
+- duplicate reservation/usage;
+- duplicate external Effect;
+- duplicate Human response/quorum count;
+- duplicate ExecutionIngressFact/WorkflowExecution;
+- correctness dependence on message-bus arrival order.
 
-### A12 — Derived State Becoming Authority
-Try deleting/rebuilding:
-- scheduler queues;
-- progress indexes;
-- dependency manifest caches;
-- accounting dashboards;
-- UI state;
-- adapter caches.
+### A13 — Derived State Becoming Authority
+Delete/rebuild queues, dashboards, indexes, manifests, UI projections, package plans and adapter caches.
 
 If correctness changes, identify the hidden canonical dependency.
 
-### A13 — Semantic Admission Drift
-Change deployment/project/workspace/runtime-policy defaults after an execution was admitted.
+### A14 — Semantic Admission Drift
+Change mutable Runtime/PWP/deployment defaults after execution admission.
 
-Verify historical replay still uses pinned immutable/revisioned semantic context and does not reinterpret the execution with current defaults.
+Historical replay must remain tied to exact immutable/revisioned semantic context while dynamic revocable authority remains dynamically checked.
 
-### A14 — Product Primitive Leakage
-Verify Browser/Shell/File/HTTP/Claude/Codex/Agent/Reviewer/Router/Human Approval/Product Loop concepts do not become Kernel primitives merely because they are visible to users.
+### A15 — Product Primitive Leakage
+Verify Browser/Shell/File/HTTP/Claude/Codex/Agent/Reviewer/Router/Human Approval/Loop/Product Nodes do not become Kernel primitives merely because they are visible.
 
 ---
 
-## 7. Blocking Finding Criteria
+## 8. Blocking Finding Criteria
 
-A finding is blocking when it demonstrates one or more of:
-- canonical Owner conflict/gap;
+Blocking findings demonstrate one or more of:
+- canonical Owner collision/gap;
 - stale authority/fencing hole;
 - replay non-determinism affecting correctness;
-- crash ambiguity converted into guessed truth;
-- external-effect duplicate/safety hole;
-- cross-owner contract with no bounded convergence path;
-- hidden semantic dependency on mutable deployment state;
+- crash ambiguity converted to guessed truth;
+- unsafe duplicate external effect/execution/accounting/response;
+- cross-owner non-convergence;
+- mutable hidden semantic dependency;
 - frozen baseline contradiction;
 - authority escalation/bypass;
-- non-reconstructible canonical history.
+- non-reconstructible canonical history;
+- exact-version/identity substitution.
 
 Do NOT FAIL solely because:
-- implementation details are intentionally deferred;
-- naming could be improved;
-- a more complex architecture is possible;
-- product UX is not yet fully specified;
-- a non-correctness optimization is open.
+- implementation technology is deferred;
+- naming can improve;
+- more elaborate features are possible;
+- Product UX is incomplete;
+- optional optimization/policy default remains open.
 
 ---
 
-## 8. Required Review Output
+## 9. Required Review Output
 
-If no blocking issue:
+If sound:
 
 ```text
 INTEGRATED REVIEW RESULT: PASS
@@ -279,28 +324,24 @@ If blocking:
 INTEGRATED REVIEW RESULT: FAIL
 ```
 
-For each finding:
-- Finding ID
-- affected document/section/invariant
-- exact contradiction/failure scenario
-- why it affects correctness
-- whether frozen baseline impact exists
-- minimum architecture correction required
+Each finding:
+- Finding ID;
+- affected document/section/invariant;
+- concrete failure scenario;
+- correctness impact;
+- frozen baseline impact yes/no;
+- minimum architecture correction.
 
-If a frozen dependency must change:
+If frozen dependency must change:
 
-```text
-ARCHITECTURE FINDING — FROZEN BASELINE IMPACT
-```
-
-Do not return long generic architecture commentary detached from concrete contracts.
+`ARCHITECTURE FINDING — FROZEN BASELINE IMPACT`
 
 ---
 
-## 9. Lead Acceptance Rule
+## 10. Lead Acceptance Rule
 
-The final reviewer result is advisory.
+Reviewer output is advisory.
 
-Lead must reject a PASS as review-invalid if it materially misstates the architecture or ignores required attack areas.
+Lead rejects a PASS as review-invalid if it materially misstates the architecture, ignores mandatory attack areas, or applies superseded pre-clarification premises.
 
-Only Lead Design Authority can make the final Overall Architecture freeze decision.
+Only Lead Design Authority can freeze Overall System Architecture v0.1.
