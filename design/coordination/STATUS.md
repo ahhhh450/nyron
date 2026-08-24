@@ -17,6 +17,7 @@ Purpose: Maintain the single current source of truth for parallel design tasks, 
 10. Reviewer conclusions are advisory. A PASS is not accepted when the returned review materially misstates the candidate or frozen baseline; the Lead Design Authority must mark that review invalid and request a corrected review.
 11. A frozen baseline may only be changed through an explicit amendment or superseding baseline that identifies the exact affected contract. Silent reinterpretation is forbidden.
 12. Delegated design tasks must write their complete candidate deliverable to the repository at the path specified in the task brief and return the commit SHA. Printing a candidate only in chat is not task completion. If repository writing is unavailable, the task must explicitly return `REPOSITORY_WRITE_UNAVAILABLE` plus the complete candidate for Lead integration.
+13. Every new specialist conversation must receive a self-contained launch message that states at minimum: the repository name and URL, that the task belongs to the Nyron design project, the Task ID, the exact task-brief path to read first, the design-only/no-freeze authority boundary, and the requirement to write the final candidate back to the repository and return the commit SHA. A new window must not be expected to infer repository location or prior conversation context.
 
 ## Current Tasks
 
