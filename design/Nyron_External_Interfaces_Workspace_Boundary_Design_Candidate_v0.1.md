@@ -9,6 +9,9 @@ Depends on:
 - `Nyron_Overall_System_Architecture_v0.1.md` — DRAFT
 - `Nyron_Capability_Resource_Effect_Authority_Design_Candidate_v0.1.md` — D-004 authority foundation
 
+> **DOCUMENTATION NOTICE — HISTORICAL CANDIDATE**  
+> This file is not, by itself, the complete implementation authority. The frozen D-008 baseline pins an earlier exact blob of this Candidate, and later frozen Amendments may supersede wording in that historical content. Where this working-tree Candidate carries a `SUPERSEDED` note, the referenced Frozen Baseline / Amendment is normative. This notice is documentation hygiene only and does not alter the already-frozen baseline identity.
+
 ## 1. Purpose
 
 This design defines Nyron's external-world boundary model for workspace/filesystem, processes, network, browser, provider/model adapters, remote workers and external-event ingress.
@@ -507,7 +510,7 @@ If the provider may have accepted or completed the request and no reliable looku
 
 Safe redispatch requires one of:
 - proof old operation was never dispatched;
-- proof old operation is FENCED;
+- proof old operation is FENCED — **SUPERSEDED FOR SEMANTIC RETRY SAFETY:** insufficient alone; see `design/amendments/External_Interfaces_Amendment_001_Fenced_Retry_Semantics.md`. `FENCED` proves active/conflict clearance only; it does not prove absence of prior consequence and does not by itself authorize same-semantic redispatch;
 - proof old operation completed and policy intentionally starts a new distinct operation;
 - provider-supported idempotency identity that safely deduplicates duplicate dispatch;
 - explicit policy accepting duplicate consequences.
