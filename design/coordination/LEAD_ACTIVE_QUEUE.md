@@ -9,34 +9,65 @@ Purpose: Immediate execution queue. `design/coordination/STATUS.md` remains auth
 - D-003 Runtime Orchestration — FROZEN
 - D-005 Accounting / Recovery — FROZEN
 - D-007 Distribution / Module Ecosystem — FROZEN
-- D-008 External Interfaces / Workspace — FROZEN
+- D-008 External Interfaces / Workspace — FROZEN **plus Amendment 001**
 - D-009 Human Interaction / Approval — FROZEN
 - D-010 Project / Workspace / Policy Context — FROZEN
 
-## Only Remaining Subsystem Freeze — D-004
+External Interfaces amendment:
+- `design/amendments/External_Interfaces_Amendment_001_Fenced_Retry_Semantics.md`
 
-Review task:
-- `design/coordination/tasks/NYRON-D-004-REVIEW-DS.md`
+## Only Remaining Subsystem Freeze — Corrected D-004
 
-Freeze candidate set already pinned:
-- Candidate blob `77cc1994368fd0b847278e3c5f6e548272912684`
-- Lead clarification blob `97f1fe428a3afa1d7783687576c73c125be05c6b`
-- Frozen Amendment 001 is mandatory.
+Independent GPT adversarial review found two valid blockers:
+- `NYRON-D-004-GPT-F01` — FENCED was incorrectly usable as semantic retry clearance;
+- `NYRON-D-004-GPT-F02` — plain authority check-then-use allowed replacement/revoke race.
 
-Action when D-004 review result is available:
-1. verify the reviewer used current Candidate + Amendment 001 + Lead clarification;
-2. reject stale/misread PASS as review-invalid;
-3. record accepted review evidence;
-4. on valid PASS, create D-004 frozen baseline immediately;
-5. update STATUS + final integrated review Manifest;
-6. open `NYRON-D-001-REVIEW-CLAUDE` gate in the same wave.
+Review record:
+- `design/reviews/NYRON-D-004_GPT_Adversarial_Review_FAIL_2026-08-24.md`
 
-## Newly Frozen This Intake
+Corrections:
+- `design/clarifications/NYRON-D-004_Lead_Integration_Clarification_003.md`
+- `design/clarifications/NYRON-D-004_Lead_Integration_Clarification_004.md`
+- `design/amendments/External_Interfaces_Amendment_001_Fenced_Retry_Semantics.md`
 
-- D-007 frozen baseline: `design/Nyron_Distribution_Module_Ecosystem_Frozen_Baseline_v0.1.md` — freeze commit `3210da0f30a6c8015b5dec322d22412600f0b081`
-- D-009 frozen baseline: `design/Nyron_Human_Interaction_Approval_Authority_Frozen_Baseline_v0.1.md` — freeze commit `c4f709e88bb1cfa284069958b4992cf4f61d91c5`
-- D-010 frozen baseline: `design/Nyron_Project_Workspace_Policy_Context_Frozen_Baseline_v0.1.md` — freeze commit `bc70f744ec93d877332264d89cdc76354df77146`
-- PASS receipt: `design/reviews/NYRON-D-007_D-009_D-010_DeepSeek_Review_PASS_Receipt.md`
+Current required invariants include:
+
+```text
+FENCED active/conflict clearance
+!= historical outcome certainty
+!= semantic retry clearance
+```
+
+and:
+
+```text
+actual authority consumption must race-safely linearize against replacement/revoke
+cached validation cannot authorize late dispatch/foreign mutation
+```
+
+## Immediate Action
+
+Reuse the **same existing GPT D-004 review conversation**.
+
+Run:
+- `design/coordination/tasks/NYRON-D-004-REVIEW-GPT-R2.md`
+
+Do not open a new GPT window.
+Do not use DeepSeek as the decisive re-reviewer for this correction.
+
+### On `RE-REVIEW RESULT: PASS`
+
+In the same Lead wave:
+1. record targeted GPT PASS evidence;
+2. create D-004 Frozen Baseline pinning Candidate + Clarifications 002/003/004 + Module Amendment 001 + applicable External Interfaces Amendment 001 dependency;
+3. update STATUS/README;
+4. update final Claude Manifest with exact D-004 frozen identity;
+5. mark `NYRON-D-001-REVIEW-CLAUDE` READY;
+6. issue the integrated Claude adversarial review.
+
+### On FAIL
+
+Validate each finding; correct only valid blockers and reuse the same GPT review conversation for targeted re-review.
 
 ## Overall Lane
 
@@ -47,17 +78,10 @@ Prepared final review:
 - Manifest: `design/reviews/NYRON-D-001_Integrated_Adversarial_Review_Manifest_DRAFT.md`
 - Claude task: `design/coordination/tasks/NYRON-D-001-REVIEW-CLAUDE.md`
 
-After D-004 freeze:
-1. pin exact frozen constituent identities in Manifest;
-2. mark Claude review task READY;
-3. issue one integrated Claude adversarial review;
-4. resolve valid findings;
-5. Lead-freeze Overall v0.1.
-
 ## Conversation Economy
 
 Do not create a new GPT conversation for every task. Reuse the current appropriate window unless substantial independent scope, context pressure, clean independent reasoning or meaningful parallelism justifies a dedicated window.
 
 ## Stop Rule
 
-Continue while an unblocked action exists. At the present state, System Foundation design work is legitimately waiting only on the D-004 independent-review result before the final integrated Claude review gate can open.
+Continue while an unblocked action exists. At this state, the only hard external dependency is the targeted GPT re-review of the corrected D-004 bundle.
