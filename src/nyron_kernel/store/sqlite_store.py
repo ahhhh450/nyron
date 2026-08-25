@@ -218,6 +218,8 @@ class SQLiteStore:
                 fencing_generation INTEGER NOT NULL
                     CHECK (fencing_generation > 0),
                 state TEXT NOT NULL,
+                terminal_attempt_seq INTEGER,
+                terminal_event_ref TEXT,
                 FOREIGN KEY (activation_ref)
                     REFERENCES activations(activation_ref),
                 FOREIGN KEY (execution_ref)
@@ -232,6 +234,44 @@ class SQLiteStore:
                 state TEXT NOT NULL,
                 PRIMARY KEY (run_ref, attempt_seq),
                 FOREIGN KEY (run_ref) REFERENCES runs(run_ref)
+            );
+            """
+        )
+
+        columns = {
+            row["name"]
+            for row in self.connection.execute("PRAGMA table_info(runs)")
+        }
+        if "terminal_attempt_seq" not in columns:
+            self.connection.execute(
+                "ALTER TABLE runs ADD COLUMN terminal_attempt_seq INTEGER"
+            )
+        if "terminal_event_ref" not in columns:
+            self.connection.execute(
+                "ALTER TABLE runs ADD COLUMN terminal_event_ref TEXT"
+            )
+
+    def create_attempt_execution_schema(self) -> None:
+        """Install the minimal Task 029 durable-value and terminal evidence tables."""
+
+        self.create_run_attempt_schema()
+        self.connection.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS durable_values (
+                value_ref TEXT PRIMARY KEY,
+                value_json TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS run_terminal_events (
+                event_ref TEXT PRIMARY KEY,
+                execution_ref TEXT NOT NULL,
+                activation_ref TEXT NOT NULL,
+                run_ref TEXT NOT NULL UNIQUE,
+                attempt_seq INTEGER NOT NULL,
+                event_kind TEXT NOT NULL CHECK (event_kind = 'RunSucceeded'),
+                FOREIGN KEY (run_ref) REFERENCES runs(run_ref),
+                FOREIGN KEY (run_ref, attempt_seq)
+                    REFERENCES run_attempts(run_ref, attempt_seq)
             );
             """
         )

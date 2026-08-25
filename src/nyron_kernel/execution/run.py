@@ -29,6 +29,8 @@ class Run:
     current_attempt_seq: int
     fencing_generation: int
     state: str
+    terminal_attempt_seq: int | None = None
+    terminal_event_ref: str | None = None
 
 
 class RunRepository:
@@ -177,7 +179,8 @@ class RunRepository:
         row = connection.execute(
             """
             SELECT run_ref, activation_ref, execution_ref,
-                   current_attempt_seq, fencing_generation, state
+                   current_attempt_seq, fencing_generation, state,
+                   terminal_attempt_seq, terminal_event_ref
             FROM runs WHERE run_ref = ?
             """,
             (run_ref,),
