@@ -8,7 +8,7 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `1`
-- Coordination Revision: `11`
+- Coordination Revision: `12`
 - Last Accepted Commit: `1ad71bec87cfc2a877f777b1e01f6683d52b3598`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Project Phase: `SYSTEM FOUNDATION IMPLEMENTATION`
@@ -17,51 +17,42 @@
 
 | Task | Type | Agent | State | Depends On |
 |---|---|---|---|---|
-| `NYRON-T-20260825-009` | Core Foundation Segment A Implementation | Codex | `RESULT_SUBMITTED` | `NYRON-T-20260825-003 ACCEPTED` |
+| `NYRON-T-20260825-011` | Task 009 Delivery Traceability Fix | Codex | `READY` | `NYRON-T-20260825-010 PASS_WITH_FINDINGS` |
 
 ## In Review
 
 | Task | Reviews | Reviewer | State |
 |---|---|---|---|
-| `NYRON-T-20260825-010` | `NYRON-T-20260825-009` | Claude Code | `IN_REVIEW` |
+| — | — | — | — |
 
 ## Blocked
 
 | Task | Reason | Blocked By |
-|---|---|---|
+|---|---|---|---|
 | — | — | — |
 
-## Accepted Previously
+## Accepted This Revision
 
-- `NYRON-T-20260825-001` — Repository Coordination Bootstrap — `ACCEPTED` after independent review.
-- `NYRON-T-20260825-002` — Independent Review of Task 001 — `ACCEPTED` with one resolved NON_BLOCKING PROCESS finding.
-- `NYRON-T-20260825-003` — System Foundation Implementation Planning — `ACCEPTED` after corrections and independent review.
-- `NYRON-T-20260825-005` — Targeted Implementation Plan Fix — `ACCEPTED`.
-- `NYRON-T-20260825-007` — Targeted Test Plan Fix — `ACCEPTED`.
-- `NYRON-T-20260825-008` — Final Targeted Re-Review — `ACCEPTED` / PASS.
-- Corrected implementation-plan integration merge commit: `1ad71bec87cfc2a877f777b1e01f6683d52b3598`.
+- `NYRON-T-20260825-009` — Core Foundation Segment A implementation — code correctness `ACCEPTED` after independent Claude Code Review.
+- `NYRON-T-20260825-010` — Independent Review of Task 009 — `ACCEPTED` with one NON_BLOCKING PROCESS finding and no code-correctness finding.
 
-## Current Delivery / Review
+## Current Process Fix
 
-- `NYRON-T-20260825-009` submitted Segment A on remote branch `task/NYRON-T-20260825-009`.
-- Remote branch tip verified at scheduling time: `73cb210d17bd5659430ffa38a27d71e0a6349909`.
-- Implementation content commit recorded by Executor: `58a666e492dd5e4b6d135f55c3e49a0cc25cff8b`.
-- Task 009 Result records `Remote Commit: 7de77eb0cf054c13386c48d009122e24e817ae38`, which is a historical push-blocker Checkpoint commit rather than the final branch tip; Reviewer must classify this metadata inconsistency separately from code correctness.
-- Independent Review Task `NYRON-T-20260825-010` is assigned to Claude Code.
-
-## Pending Independent Review
-
-- `NYRON-T-20260825-009` cannot be ACCEPTED until `NYRON-T-20260825-010` completes independent Review.
+- `NYRON-T-20260825-010-F-001` — PROCESS / NON_BLOCKING — Task 009 Result/Checkpoint contain invalid or misleading Git SHA metadata.
+- Review independently verified the real Segment A implementation content commit: `6b1ad8189aa5f54797956b15635b39c13e4488fb`.
+- Review independently verified remote branch tip: `73cb210d17bd5659430ffa38a27d71e0a6349909`.
+- `NYRON-T-20260825-011` is a LOW-risk traceability-only correction. It must not modify implementation/tests or rewrite shared history.
+- Segment A integration into `main` is deferred until Task 011 repairs the audit metadata.
 
 ## Review Debt
 
 | Delivery / Task | Review Type | Reason | Risk | Clearance Condition |
 |---|---|---|---|---|
-| — | — | — | — | — |
+| `NYRON-T-20260825-009` | Process traceability | Invalid/misleading Result and CP-004 SHA metadata | LOW | Task 011 corrects records to verifiable Git objects |
 
 ## Open Findings
 
-- None pending Review 010.
+- `NYRON-T-20260825-010-F-001` — PROCESS / NON_BLOCKING — traceability metadata correction pending Task 011.
 
 Resolved:
 - `NYRON-T-20260825-004-F-001` — CONTRACT / BLOCKING — closed by Task 005 and Re-Review 006.
@@ -89,16 +80,19 @@ Resolved:
 ## Implementation Baseline
 
 - Accepted Plan: `docs/development/Nyron_System_Foundation_First_Implementation_Slice_Plan_v0.1.md`
-- First Implementation Segment: StateStore → ModuleDefinition Registry → GraphRevision / ModuleInstanceRevision.
-- Packet / Delivery / Activation / Run work remains downstream of Segment A.
-- Parallel implementation tracks remain closed until Segment A is ACCEPTED; Review 010 is the current gate.
+- Segment A code correctness: ACCEPTED.
+- Verified Segment A implementation content commit: `6b1ad8189aa5f54797956b15635b39c13e4488fb`.
+- Segment A is not yet integrated into `main`; integration follows Task 011 traceability repair.
+- Packet / Delivery / Activation / Run work remains downstream.
+- Parallel implementation tracks remain closed until Segment A is integrated into `main`.
 
 ## Next Eligible Tasks
 
-1. Execute independent Review `NYRON-T-20260825-010` with Claude Code against Task 009 remote delivery.
-2. On Review Result, accept / fix / re-review Segment A as evidence requires.
-3. Only after Segment A is ACCEPTED, open the next implementation track(s) and parallelize only genuinely disjoint work identified by the accepted plan.
-4. `NYRON-D-006` remains independently eligible but is not scheduled ahead of the P0 System Foundation path.
+1. Execute `NYRON-T-20260825-011` as traceability-only correction.
+2. Verify the corrected remote records and close `NYRON-T-20260825-010-F-001` without another code review.
+3. Integrate accepted Segment A into `main`.
+4. Then open the next implementation tracks and parallelize only genuinely disjoint work from the accepted plan.
+5. `NYRON-D-006` remains independently eligible but is not scheduled ahead of the P0 System Foundation path.
 
 ## State Update Rule
 
