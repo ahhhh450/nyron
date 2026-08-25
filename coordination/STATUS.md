@@ -8,7 +8,7 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `1`
-- Coordination Revision: `17`
+- Coordination Revision: `18`
 - Last Accepted Commit: `c0f0c97cea43ba10718d8a786361c1c0da8bbb5c`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Project Phase: `SYSTEM FOUNDATION IMPLEMENTATION`
@@ -18,19 +18,19 @@
 | Task | Type | Agent | State | Depends On |
 |---|---|---|---|---|
 | `NYRON-T-20260825-013` | Trusted Host + builtin.text.concat@1 | DeepSeek | `FIX_REQUIRED` | `NYRON-T-20260825-009 ACCEPTED` |
-| `NYRON-T-20260825-017` | Targeted Trusted Host Contract Fix | Claude Code | `READY` | `NYRON-T-20260825-016 FAIL` |
+| `NYRON-T-20260825-017` | Targeted Trusted Host Contract Fix | Claude Code | `RESULT_SUBMITTED` | `NYRON-T-20260825-016 FAIL` |
 
 ## In Review
 
 | Task | Reviews | Reviewer | State |
 |---|---|---|---|
-| — | — | — | — |
+| `NYRON-T-20260825-018` | `NYRON-T-20260825-017` | Codex | `IN_REVIEW` |
 
 ## Blocked
 
 | Task | Reason | Blocked By |
 |---|---|---|
-| `NYRON-T-20260825-013` | Three blocking Review findings require targeted correction before acceptance/integration | `NYRON-T-20260825-016-F-001`, `F-002`, `F-003` |
+| `NYRON-T-20260825-013` | Acceptance/integration waits for targeted Re-Review of the three Review 016 blockers | `NYRON-T-20260825-018` |
 
 ## Accepted Previously
 
@@ -41,23 +41,27 @@
 - Task 015 process-rule integration merge commit: `1cca6cf3b4a5a0893420853b51814964085d62ab`.
 - Packet / Delivery implementation integration merge commit: `c0f0c97cea43ba10718d8a786361c1c0da8bbb5c`.
 
-## Review 016 Result
+## Current Targeted Fix / Re-Review
 
 - `NYRON-T-20260825-016` — independent Codex Review of Task 013 — `FAIL` accepted by Orchestrator.
-- Task 013 implementation content reviewed at `dc1cf925bbf92355bb40ab695fc9bf9f3bc72925` with delivery branch tip `060e13594f0c5aec18cd88ed7581579f448eabaa`.
-- No full redesign is required; all three findings are targeted corrections to the Trusted Host delivery.
+- `NYRON-T-20260825-017` targeted fix is remotely submitted.
+- Task 017 fix content commit: `500f4ffcaba923c7db60fa966f3e1e33f71c4ed1`.
+- Task 017 branch: `task/NYRON-T-20260825-017`.
+- Verified Task 017 branch tip containing Result: `825086782fd241811799e7047c186149b7c5072c`.
+- Task 017 branch is based on current main and non-rewriting integration of the original Task 013 delivery.
+- Executor reports full merged kernel suite `40/40` passing; Codex must independently verify in `NYRON-T-20260825-018`.
 
 ## Review Debt
 
 | Delivery / Task | Review Type | Reason | Risk | Clearance Condition |
 |---|---|---|---|---|
-| `NYRON-T-20260825-013` | Targeted Re-Review | Host authority boundary, implementation-contract binding, current-main test integration | HIGH | Task 017 corrects F-001/F-002/F-003 and Codex Targeted Re-Review closes them |
+| `NYRON-T-20260825-013` | Targeted Re-Review | Host authority boundary, implementation-contract binding, current-main test integration | HIGH | Task 018 closes all three Review 016 findings with no new blocking regression |
 
 ## Open Findings
 
-- `NYRON-T-20260825-016-F-001` — CONTRACT / BLOCKING — `runtime_context` accepts arbitrary objects and can leak raw Store/DB/authority handles into module code.
-- `NYRON-T-20260825-016-F-002` — CONTRACT / BLOCKING — Host verifies only module identity/version existence, not equality between registered immutable definition and hosted implementation contract.
-- `NYRON-T-20260825-016-F-003` — TEST / BLOCKING — Task 013 test asserts global absence of `nyron_kernel.execution`, conflicting with already integrated Packet / Delivery on current main.
+- `NYRON-T-20260825-016-F-001` — CONTRACT / BLOCKING — `runtime_context` previously accepted arbitrary objects and could leak raw Store/DB/authority handles; Task 017 claims targeted closure, pending Re-Review 018.
+- `NYRON-T-20260825-016-F-002` — CONTRACT / BLOCKING — Host previously verified only module identity/version existence, not exact registered-definition ↔ hosted-implementation contract equality; Task 017 claims targeted closure, pending Re-Review 018.
+- `NYRON-T-20260825-016-F-003` — TEST / BLOCKING — Task 013 test incorrectly asserted global absence of integrated `nyron_kernel.execution`; Task 017 claims targeted closure, pending Re-Review 018.
 
 Resolved:
 - `NYRON-T-20260825-014-F-001` — PROCESS / NON_BLOCKING — Task 012 Result SHA corrected and general fail-closed SHA verification rule added by Task 015.
@@ -93,17 +97,17 @@ Resolved:
 - Verified Packet / Delivery implementation content commit: `435a5189c52c70267f902f158ab06db321019f61`.
 - Packet / Delivery integration commit: `c0f0c97cea43ba10718d8a786361c1c0da8bbb5c`.
 - Final Result SHA verification is mandatory: recorded `Commit` / `Remote Commit` SHAs must resolve as commit objects; Remote Commit must also be canonical-remote readable.
-- TRUSTED MODULE MODE + `builtin.text.concat@1` remains unaccepted pending Task 017 targeted correction and Targeted Re-Review.
-- Activation / Run / RunAttempt remain serial behind accepted Trusted Host correction; do not schedule them against a known-bad Host boundary.
+- TRUSTED MODULE MODE + `builtin.text.concat@1` remains unaccepted pending Targeted Re-Review 018.
+- Activation / Run / RunAttempt remain serial behind accepted Trusted Host correction; do not schedule until Task 013 is accepted/integrated.
 - Accounting resolver/admission remains unscheduled until its shared-schema boundary is scheduled explicitly.
 
 ## Next Eligible Tasks
 
-1. Execute `NYRON-T-20260825-017` with Claude Code from current main plus the existing Task 013 remote delivery.
-2. Run the full current-main kernel suite after the targeted fix; Packet / Delivery tests must remain green.
-3. Submit Task 017 remotely with verified SHA metadata.
-4. Assign Codex a Targeted Re-Review that checks only F-001, F-002, F-003 and any direct regression introduced by Task 017.
-5. If all three findings close with no new blocking finding, accept/integrate Trusted Host + builtin module and continue the serial Activation / execution-core path.
+1. Execute `NYRON-T-20260825-018` with Codex as targeted Re-Review of Task 017 only.
+2. Verify F-001 / F-002 / F-003 closure and independently rerun the full merged kernel suite.
+3. If Re-Review 018 passes with no new blocking finding, accept/integrate Task 013 + 017.
+4. Then continue the serial Activation / execution-core implementation path from the accepted plan.
+5. Schedule Accounting resolver/admission only with an explicit non-conflicting shared-schema boundary.
 6. `NYRON-D-006` remains independently eligible but is not scheduled ahead of the P0 System Foundation path.
 
 ## State Update Rule
