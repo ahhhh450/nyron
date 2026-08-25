@@ -51,6 +51,116 @@ class PacketRepository:
         caused_by_ref: str,
         created_event_ref: str,
     ) -> Packet:
+        self._validate_request(
+            packet_ref=packet_ref,
+            execution_ref=execution_ref,
+            graph_revision_ref=graph_revision_ref,
+            source_kind=source_kind,
+            source_ref=source_ref,
+            source_port_ref=source_port_ref,
+            value_ref=value_ref,
+            schema_ref=schema_ref,
+            caused_by_ref=caused_by_ref,
+            created_event_ref=created_event_ref,
+        )
+        try:
+            with self._store.transaction() as connection:
+                return self.commit_in_transaction(
+                    connection,
+                    packet_ref=packet_ref,
+                    execution_ref=execution_ref,
+                    graph_revision_ref=graph_revision_ref,
+                    source_kind=source_kind,
+                    source_ref=source_ref,
+                    source_port_ref=source_port_ref,
+                    value_ref=value_ref,
+                    schema_ref=schema_ref,
+                    caused_by_ref=caused_by_ref,
+                    created_event_ref=created_event_ref,
+                )
+        except sqlite3.IntegrityError as error:
+            raise PacketError(
+                "PACKET_IDENTITY_CONFLICT", packet_ref=packet_ref
+            ) from error
+
+    def commit_in_transaction(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        packet_ref: str,
+        execution_ref: str,
+        graph_revision_ref: str,
+        source_kind: str,
+        source_ref: str,
+        source_port_ref: str | None,
+        value_ref: str,
+        schema_ref: str,
+        caused_by_ref: str,
+        created_event_ref: str,
+    ) -> Packet:
+        """Insert one Packet through an already-open Runtime transaction."""
+        self._validate_request(
+            packet_ref=packet_ref,
+            execution_ref=execution_ref,
+            graph_revision_ref=graph_revision_ref,
+            source_kind=source_kind,
+            source_ref=source_ref,
+            source_port_ref=source_port_ref,
+            value_ref=value_ref,
+            schema_ref=schema_ref,
+            caused_by_ref=caused_by_ref,
+            created_event_ref=created_event_ref,
+        )
+        requested = (
+            execution_ref, graph_revision_ref, source_kind, source_ref,
+            source_port_ref, value_ref, schema_ref, caused_by_ref,
+            created_event_ref,
+        )
+        existing = self._resolve_with(connection, packet_ref)
+        if existing is not None:
+            if self._request_fields(existing) != requested:
+                raise PacketError("PACKET_IDENTITY_CONFLICT", packet_ref=packet_ref)
+            return existing
+
+        self._require_executable_graph(connection, graph_revision_ref)
+        self._validate_module_source(
+            connection, graph_revision_ref, source_kind, source_ref,
+            source_port_ref,
+        )
+        source_packet_seq = connection.execute(
+            """
+            SELECT COALESCE(MAX(source_packet_seq), 0) + 1
+            FROM packets WHERE execution_ref = ?
+            """,
+            (execution_ref,),
+        ).fetchone()[0]
+        connection.execute(
+            """
+            INSERT INTO packets(
+                packet_ref, execution_ref, graph_revision_ref,
+                source_kind, source_ref, source_port_ref, value_ref,
+                schema_ref, source_packet_seq, caused_by_ref,
+                created_event_ref
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                packet_ref, execution_ref, graph_revision_ref, source_kind,
+                source_ref, source_port_ref, value_ref, schema_ref,
+                source_packet_seq, caused_by_ref, created_event_ref,
+            ),
+        )
+        resolved = self._resolve_with(connection, packet_ref)
+        if resolved is None:  # pragma: no cover
+            raise PacketError("PACKET_COMMIT_FAILED", packet_ref=packet_ref)
+        return resolved
+
+    @staticmethod
+    def _validate_request(
+        *, packet_ref: str, execution_ref: str, graph_revision_ref: str,
+        source_kind: str, source_ref: str, source_port_ref: str | None,
+        value_ref: str, schema_ref: str, caused_by_ref: str,
+        created_event_ref: str,
+    ) -> None:
         values = (
             packet_ref,
             execution_ref,
@@ -68,75 +178,6 @@ class PacketRepository:
             not isinstance(source_port_ref, str) or not source_port_ref
         ):
             raise PacketError("PACKET_INVALID")
-
-        requested = (
-            execution_ref,
-            graph_revision_ref,
-            source_kind,
-            source_ref,
-            source_port_ref,
-            value_ref,
-            schema_ref,
-            caused_by_ref,
-            created_event_ref,
-        )
-        try:
-            with self._store.transaction() as connection:
-                existing = self._resolve_with(connection, packet_ref)
-                if existing is not None:
-                    if self._request_fields(existing) != requested:
-                        raise PacketError(
-                            "PACKET_IDENTITY_CONFLICT", packet_ref=packet_ref
-                        )
-                    return existing
-
-                self._require_executable_graph(connection, graph_revision_ref)
-                self._validate_module_source(
-                    connection,
-                    graph_revision_ref,
-                    source_kind,
-                    source_ref,
-                    source_port_ref,
-                )
-                source_packet_seq = connection.execute(
-                    """
-                    SELECT COALESCE(MAX(source_packet_seq), 0) + 1
-                    FROM packets WHERE execution_ref = ?
-                    """,
-                    (execution_ref,),
-                ).fetchone()[0]
-                connection.execute(
-                    """
-                    INSERT INTO packets(
-                        packet_ref, execution_ref, graph_revision_ref,
-                        source_kind, source_ref, source_port_ref, value_ref,
-                        schema_ref, source_packet_seq, caused_by_ref,
-                        created_event_ref
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        packet_ref,
-                        execution_ref,
-                        graph_revision_ref,
-                        source_kind,
-                        source_ref,
-                        source_port_ref,
-                        value_ref,
-                        schema_ref,
-                        source_packet_seq,
-                        caused_by_ref,
-                        created_event_ref,
-                    ),
-                )
-        except sqlite3.IntegrityError as error:
-            raise PacketError(
-                "PACKET_IDENTITY_CONFLICT", packet_ref=packet_ref
-            ) from error
-
-        resolved = self.resolve(packet_ref)
-        if resolved is None:  # pragma: no cover - guards store corruption
-            raise PacketError("PACKET_COMMIT_FAILED", packet_ref=packet_ref)
-        return resolved
 
     def resolve(self, packet_ref: str) -> Packet | None:
         return self._resolve_with(self._store.connection, packet_ref)

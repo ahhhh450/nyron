@@ -12,19 +12,26 @@ from .activation import (
     ActivationRepository,
     InputBinding,
 )
-from .attempt import RunAttempt
+from .attempt import AttemptAuthority, RunAttempt
 from .delivery import Delivery, DeliveryError, DeliveryProjector
 from .packet import Packet, PacketError, PacketRepository
+from .executor import AttemptExecutionError, AttemptExecutor
 from .run import Run, RunError, RunRepository
+from .value import DurableValueError, DurableValueRepository
 
 __all__ = [
     "Activation",
     "ActivationError",
     "ActivationRepository",
+    "AttemptAuthority",
+    "AttemptExecutionError",
+    "AttemptExecutor",
     "AdmissionError",
     "Delivery",
     "DeliveryError",
     "DeliveryProjector",
+    "DurableValueError",
+    "DurableValueRepository",
     "ExecutionAdmission",
     "ExecutionAdmissionGate",
     "InputBinding",
