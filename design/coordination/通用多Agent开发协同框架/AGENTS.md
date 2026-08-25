@@ -64,6 +64,26 @@ Execution Agent 才可执行对应协调写入。
 
 没有 `GRANTED` 时，一律视为无协调写权限。
 
+### Execution Record 与 Coordination State 分离
+
+以下内容属于本 Task 的执行证据，不属于项目级协调裁决：
+
+```text
+coordination/results/<当前 Task ID>...
+coordination/checkpoints/<当前 Task ID>...
+```
+
+在当前 Task 允许 Repository 写入且未明确禁止 execution-record write 时，Execution Agent 可以落盘**自己当前 Task**的 Result / Checkpoint，不需要 `Coordination Write Authorization: GRANTED`。
+
+该权限严格限制为执行记录：
+
+- 不得修改 `STATUS.md`；
+- 不得改变 Task 的权威 Status / Priority / Gate；
+- 不得修改其他 Task 的 Result / Checkpoint；
+- 不得借执行记录写入改变 Baseline / Release 结论。
+
+若 Task 明确为 Repository `READ_ONLY`，Agent 只在返回结果中提供 Checkpoint / Result 内容，由 Orchestrator 决定是否另行落库。
+
 ---
 
 ## 4. 规则优先级
@@ -253,12 +273,38 @@ Architecture、Contract、Security-sensitive change、Core runtime、Baseline ch
 
 ---
 
-## 16. Checkpoint 与 Result 权威顺序
+## 16. Checkpoint 与 Result
 
 统一 Checkpoint：
 
 ```text
 Type: PROGRESS | HANDOFF
+```
+
+### 强制 Checkpoint 触发条件
+
+不依赖 Agent 自我判断“上下文快满了”。只要 Task 尚未产生 Final Result，出现以下任一条件就必须形成新的 `PROGRESS` Checkpoint：
+
+1. 完成 Task 明确定义的一个阶段 / milestone，且仍有后续工作；
+2. 自上一个 Checkpoint 起，累计触及 **5 个新的不同文件**，且仍将继续修改更多文件；
+3. 自上一个 Checkpoint 起，累计产生 **3 个 Task-scoped commit**，且 Task 尚未结束。
+
+出现以下任一情况必须形成 `HANDOFF` Checkpoint：
+
+- 计划更换 Agent / 会话 / workspace；
+- quota / 工具限制导致无法继续；
+- Task 被 Orchestrator 暂停；
+- Blocking Failure 导致当前执行无法继续；
+- 当前 Agent 将停止工作但 Task 尚未形成 Final Result。
+
+如果 Task 在触发上述阈值之前已经可以直接产生 Final Result，则不要求为了形式额外创建 Checkpoint。
+
+Checkpoint 必须**新增而不是覆盖旧文件**，建议编号：
+
+```text
+<TaskID>-CP-001.md
+<TaskID>-CP-002.md
+...
 ```
 
 建议记录 Task ID、Current Step、Completed、Remaining、Files Touched、Validation、Findings、Blockers、Next Action。
