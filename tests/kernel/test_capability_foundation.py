@@ -395,6 +395,28 @@ class CapabilityFoundationTest(unittest.TestCase):
             AdvisoryCapabilityValidation(False, "CAPABILITY_REVOKED"), after
         )
 
+    def test_revoke_after_expiry_is_durable_expired_not_revoked(self):
+        self.authority.issue(self._request(), expires_at=105)
+        self.assertEqual(
+            "ACTIVE", self.authority.resolve("grant:capability/1").state
+        )
+
+        self.now = 110
+        expired = self.authority.revoke("grant:capability/1")
+        self.assertEqual("EXPIRED", expired.state)
+        self.assertEqual(
+            "EXPIRED", self.authority.resolve("grant:capability/1").state
+        )
+        validation = self.authority.validate_advisory(
+            "grant:capability/1",
+            self.attempt_authority,
+            {"workspace_ref": "workspace:1", "access": "READ"},
+        )
+        self.assertEqual(
+            AdvisoryCapabilityValidation(False, "CAPABILITY_EXPIRED"),
+            validation,
+        )
+
     def test_expiry_and_not_before_are_fail_closed_and_expiry_persists(self):
         self.authority.issue(self._request(), not_before=105, expires_at=110)
         early = self.authority.validate_advisory(
