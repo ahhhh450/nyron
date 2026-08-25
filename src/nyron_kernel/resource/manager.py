@@ -293,6 +293,43 @@ class ResourceManager:
         ).fetchone()
         return self._lease_from_row(row) if row is not None else None
 
+    def _resolve_effect_directory_with(
+        self,
+        connection: sqlite3.Connection,
+        resource_ref: str,
+        lease_ref: str,
+        authority: AttemptAuthority,
+        now: int,
+    ) -> Path | None:
+        """Resolve exact Resource/Lease truth inside dispatch admission."""
+
+        resource_row = connection.execute(
+            "SELECT * FROM resources WHERE resource_ref = ?",
+            (resource_ref,),
+        ).fetchone()
+        lease_row = connection.execute(
+            "SELECT * FROM resource_leases WHERE lease_ref = ?",
+            (lease_ref,),
+        ).fetchone()
+        if (
+            resource_row is None
+            or resource_row["state"] != "AVAILABLE"
+            or lease_row is None
+            or lease_row["state"] != "ACTIVE"
+            or lease_row["resource_ref"] != resource_ref
+            or self._authority_from_row(lease_row) != authority
+            or (
+                lease_row["expires_at"] is not None
+                and now >= lease_row["expires_at"]
+            )
+        ):
+            return None
+        resource = self._resource_from_row(resource_row)
+        path = self._verified_stored_path(resource)
+        if self._directory_evidence(path, resource.provenance) != "EXACT":
+            return None
+        return path
+
     def _end_lease(self, lease_ref: str, state: str) -> ResourceLease:
         now = self._now()
         with self._store.transaction() as connection:

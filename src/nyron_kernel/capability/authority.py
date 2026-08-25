@@ -293,6 +293,36 @@ class CapabilityAuthority:
                 )
         return AdvisoryCapabilityValidation(True, "ADVISORY_VALID")
 
+    @classmethod
+    def _is_effect_dispatch_admissible_with(
+        cls,
+        connection: sqlite3.Connection,
+        grant_ref: str,
+        authority: AttemptAuthority,
+        exact_scope: dict[str, Any],
+        now: int,
+    ) -> bool:
+        """Check this Owner's exact truth inside the dispatch transaction."""
+
+        row = connection.execute(
+            "SELECT * FROM capability_grants WHERE grant_ref = ?",
+            (grant_ref,),
+        ).fetchone()
+        if row is None or row["state"] != "ACTIVE":
+            return False
+        if row["not_before"] is not None and now < row["not_before"]:
+            return False
+        if row["expires_at"] is not None and now >= row["expires_at"]:
+            return False
+        try:
+            scope_json = cls._canonical_scope(exact_scope)
+        except CapabilityError:
+            return False
+        return (
+            row["scope_json"] == scope_json
+            and cls._authority_from_row(row) == authority
+        )
+
     @staticmethod
     def _validate_request(request: CapabilityRequest) -> None:
         if not isinstance(request, CapabilityRequest):
