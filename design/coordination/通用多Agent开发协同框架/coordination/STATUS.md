@@ -33,6 +33,14 @@
 
 - None.
 
+## Review Debt
+
+| Delivery / Task | Review Type | Reason | Risk | Clearance Condition |
+|---|---|---|---|---|
+| — | — | — | — | — |
+
+`WAIVED` Review 不自动关闭本表记录。只有满足 Clearance Condition 的独立 Review / Re-Review 被 Orchestrator 接受后才可移除。
+
 ## Open Findings
 
 - None.
@@ -55,4 +63,5 @@
 2. 由 Active Orchestrator 决定；
 3. 更新后递增 Revision；
 4. 新 Orchestrator 接管时递增 Epoch；
-5. Executor 不得在普通实现 Task 中顺手修改本文件。
+5. Executor 不得在普通实现 Task 中顺手修改本文件；
+6. `WAIVED` Review 形成的 Review Debt 必须显式保留到清偿完成。
