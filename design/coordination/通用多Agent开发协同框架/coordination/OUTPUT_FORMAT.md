@@ -19,12 +19,25 @@ Validation:
 Commit:
 - ...
 
+Remote Branch:
+- <branch/ref | NOT_APPLICABLE>
+
+Remote Commit:
+- <remote-readable commit SHA | NOT_APPLICABLE>
+
 Findings:
 - NONE | <finding summary>
 
 Blockers:
 - NONE | ...
 ```
+
+对于要求 Repository 写入并远端提交的 Task：
+
+- `Commit` 可以记录本地 Task-scoped commit；
+- `Remote Branch` / `Remote Commit` 必须指向 Reviewer / Orchestrator 可从远端读取的正式交付；
+- 仅存在本地、尚未 push 的 commit 不得作为正式 submitted delivery 报告 `SUCCESS`；
+- `READ_ONLY` / `LOCAL_ONLY` / 明确不要求远端提交的 Task 可填写 `NOT_APPLICABLE`。
 
 ## 2. Review Result
 
