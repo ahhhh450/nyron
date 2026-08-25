@@ -8,8 +8,8 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `1`
-- Coordination Revision: `18`
-- Last Accepted Commit: `c0f0c97cea43ba10718d8a786361c1c0da8bbb5c`
+- Coordination Revision: `19`
+- Last Accepted Commit: `75a24fb61d1ecb37137c7b52cafa1855bc5879c1`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Project Phase: `SYSTEM FOUNDATION IMPLEMENTATION`
 
@@ -17,53 +17,52 @@
 
 | Task | Type | Agent | State | Depends On |
 |---|---|---|---|---|
-| `NYRON-T-20260825-013` | Trusted Host + builtin.text.concat@1 | DeepSeek | `FIX_REQUIRED` | `NYRON-T-20260825-009 ACCEPTED` |
-| `NYRON-T-20260825-017` | Targeted Trusted Host Contract Fix | Claude Code | `RESULT_SUBMITTED` | `NYRON-T-20260825-016 FAIL` |
+| `NYRON-T-20260825-019` | AccountingScope Identity + Static Ancestry Resolver | Codex | `READY` | `NYRON-T-20260825-013/017/018 ACCEPTED` |
 
 ## In Review
 
 | Task | Reviews | Reviewer | State |
 |---|---|---|---|
-| `NYRON-T-20260825-018` | `NYRON-T-20260825-017` | Codex | `IN_REVIEW` |
+| — | — | — | — |
 
 ## Blocked
 
 | Task | Reason | Blocked By |
 |---|---|---|
-| `NYRON-T-20260825-013` | Acceptance/integration waits for targeted Re-Review of the three Review 016 blockers | `NYRON-T-20260825-018` |
+| — | — | — |
+
+## Accepted This Revision
+
+- `NYRON-T-20260825-013` — TRUSTED MODULE MODE + `builtin.text.concat@1` — `ACCEPTED` after targeted correction.
+- `NYRON-T-20260825-017` — Targeted Trusted Host Contract Fix — `ACCEPTED`.
+- `NYRON-T-20260825-018` — Codex Targeted Re-Review — `PASS / ACCEPTED`; independently observed full merged kernel suite `40/40 PASS`.
+- `NYRON-T-20260825-016-F-001` — CONTRACT / BLOCKING — CLOSED by Task 017 and Re-Review 018.
+- `NYRON-T-20260825-016-F-002` — CONTRACT / BLOCKING — CLOSED by Task 017 and Re-Review 018.
+- `NYRON-T-20260825-016-F-003` — TEST / BLOCKING — CLOSED by Task 017 and Re-Review 018.
+- Corrected Trusted Host integration commit: `75a24fb61d1ecb37137c7b52cafa1855bc5879c1`.
 
 ## Accepted Previously
 
-- `NYRON-T-20260825-012` — Packet / Delivery implementation — `ACCEPTED` after independent Review and traceability repair.
-- `NYRON-T-20260825-014` — independent Review of Task 012 — `ACCEPTED / PASS_WITH_FINDINGS`; code correctness passed.
+- `NYRON-T-20260825-012` — Packet / Delivery implementation — `ACCEPTED`.
+- `NYRON-T-20260825-014` — independent Review of Task 012 — `ACCEPTED / PASS_WITH_FINDINGS`.
 - `NYRON-T-20260825-015` — SHA traceability/process fix — `ACCEPTED`.
-- `NYRON-T-20260825-014-F-001` — PROCESS / NON_BLOCKING — CLOSED by Task 015.
 - Task 015 process-rule integration merge commit: `1cca6cf3b4a5a0893420853b51814964085d62ab`.
-- Packet / Delivery implementation integration merge commit: `c0f0c97cea43ba10718d8a786361c1c0da8bbb5c`.
-
-## Current Targeted Fix / Re-Review
-
-- `NYRON-T-20260825-016` — independent Codex Review of Task 013 — `FAIL` accepted by Orchestrator.
-- `NYRON-T-20260825-017` targeted fix is remotely submitted.
-- Task 017 fix content commit: `500f4ffcaba923c7db60fa966f3e1e33f71c4ed1`.
-- Task 017 branch: `task/NYRON-T-20260825-017`.
-- Verified Task 017 branch tip containing Result: `825086782fd241811799e7047c186149b7c5072c`.
-- Task 017 branch is based on current main and non-rewriting integration of the original Task 013 delivery.
-- Executor reports full merged kernel suite `40/40` passing; Codex must independently verify in `NYRON-T-20260825-018`.
+- Packet / Delivery integration commit: `c0f0c97cea43ba10718d8a786361c1c0da8bbb5c`.
 
 ## Review Debt
 
 | Delivery / Task | Review Type | Reason | Risk | Clearance Condition |
 |---|---|---|---|---|
-| `NYRON-T-20260825-013` | Targeted Re-Review | Host authority boundary, implementation-contract binding, current-main test integration | HIGH | Task 018 closes all three Review 016 findings with no new blocking regression |
+| — | — | — | — | — |
 
 ## Open Findings
 
-- `NYRON-T-20260825-016-F-001` — CONTRACT / BLOCKING — `runtime_context` previously accepted arbitrary objects and could leak raw Store/DB/authority handles; Task 017 claims targeted closure, pending Re-Review 018.
-- `NYRON-T-20260825-016-F-002` — CONTRACT / BLOCKING — Host previously verified only module identity/version existence, not exact registered-definition ↔ hosted-implementation contract equality; Task 017 claims targeted closure, pending Re-Review 018.
-- `NYRON-T-20260825-016-F-003` — TEST / BLOCKING — Task 013 test incorrectly asserted global absence of integrated `nyron_kernel.execution`; Task 017 claims targeted closure, pending Re-Review 018.
+- NONE.
 
 Resolved:
+- `NYRON-T-20260825-016-F-001` — CONTRACT / BLOCKING — raw/arbitrary runtime context leakage closed by None-only PURE-slice boundary.
+- `NYRON-T-20260825-016-F-002` — CONTRACT / BLOCKING — exact registered-definition ↔ hosted-implementation contract binding added.
+- `NYRON-T-20260825-016-F-003` — TEST / BLOCKING — invalid global execution-package absence assertion replaced by Task-scoped leakage validation; merged suite 40/40 PASS.
 - `NYRON-T-20260825-014-F-001` — PROCESS / NON_BLOCKING — Task 012 Result SHA corrected and general fail-closed SHA verification rule added by Task 015.
 - `NYRON-T-20260825-010-F-001` — PROCESS / NON_BLOCKING — corrected Task 009 Result/CP-004 to verifiable Git coordinates.
 - `NYRON-T-20260825-004-F-001` — CONTRACT / BLOCKING — closed by Task 005 and Re-Review 006.
@@ -94,20 +93,31 @@ Resolved:
 - Segment A integrated: StateStore → ModuleDefinition Registry → GraphRevision / ModuleInstanceRevision.
 - Segment A integration commit: `dfdeb5092176d50a6c16ee80c73ce8e9e6e0504b`.
 - Packet / Delivery integrated and accepted.
-- Verified Packet / Delivery implementation content commit: `435a5189c52c70267f902f158ab06db321019f61`.
+- Packet / Delivery implementation content commit: `435a5189c52c70267f902f158ab06db321019f61`.
 - Packet / Delivery integration commit: `c0f0c97cea43ba10718d8a786361c1c0da8bbb5c`.
-- Final Result SHA verification is mandatory: recorded `Commit` / `Remote Commit` SHAs must resolve as commit objects; Remote Commit must also be canonical-remote readable.
-- TRUSTED MODULE MODE + `builtin.text.concat@1` remains unaccepted pending Targeted Re-Review 018.
-- Activation / Run / RunAttempt remain serial behind accepted Trusted Host correction; do not schedule until Task 013 is accepted/integrated.
-- Accounting resolver/admission remains unscheduled until its shared-schema boundary is scheduled explicitly.
+- TRUSTED MODULE MODE + `builtin.text.concat@1` integrated and accepted.
+- Original Task 013 content commit: `dc1cf925bbf92355bb40ab695fc9bf9f3bc72925`.
+- Task 017 targeted fix content commit: `500f4ffcaba923c7db60fa966f3e1e33f71c4ed1`.
+- Corrected Trusted Host integration commit: `75a24fb61d1ecb37137c7b52cafa1855bc5879c1`.
+- Final Result SHA verification remains mandatory.
+
+## Current Serial Dependency
+
+The accepted plan plus frozen Graph/Accounting Amendment requires authoritative static AccountingScope resolution before Runtime admission; Activation relies on prior admission and must not derive Accounting truth itself.
+
+Current order:
+
+`AccountingScope resolver -> ExecutionAdmission -> Activation -> Run / RunAttempt`
+
+Task `NYRON-T-20260825-019` implements only the first step.
 
 ## Next Eligible Tasks
 
-1. Execute `NYRON-T-20260825-018` with Codex as targeted Re-Review of Task 017 only.
-2. Verify F-001 / F-002 / F-003 closure and independently rerun the full merged kernel suite.
-3. If Re-Review 018 passes with no new blocking finding, accept/integrate Task 013 + 017.
-4. Then continue the serial Activation / execution-core implementation path from the accepted plan.
-5. Schedule Accounting resolver/admission only with an explicit non-conflicting shared-schema boundary.
+1. Execute `NYRON-T-20260825-019` with Codex.
+2. Independently review Task 019 with Claude Code after remote Result submission.
+3. After AccountingScope resolution is ACCEPTED, implement the minimal Runtime `ExecutionAdmission` gate that consumes the Accounting Owner result without re-deriving it.
+4. Only after admission is accepted, implement transactional Activation creation/binding.
+5. Keep Run / RunAttempt serial behind accepted Activation semantics.
 6. `NYRON-D-006` remains independently eligible but is not scheduled ahead of the P0 System Foundation path.
 
 ## State Update Rule
