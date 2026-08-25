@@ -84,6 +84,8 @@ Assigned Reviewer != Original Agent
 ```
 高风险交付如果无法独立 Review，不得伪装为已通过；保持 `PENDING_INDEPENDENT_REVIEW`。
 
+对于 `HIGH` risk Review，单纯重跑 Executor 声称的标准测试套件不能作为完整独立审查。除非任务性质确实不适用，Reviewer 至少必须增加一项**由 Reviewer 自己设计、且不只是重复 Executor 标准 validation 的对抗性验证**，例如：真实并发/竞态探针、raw storage invariant 攻击、额外 fault injection、不同执行路径/环境验证、或针对关键正确性证明的独立实证检查。如果确实没有合理的额外验证方式，Review Result 必须明确说明原因。
+
 ## 7. 并发
 并发前确认：
 - Task 之间无未解决写冲突；
@@ -98,6 +100,8 @@ Orchestrator 应根据风险选择：
 - 检查 diff / tests / commit；
 - 派独立 Review；
 - 要求 Fix / Re-Review。
+
+测试全绿不是高风险架构正确性的充分证据。高风险验收必须同时考虑测试设计之外的 ownership、fencing、race、failure-window、trust-boundary 与 storage invariant 证明。
 
 如果 Web GPT 当前没有足够工具验证关键事实，应安排具备能力的独立验证，而不是假装自己已验证。
 
