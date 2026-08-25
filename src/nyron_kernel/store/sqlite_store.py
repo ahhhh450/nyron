@@ -148,6 +148,58 @@ class SQLiteStore:
                 FOREIGN KEY (admission_ref)
                     REFERENCES execution_admissions(admission_ref)
             );
+
+            """
+        )
+
+    def create_activation_schema(self) -> None:
+        """Install the Task-scoped Runtime Activation canonical tables."""
+
+        self.connection.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS activations (
+                activation_ref TEXT PRIMARY KEY,
+                execution_ref TEXT NOT NULL,
+                graph_revision_ref TEXT NOT NULL,
+                module_instance_revision_ref TEXT NOT NULL,
+                trigger_delivery_ref TEXT NOT NULL UNIQUE,
+                input_bindings_json TEXT NOT NULL,
+                static_accounting_scope_ref TEXT NOT NULL,
+                created_event_ref TEXT NOT NULL UNIQUE,
+                FOREIGN KEY (execution_ref)
+                    REFERENCES workflow_executions(execution_ref),
+                FOREIGN KEY (graph_revision_ref)
+                    REFERENCES graph_revisions(graph_revision_ref),
+                FOREIGN KEY (module_instance_revision_ref)
+                    REFERENCES module_instance_revisions(
+                        module_instance_revision_ref
+                    )
+            );
+
+            CREATE TABLE IF NOT EXISTS delivery_bindings (
+                delivery_ref TEXT PRIMARY KEY,
+                packet_ref TEXT NOT NULL,
+                graph_revision_ref TEXT NOT NULL,
+                edge_ref TEXT NOT NULL,
+                target_port_ref TEXT NOT NULL,
+                activation_ref TEXT NOT NULL,
+                FOREIGN KEY (
+                    packet_ref, graph_revision_ref, edge_ref, target_port_ref
+                ) REFERENCES deliveries(
+                    packet_ref, graph_revision_ref, edge_ref, target_port_ref
+                ),
+                FOREIGN KEY (activation_ref)
+                    REFERENCES activations(activation_ref)
+                    DEFERRABLE INITIALLY DEFERRED
+            );
+
+            CREATE TABLE IF NOT EXISTS activation_created_events (
+                created_event_ref TEXT PRIMARY KEY,
+                activation_ref TEXT NOT NULL UNIQUE,
+                event_kind TEXT NOT NULL CHECK (event_kind = 'ActivationCreated'),
+                FOREIGN KEY (activation_ref)
+                    REFERENCES activations(activation_ref)
+            );
             """
         )
 
