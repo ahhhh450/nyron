@@ -1,8 +1,10 @@
 # 通用多 Agent 开发协同框架
 
-状态：`DRAFT / USABLE TEMPLATE / NOT FROZEN`
+状态：`PILOT ACTIVE / REVIEW PASS / NOT FROZEN`
 
 本目录是一套可直接复制到新项目中使用的 **Web GPT + Codex + Claude Code + DeepSeek 多 Agent 软件开发协同模板**。
+
+当前已完成独立框架审查，Blocking Finding 为 0。自 2026-08-25 起进入真实项目试运行阶段；后续只根据实际运行中发现的问题迭代，不再因为纯纸面完善而阻塞使用。
 
 目标：让 Web GPT 作为 Development Orchestrator（开发调度器），通过 Repository 中结构化 Markdown 指挥多个执行 Agent，并让项目在换会话、并发开发、Review、额度中断和长期迭代后仍可恢复和审计。
 
@@ -301,12 +303,26 @@ Web GPT 作出裁决
 
 ## 10. 当前状态
 
-本目录已形成可使用的第一版模板，但仍为：
+本目录已通过独立框架审查并进入：
 
-`DRAFT / NOT FROZEN`
+`PILOT ACTIVE / REVIEW PASS / NOT FROZEN`
+
+Blocking Findings：`0`
+
+当前策略：
+
+```text
+停止纯纸面扩展
+→ 直接用于真实项目
+→ 记录实际摩擦与失败模式
+→ 仅针对真实问题修正
+→ 累积足够运行证据后再决定是否冻结为正式通用 Baseline
+```
 
 详细设计来源：
 
 `../通用多Agent开发协同框架设计候选版_v0.1.md`
 
-后续应通过真实项目试运行和独立 Review 继续修正，再决定是否形成正式通用 Baseline。
+上位通用指导：
+
+`../../../通用多Agent项目设计与开发协同指导方案_v0.1.md`
