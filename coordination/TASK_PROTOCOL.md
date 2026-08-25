@@ -113,6 +113,24 @@ Agent 可以在本地隔离 branch / worktree / sandbox 中实现、测试和形
 
 远端可审查不等于项目级 ACCEPTED。是否接受、集成、merge、Baseline / Release 仍由 Orchestrator 决定。
 
+### Final Result SHA Verification
+
+在把任何 SHA 写入 Final Result 的 `Commit` 或 `Remote Commit` 字段前，Execution Agent 必须执行：
+
+```text
+git cat-file -t <sha>
+```
+
+并确认输出严格为：
+
+```text
+commit
+```
+
+`Remote Commit` 还必须从 canonical remote / 声明的 remote branch history 中可读取；仅在本地对象库可解析不足以构成远端交付证据。无法完成任一验证时必须 fail closed，不得写入该 SHA 或报告正式 `SUCCESS`。
+
+如果 commit 曾被 amend、rebase 或 recreate，导致旧 SHA 已不存在或不再属于声明的交付历史，禁止把旧 SHA 写入 Result；必须使用重新验证后的真实 commit 坐标。
+
 ## 9. Coordination CAS
 协调写入必须在落盘前重新读取当前状态，并比较：
 ```text
