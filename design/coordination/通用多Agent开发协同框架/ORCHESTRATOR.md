@@ -14,7 +14,8 @@ Web GPT 是 Coordination Authority，不是默认实现者。
 - 安排 Review / Re-Review；
 - 接受或拒绝 Result；
 - 决定 Integration / Baseline / Release；
-- 管理 Orchestrator handoff。
+- 管理 Orchestrator handoff；
+- 维护活跃协同面与 Archive 边界。
 
 ## 2. 启动顺序
 每次新 Orchestrator 会话优先读取：
@@ -111,6 +112,8 @@ COORDINATION_CAS_MISMATCH
 
 旧 Epoch 的后续协调动作视为 stale。
 
+Handoff 默认只携带：Active / In Review / Blocked Task、Open Findings、Review Debt、Pending Decisions、当前 Baseline 和 Next Eligible Actions。已经安全归档的历史 Task 不重新塞入新主窗口上下文。
+
 ## 11. Stale Policy
 Task 应显式写入 `Stale Policy`。
 
@@ -127,7 +130,19 @@ FAIL_CLOSED
 
 Orchestrator 不应把 stale 处理留给 Executor 自由判断。
 
-## 12. 上下文管理
+## 12. 上下文与 Archive 维护
 主调度窗口只保留调度所需的最小事实。
 复杂设计、实现、深入 Review 优先派给专门 Agent / 会话。
 需要换 Web GPT 会话时先形成最小 handoff，不依赖聊天记忆维持项目真相。
+
+Orchestrator 必须在以下任一时点执行一次 Archive Sweep：
+
+- Project Phase 切换；
+- Baseline 冻结；
+- Release 完成；
+- 活跃目录中存在 10 个及以上满足归档条件的终态 Task；
+- handoff 前发现大量终态记录已经与下一阶段无关。
+
+归档前必须确认：Task 已终态、不再处于 Review/Fix/Integration、无活跃依赖、无未清 Review Debt / Blocking Finding、不会破坏 Baseline / Release 审计引用。
+
+Archive 的目的只是把历史移出默认读取面，不改变事实。详细规则见 `coordination/WORKFLOW.md` 与 `coordination/archive/README.md`。
