@@ -8,8 +8,8 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `1`
-- Coordination Revision: `1`
-- Last Accepted Commit: `04d7c2222d2a4e27dae68259d70b6f0d95b139fb`
+- Coordination Revision: `2`
+- Last Accepted Commit: `57e6cc14446812ee89e1deba2179345396b33180`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Project Phase: `SYSTEM FOUNDATION IMPLEMENTATION PLANNING`
 
@@ -17,7 +17,7 @@
 
 | Task | Type | Agent | State | Depends On |
 |---|---|---|---|---|
-| — | — | — | — | — |
+| `NYRON-T-20260825-001` | Repository Coordination Bootstrap | Codex | `READY` | None |
 
 ## In Review
 
@@ -33,7 +33,7 @@
 
 ## Pending Independent Review
 
-- None.
+- `NYRON-T-20260825-001` requires independent review by an Agent other than Codex after Result submission; planned reviewer: DeepSeek.
 
 ## Review Debt
 
@@ -73,9 +73,10 @@ The following accepted facts are inherited from `design/coordination/STATUS.md`:
 
 ## Next Eligible Tasks
 
-1. Install/adapt the pilot multi-Agent coordination framework into Nyron's project root/control plane without changing frozen design semantics.
-2. After framework adoption is accepted, create System Foundation implementation planning / bootstrap tasks against the frozen baseline.
-3. `NYRON-D-006` Product Node / Visual Workflow UX may proceed independently when useful.
+1. Execute `NYRON-T-20260825-001` with Codex.
+2. On Result submission, inspect delivery and create an independent Review Task for DeepSeek if the Result is reviewable.
+3. Only after framework adoption is accepted, create System Foundation implementation planning / bootstrap tasks against the frozen baseline.
+4. `NYRON-D-006` remains independently eligible but is not scheduled ahead of the P0 coordination bootstrap.
 
 ## State Update Rule
 
