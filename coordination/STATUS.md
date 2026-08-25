@@ -8,33 +8,35 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `1`
-- Coordination Revision: `41`
-- Last Accepted Commit: `a0a840420cc25f357d451e3799581dfc21817ca6`
+- Coordination Revision: `42`
+- Last Accepted Commit: `22338a805002f8aed314869006a49415be022acf`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Project Phase: `SYSTEM FOUNDATION IMPLEMENTATION`
 - First Slice Closure: `PASS / CLOSED`
-- Current Frozen Implementation Gate: `ARE-GATE-2 — Resource Foundation`
+- Current Frozen Implementation Gate: `ARE-GATE-3A — Bounded EffectOperation Foundation`
 
 ## Active Tasks
 
 | Task | Type | Agent | State | Depends On |
 |---|---|---|---|---|
 | `NYRON-T-20260825-036` | Capability revoke-after-expiry coverage | DeepSeek | `FIX_REQUIRED` | Task 034 accepted/integrated |
-| `NYRON-T-20260825-037` | Resource / ResourceLease foundation | Codex | `IN_REVIEW` | Task 034 accepted/integrated |
-| `NYRON-T-20260825-038` | Independent Resource foundation review | Claude Code | `RESULT_SUBMITTED` | Task 037 remote Result submitted |
-| `NYRON-T-20260825-039` | Task 036 Final Result SHA correction | DeepSeek | `READY` | Task 036 Result submitted |
-| `NYRON-T-20260825-040` | Targeted stale-coordination Resource re-review | Claude Code | `READY` | Task 038 Result submitted; Revision 40 coordination delta |
+| `NYRON-T-20260825-041` | Task 036 exact Final Result SHA correction | DeepSeek | `READY` | Task 036 Result submitted; supersedes stale Task 039 |
+| `NYRON-T-20260825-042` | Bounded EffectOperation foundation | Codex | `READY` | Task 037 accepted/integrated |
 
 ## Accepted This Revision
 
-- No new production implementation is accepted in Revision 41.
-- Task 038 returned `PASS_WITH_FINDINGS` for Task 037 with no blocking finding and one reported `SECURITY / NON_BLOCKING` finding, `NYRON-T-20260825-038-F-001`, concerning a narrow provisioning-time TOCTOU window between managed-directory creation and provenance-marker write.
-- The full Task 038 Review Result is recorded at `coordination/results/NYRON-T-20260825-038.md` for audit and future design-note extraction.
-- Task 038 itself is **not accepted** because it was issued under `FAIL_CLOSED` against Coordination Revision 39 and Coordination had already advanced to Revision 40 before Orchestrator acceptance. Revision 40 changed only Task 036 delivery/process handling, but `FAIL_CLOSED` does not permit the Orchestrator to waive the stale basis by judgment.
-- Targeted independent Re-Review Task `NYRON-T-20260825-040` is opened against Revision 41. It must verify only that the Revision-40 coordination delta did not change Task 037 code basis, review assumptions, Review Debt, Gate conditions, or the classification of `NYRON-T-20260825-038-F-001`; it must not repeat the full Resource review unless relevant semantics changed.
-- Task 037 Review Debt remains open pending Task 040. `ARE-GATE-2` remains current and Task 037 remains unaccepted/unintegrated.
-- `ARE-GATE-3 — EffectOperation Foundation` remains closed.
-- Task 036 / Task 039 process-repair state is unchanged from Revision 40.
+- `NYRON-T-20260825-040` — targeted stale-coordination Resource re-review — `PASS_WITH_FINDINGS / ACCEPTED`; it independently reconfirmed that Revision 39 -> 40 -> 41 coordination changes did not touch Task 037 production/tests/frozen design or remote delivery identity.
+- `NYRON-T-20260825-038` — independent HIGH-risk Resource foundation review — `PASS_WITH_FINDINGS / ACCEPTED` on the current basis restored by Task 040; Blocking Findings `NONE`.
+- `NYRON-T-20260825-038-F-001` — `SECURITY / NON_BLOCKING / OPEN` — accepted classification. Narrow provisioning-time TOCTOU exists between managed-directory creation and provenance-marker write if a less-trusted co-resident actor can concurrently mutate the exact managed root. It does not block the current trusted Kernel foundation; hardening becomes a blocking prerequisite before less-trusted concurrent root access, real Module filesystem I/O, or Host trust-boundary exposure activates that threat surface.
+- `NYRON-T-20260825-037` — Resource / ResourceLease foundation — `ACCEPTED / INTEGRATED`.
+- Task 037 reviewed delivery content commit: `835d752ba2e68507f358e2bdea0b38ce981a1d6d`.
+- Task 037 result-record branch tip: `9b9875462d889a2d149d7b1b5a0995a87d1349f2`.
+- Integration PR: `#16`.
+- Integration merge commit: `22338a805002f8aed314869006a49415be022acf`.
+- Task 037 Review Debt is `CLOSED`; ARE-GATE-2 Resource Foundation is `PASS / CLOSED`.
+- Frozen ARE-GATE-3 is opened through bounded internal sub-gate `ARE-GATE-3A`. This subdivision is orchestration-only and does not reinterpret or prematurely close frozen ARE-GATE-3.
+- `NYRON-T-20260825-039` is `SUPERSEDED / NOT EXECUTED` because its `FAIL_CLOSED` basis became stale before execution. Current-basis replacement Task `NYRON-T-20260825-041` is opened against Revision 42.
+- `NYRON-T-20260825-042` is opened for the first real bounded EffectOperation and real authority-consumption linearization at an actual dispatch boundary.
 
 ## First Slice Closure
 
@@ -66,6 +68,8 @@ The accepted connected path is:
 
 ## Accepted Production Baseline
 
+- `NYRON-T-20260825-038/040` — independent Resource foundation review chain — `PASS_WITH_FINDINGS / ACCEPTED`; Blocking Findings `NONE`; Task 040 restored current-basis validity without changing Task 038 technical conclusion.
+- `NYRON-T-20260825-037` — Resource / ResourceLease foundation — `ACCEPTED`; implementation content `835d752ba2e68507f358e2bdea0b38ce981a1d6d`; integration merge `22338a805002f8aed314869006a49415be022acf`.
 - `NYRON-T-20260825-035` — independent Claude Review of Task 034 — `PASS_WITH_FINDINGS / ACCEPTED`; Blocking Findings `NONE`; independent full kernel `123/123 PASS`.
 - `NYRON-T-20260825-034` — Capability canonical foundation — `ACCEPTED`; implementation content `ce7ea08ed168f6009356ff6d70ef7ae3e0a1ed70`; integration merge `a0a840420cc25f357d451e3799581dfc21817ca6`.
 - `NYRON-T-20260825-030` — independent Claude Review of Task 029 — `PASS / ACCEPTED`; Findings `NONE`; full kernel suite independently observed `110/110 PASS`.
@@ -90,22 +94,19 @@ For formal remote Repository delivery:
 
 `Commit == Remote Commit == final remotely reviewable delivery-content commit`.
 
-Final Results must include exact `SHA Verification Evidence` with the final SHA, observed commit-object result, and canonical remote reachability evidence. Later Result/Checkpoint record commits may advance branch tip without changing content identity.
+Final Results must include exact full 40-character `SHA Verification Evidence` with the final SHA, observed commit-object result, and canonical remote reachability evidence. Later Result/Checkpoint record commits may advance branch tip without changing content identity.
 
 ## Review Debt
 
 | Delivery / Task | Review Type | Reason | Risk | Clearance Condition |
 |---|---|---|---|---|
-| `NYRON-T-20260825-037` | Independent Code Review | Resource/ResourceLease ownership, filesystem provenance, crash recovery, Attempt/fencing binding, revoke/expiry and destruction safety are core authority/resource correctness boundaries | HIGH | current-basis independent Claude review returns no blocking finding; Task 040 is the targeted stale-basis re-review |
+| `NYRON-T-20260825-042` | Independent Code Review | first real EffectOperation, PREPARED-before-dispatch, Capability+Lease+Attempt authority-consumption linearization, bounded external mutation and crash evidence are security/correctness boundaries | HIGH | after Task 042 remote Result, independent Claude review returns no blocking finding |
 
 ## Open Findings
 
 - `NYRON-T-20260825-035-F-001` — `TEST / NON_BLOCKING / OPEN` — missing direct coverage for `CapabilityAuthority.revoke()` after `expires_at`; Task 036 implementation supplies the intended test but the Finding remains open until Task 036 is formally accepted/integrated.
-- `NYRON-T-20260825-036-F-001` — `PROCESS / BLOCKING / OPEN` — Task 036 Final Result uses abbreviated SHA metadata instead of the required exact full SHA; Task 039 assigned to correct the record without changing Task 036 content.
-
-## Pending Review Findings
-
-- `NYRON-T-20260825-038-F-001` — `SECURITY / NON_BLOCKING / PENDING_REVIEW_ACCEPTANCE` — narrow provisioning-time TOCTOU between `mkdir` and provenance-marker write when an already-privileged/co-resident actor can concurrently mutate the exact manager-owned root. Task 038 judges it non-blocking for ARE-GATE-2, but Task 040 must reconfirm the classification on a current coordination basis before it becomes an accepted Open Finding.
+- `NYRON-T-20260825-036-F-001` — `PROCESS / BLOCKING / OPEN` — Task 036 Final Result uses abbreviated SHA metadata instead of required exact full SHA; Task 041 is the current-basis correction Task.
+- `NYRON-T-20260825-038-F-001` — `SECURITY / NON_BLOCKING / OPEN` — provisioning `mkdir` -> provenance-marker TOCTOU under concurrent less-trusted mutation of the exact managed root. Current trusted Kernel effect work must not expose such concurrent access. Hardening is mandatory before Module filesystem I/O, less-trusted co-resident root mutation, or Host trust-boundary exposure.
 
 ## Stable Baseline
 
@@ -129,24 +130,34 @@ Final Results must include exact `SHA Verification Evidence` with the final SHA,
 - First PURE Module System Foundation slice: `PASS / CLOSED`.
 - Packet / Delivery, Trusted Host, AccountingScope, ExecutionAdmission, Activation, Run/RunAttempt, Attempt execution/terminal commit and connected E2E proof are integrated and accepted.
 - Capability canonical foundation is integrated and accepted: immutable/versioned CapabilityType registry, Capability Authority policy boundary, Attempt/Run/Activation/fencing-bound immutable CapabilityGrant, explicit machine-checkable scope, revoke/expiry, stale-authority fail closed, non-transferability, and advisory/non-consumptive validation.
-- Actual external/foreign authority consumption is not implemented by Capability foundation and remains governed by frozen Clarification 004 for later real Effect/Command boundaries.
+- Resource / ResourceLease foundation is integrated and accepted: one real managed-directory Resource, durable PROVISIONING/AVAILABLE/DESTROYING/DESTROYED/UNKNOWN lifecycle, exact provenance/recovery, exact Attempt/fencing-bound Lease lifecycle, non-transferability, release/revoke/expiry and advisory/non-consumptive validation.
+- Actual external/foreign authority consumption has not yet been accepted; it begins only in real Effect/Command boundaries governed by Clarification 004.
 
 ## Current Next-Phase Decision
 
 Frozen D-004 §26 route remains:
 
-- `ARE-GATE-1` — Capability foundation;
-- `ARE-GATE-2` — Resource foundation;
-- `ARE-GATE-3` — EffectOperation foundation;
+- `ARE-GATE-1` — Capability foundation — PASS / CLOSED for the current Capability Owner slice;
+- `ARE-GATE-2` — Resource foundation — PASS / CLOSED;
+- `ARE-GATE-3` — EffectOperation foundation — OPEN via bounded implementation sub-gates;
 - later replacement fencing / Host mediated boundary / Accounting-Recovery integration gates.
 
-Revision 41 keeps **ARE-GATE-2** open. Task 037 remains unaccepted/unintegrated because Task 038's otherwise favorable independent review became stale under its own `FAIL_CLOSED` basis when Coordination advanced from Revision 39 to 40.
+Revision 42 opens only **ARE-GATE-3A — Bounded EffectOperation Foundation**.
 
-Task 040 is intentionally narrow: it revalidates only the coordination delta and the continued applicability/classification of Task 038's finding. Full Resource code re-review or full test rerun is unnecessary unless that delta touched relevant semantics.
+Task 042 must establish the first real Effect Authority-owned PREPARED-before-dispatch flow and the first race-safe authority-consumption linearization for an exact operation against Runtime Attempt/fencing + CapabilityGrant + ResourceLease, followed by one trusted bounded real external mutation and exact crash evidence.
 
-Task 036 content is test-only and independently traceable, but formal acceptance/integration remains blocked solely by `NYRON-T-20260825-036-F-001`. Task 039 must correct the Final Result to exact full SHA before draft PR `#15` may merge.
+Task 042 must not expand into long/async provider architecture, Canonical Command, retry/replacement, generalized EffectConflictScope, Recovery, Budget, Module filesystem APIs, or hostile-plugin isolation. Frozen ARE-GATE-3 is not complete when 3A passes; later bounded work will cover long/async and broader UNKNOWN/revoke/fencing semantics.
 
-Frozen Clarification 004 still controls actual authority consumption: no cached ValidateLease result or hypothetical authority-use permit may authorize future external/foreign consequence. That linearization remains deferred to the real Effect/Command boundary.
+Task 038-F-001 remains non-blocking only while the managed root is not concurrently writable by less-trusted code. Task 042's concrete adapter is trusted internal Kernel test infrastructure and must not expose raw root write access to Modules or less-trusted actors.
+
+Task 041 may run in parallel with Task 042 because it modifies only coordination Result metadata on the separate Task 036 branch.
+
+## Design / Development Notes
+
+- `docs/development/notes/README.md` — working-note authority and promotion rules.
+- `docs/development/notes/2026-08-25_Authority_Gate_Implementation_Notes.md` — avoid hypothetical authority-use permits before a real mediated boundary.
+- `docs/development/notes/2026-08-25_Resource_Provenance_TOCTOU_and_Trust_Boundary.md` — threat-surface timing and Resource provenance security debt.
+- `docs/development/notes/2026-08-25_EffectOperation_Gate3_Subdivision.md` — rationale for splitting frozen ARE-GATE-3 into independently reviewable implementation sub-gates.
 
 ## Orchestrator Implementation Boundary
 
@@ -159,12 +170,12 @@ The Active Orchestrator does not perform complex production implementation. Comp
 
 ## Next Eligible Tasks
 
-1. Reuse the same independent Claude Resource review conversation for targeted Task `NYRON-T-20260825-040`; do not open a fresh review window because this is a narrow continuation and independence from Original Agent Codex is preserved.
-2. Execute DeepSeek Process Fix `NYRON-T-20260825-039` on the existing `task/NYRON-T-20260825-036` branch to replace abbreviated Result SHA fields with exact `229f52f39462a843680c20f665218801805ad547`; no code/test changes are authorized.
-3. Do not merge draft PR `#15` until Task 039 closes `NYRON-T-20260825-036-F-001`.
-4. If Task 040 returns no blocking finding, accept Task 038/040, classify `NYRON-T-20260825-038-F-001`, clear Task 037 Review Debt, and decide Task 037 acceptance/integration.
-5. Do not open `ARE-GATE-3 — EffectOperation Foundation` until Task 037 is independently accepted and integrated.
-6. Preserve the provisioning TOCTOU lesson in `docs/development/notes/` and require hardening before Resource handles are exposed to less-trusted concurrent filesystem actors or real Module file I/O.
+1. Execute Codex Task `NYRON-T-20260825-042` against Epoch 1 / Revision 42 for `ARE-GATE-3A — Bounded EffectOperation Foundation`.
+2. Execute DeepSeek Task `NYRON-T-20260825-041` against Epoch 1 / Revision 42 to correct Task 036 Final Result to exact full SHA `229f52f39462a843680c20f665218801805ad547`; no code/test change is authorized.
+3. Task 041 and Task 042 may run in parallel in isolated branches/workspaces.
+4. After Task 042 remote Result, assign independent Claude HIGH-risk review before integration or further ARE-GATE-3 work.
+5. After Task 041 succeeds, verify corrected Result, close `NYRON-T-20260825-036-F-001`, accept/integrate Task 036 test-only content, and close `NYRON-T-20260825-035-F-001`.
+6. Do not expose managed Resource roots to less-trusted concurrent filesystem actors or Module filesystem APIs until `NYRON-T-20260825-038-F-001` is hardened/closed.
 7. `NYRON-D-006` remains deferred behind P0 System Foundation unless explicitly reprioritized.
 
 ## State Update Rule
