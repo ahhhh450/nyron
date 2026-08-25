@@ -43,12 +43,15 @@ Findings:
 ```text
 Finding ID:
 Type:
+Code: <optional standardized code, e.g. OVER_ENGINEERING>
 Severity:
 Location:
 Evidence:
 Impact:
 Required Resolution:
 ```
+
+`Code` 为可选字段。只有存在框架定义的标准化问题代码时填写；不要为了形式给每个 Finding 发明新的 Code。
 
 ## 3. Re-Review Result
 
