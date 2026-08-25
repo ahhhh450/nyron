@@ -35,6 +35,9 @@ Blockers:
 对于要求 Repository 写入并远端提交的 Task：
 
 - `Commit` 可以记录本地 Task-scoped commit；
+- 写入 `Commit` 或 `Remote Commit` 前，必须执行 `git cat-file -t <sha>` 并确认返回 `commit`；
+- `Remote Commit` 还必须确认可从 canonical remote / 声明的 remote branch history 读取；
+- amend / rebase / recreate 后不再存在或不属于声明交付历史的旧 SHA 禁止写入 Result；
 - `Remote Branch` 必须指向 Reviewer / Orchestrator 可从远端读取的正式交付分支或 ref；
 - `Remote Commit` 表示**被交付、被审查的内容提交**，不要求 Result 文件自引用“包含它自身的最终记录 commit”；
 - 如果 Result / Checkpoint 在 delivery commit 之后通过后续 record commit 落盘，允许 branch tip 晚于 `Remote Commit`；Reviewer 应同时核对 `Remote Commit` 的交付内容以及当前 branch tip 是否包含声明的 Result / Checkpoint；
