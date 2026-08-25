@@ -8,8 +8,8 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `1`
-- Coordination Revision: `26`
-- Last Accepted Commit: `47c7316ab42ad47be2fa9b11554126d356c5f2cf`
+- Coordination Revision: `27`
+- Last Accepted Commit: `cd06a3da07b623cab74884cba544bbb710acbbd4`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Project Phase: `SYSTEM FOUNDATION IMPLEMENTATION`
 
@@ -17,45 +17,28 @@
 
 | Task | Type | Agent | State | Depends On |
 |---|---|---|---|---|
-| `NYRON-T-20260825-025` | Transactional Activation implementation | Codex | `RESULT_SUBMITTED` | `NYRON-T-20260825-023 ACCEPTED` |
-| `NYRON-T-20260825-027` | Speculative Run + initial RunAttempt authority foundation | Codex | `READY` | `NYRON-T-20260825-025 RESULT_SUBMITTED`; formal acceptance waits for Task 025 ACCEPTED |
+| `NYRON-T-20260825-027` | Run + initial RunAttempt authority foundation | Codex | `READY` | `NYRON-T-20260825-025 ACCEPTED` |
 
 ## In Review
 
 | Task | Reviews | Reviewer | State |
 |---|---|---|---|
-| `NYRON-T-20260825-026` | `NYRON-T-20260825-025` | Claude Code | `IN_REVIEW` |
+| — | — | — | — |
 
 ## Blocked / Conditional
 
 | Task | Reason | Blocked By |
 |---|---|---|
-| `NYRON-T-20260825-027` | Speculative implementation may proceed, but merge/ACCEPTED is forbidden until Activation clears independent Review | `NYRON-T-20260825-026 PASS`, `NYRON-T-20260825-025 ACCEPTED` |
+| — | — | — |
 
-## Current Delivery / Review
+## Accepted This Revision
 
-- Task 025 remote branch: `task/NYRON-T-20260825-025`.
-- Task 025 final remotely reviewable content commit: `0e4b1b8f81b98efecb31e815da1a16a54ec63973`.
-- Task 025 Result-record branch tip: `46bf1c1f477820798570026f3436a99b4cd17ffe`.
-- Executor reports targeted Activation tests `16/16 PASS` and complete kernel suite `88/88 PASS`.
-- Orchestrator verified Task 025 content commit is one commit ahead of Revision 25 main and changes only authorized Task 025 implementation/tests/checkpoints; `delivery.py` change is a narrow 10-line addition permitted by Task 025.
-- Task 025 Result obeys strengthened SHA rule: `Commit == Remote Commit == 0e4b1b8f81b98efecb31e815da1a16a54ec63973` with explicit remote evidence.
-- Task 026 independently reviews Activation readiness, binding, ownership, atomicity, deterministic input selection, current-main compatibility and SHA traceability.
-
-## Parallelization Decision
-
-Revision 26 authorizes two P0 tracks:
-
-1. `NYRON-T-20260825-026` — Claude performs read-only independent Review of Task 025.
-2. `NYRON-T-20260825-027` — Codex may speculatively implement only the Run + initial RunAttempt current-authority/fencing foundation on top of Task 025 content.
-
-Task 027 stops before Module execution, ACTIVE transition, retry/replacement, terminal canonical commit or Output Packet creation.
-
-Formal semantic acceptance order remains:
-
-`ExecutionAdmission ACCEPTED -> Activation ACCEPTED -> Run / initial RunAttempt authority ACCEPTED -> later execute/terminal commit work`.
-
-If Review 026 requires any Activation semantic/API correction, Task 027 must recheck impact and fail closed/rebuild affected work rather than silently retain stale assumptions.
+- `NYRON-T-20260825-026` — independent Claude Review of Task 025 — `PASS / ACCEPTED`; findings `NONE`; full kernel suite independently observed `88/88 PASS`.
+- `NYRON-T-20260825-025` — transactional Activation implementation — `ACCEPTED`.
+- Task 025 final remotely reviewed content commit: `0e4b1b8f81b98efecb31e815da1a16a54ec63973`.
+- Task 025 integration merge commit: `cd06a3da07b623cab74884cba544bbb710acbbd4`.
+- Task 025 `delivery.py` change was independently verified by Review 026 as a narrow derived `delivery_ref` addition that does not alter Delivery projection/order/persistence semantics.
+- Task 027's speculative acceptance gate is cleared. Revision 26 -> 27 formally accepts/integrates the exact Activation semantics already used by Task 027.
 
 ## Accepted Previously
 
@@ -81,12 +64,11 @@ Final Results must include exact `SHA Verification Evidence` with the final SHA,
 
 | Delivery / Task | Review Type | Reason | Risk | Clearance Condition |
 |---|---|---|---|---|
-| `NYRON-T-20260825-025` | Independent Code Review | Activation readiness/binding/consumption transaction is a Runtime correctness boundary | HIGH | Task 026 returns no blocking finding |
-| `NYRON-T-20260825-027` | Independent Code Review | Run/current-attempt/fencing authority is a Runtime correctness boundary | HIGH | independent Review after remote Result submission and formal Task 025 clearance |
+| `NYRON-T-20260825-027` | Independent Code Review | Run/current-attempt/fencing authority is a Runtime correctness boundary | HIGH | independent Review after remote Result submission |
 
 ## Open Findings
 
-- NONE pending Review 026 classification.
+- NONE.
 
 ## Stable Baseline
 
@@ -112,23 +94,27 @@ Final Results must include exact `SHA Verification Evidence` with the final SHA,
 - TRUSTED MODULE MODE + `builtin.text.concat@1` integrated and accepted.
 - AccountingScope Identity + Static Ancestry Resolver integrated and accepted.
 - ExecutionAdmission integrated and accepted.
-- Activation remotely submitted and under independent Review.
+- Transactional Activation integrated and accepted.
 
 ## Current Execution-Path Order
 
 `AccountingScope resolver -> ExecutionAdmission -> Activation -> Run / RunAttempt`
 
-Task 026 reviews Activation. Task 027 may build only the next authority foundation speculatively; formal acceptance remains behind accepted Activation.
+Activation is now formally accepted. Task 027 is the current execution-path step and may proceed formally.
+
+## Task 027 Staleness Disposition
+
+Task 027 was created at Coordination Revision 26 with speculative authorization on top of Task 025 content commit `0e4b1b8f81b98efecb31e815da1a16a54ec63973`.
+
+Revision 27 only accepts/integrates that exact Activation content after Review 026 PASS. Therefore Task 027 MAY continue after rechecking current main and does not need to restart or rebuild solely because Revision advanced from 26 to 27.
 
 ## Next Eligible Tasks
 
-1. Execute Task 026 with Claude Code.
-2. In parallel, execute speculative Task 027 with Codex.
-3. If Task 026 passes: accept/integrate Task 025, then clear Task 027's formal acceptance gate if its input remains unchanged.
-4. Independently review Task 027 after remote delivery.
-5. Only after Task 027 acceptance, schedule the next narrowly scoped Attempt dispatch/execute/canonical-commit work defined by the accepted plan.
-6. Keep retry/replacement and later lifecycle work separate unless an accepted Task explicitly authorizes it.
-7. `NYRON-D-006` remains deferred behind P0 System Foundation.
+1. Continue/execute `NYRON-T-20260825-027` after stale recheck against Revision 27/current main.
+2. After Task 027 remote Result submission, assign independent high-capability Code Review.
+3. Only after Task 027 acceptance, schedule the next narrowly scoped Attempt dispatch / Module execute / canonical terminal commit work defined by the accepted plan.
+4. Keep retry/replacement/suspension and later lifecycle work separate unless an accepted Task explicitly authorizes it.
+5. `NYRON-D-006` remains deferred behind P0 System Foundation.
 
 ## State Update Rule
 
