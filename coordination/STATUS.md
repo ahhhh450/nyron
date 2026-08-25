@@ -8,7 +8,7 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `1`
-- Coordination Revision: `16`
+- Coordination Revision: `17`
 - Last Accepted Commit: `c0f0c97cea43ba10718d8a786361c1c0da8bbb5c`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Project Phase: `SYSTEM FOUNDATION IMPLEMENTATION`
@@ -17,21 +17,22 @@
 
 | Task | Type | Agent | State | Depends On |
 |---|---|---|---|---|
-| `NYRON-T-20260825-013` | Trusted Host + builtin.text.concat@1 | DeepSeek | `RESULT_SUBMITTED` | `NYRON-T-20260825-009 ACCEPTED` |
+| `NYRON-T-20260825-013` | Trusted Host + builtin.text.concat@1 | DeepSeek | `FIX_REQUIRED` | `NYRON-T-20260825-009 ACCEPTED` |
+| `NYRON-T-20260825-017` | Targeted Trusted Host Contract Fix | Claude Code | `READY` | `NYRON-T-20260825-016 FAIL` |
 
 ## In Review
 
 | Task | Reviews | Reviewer | State |
 |---|---|---|---|
-| `NYRON-T-20260825-016` | `NYRON-T-20260825-013` | Codex | `IN_REVIEW` |
+| — | — | — | — |
 
 ## Blocked
 
 | Task | Reason | Blocked By |
 |---|---|---|
-| — | — | — |
+| `NYRON-T-20260825-013` | Three blocking Review findings require targeted correction before acceptance/integration | `NYRON-T-20260825-016-F-001`, `F-002`, `F-003` |
 
-## Accepted This Revision
+## Accepted Previously
 
 - `NYRON-T-20260825-012` — Packet / Delivery implementation — `ACCEPTED` after independent Review and traceability repair.
 - `NYRON-T-20260825-014` — independent Review of Task 012 — `ACCEPTED / PASS_WITH_FINDINGS`; code correctness passed.
@@ -40,23 +41,23 @@
 - Task 015 process-rule integration merge commit: `1cca6cf3b4a5a0893420853b51814964085d62ab`.
 - Packet / Delivery implementation integration merge commit: `c0f0c97cea43ba10718d8a786361c1c0da8bbb5c`.
 
-## Current Delivery / Review
+## Review 016 Result
 
-- `NYRON-T-20260825-013` implementation content is remotely readable at `dc1cf925bbf92355bb40ab695fc9bf9f3bc72925`.
-- Remote delivery branch: `task/NYRON-T-20260825-013`.
-- Current verified branch tip containing the corrected Result: `060e13594f0c5aec18cd88ed7581579f448eabaa`.
-- Independent Review Task `NYRON-T-20260825-016` is assigned to Codex.
-- Task 013 is not ACCEPTED or integrated until Review 016 completes and the Orchestrator accepts the result.
+- `NYRON-T-20260825-016` — independent Codex Review of Task 013 — `FAIL` accepted by Orchestrator.
+- Task 013 implementation content reviewed at `dc1cf925bbf92355bb40ab695fc9bf9f3bc72925` with delivery branch tip `060e13594f0c5aec18cd88ed7581579f448eabaa`.
+- No full redesign is required; all three findings are targeted corrections to the Trusted Host delivery.
 
 ## Review Debt
 
 | Delivery / Task | Review Type | Reason | Risk | Clearance Condition |
 |---|---|---|---|---|
-| — | — | — | — | — |
+| `NYRON-T-20260825-013` | Targeted Re-Review | Host authority boundary, implementation-contract binding, current-main test integration | HIGH | Task 017 corrects F-001/F-002/F-003 and Codex Targeted Re-Review closes them |
 
 ## Open Findings
 
-- None pending Review 016.
+- `NYRON-T-20260825-016-F-001` — CONTRACT / BLOCKING — `runtime_context` accepts arbitrary objects and can leak raw Store/DB/authority handles into module code.
+- `NYRON-T-20260825-016-F-002` — CONTRACT / BLOCKING — Host verifies only module identity/version existence, not equality between registered immutable definition and hosted implementation contract.
+- `NYRON-T-20260825-016-F-003` — TEST / BLOCKING — Task 013 test asserts global absence of `nyron_kernel.execution`, conflicting with already integrated Packet / Delivery on current main.
 
 Resolved:
 - `NYRON-T-20260825-014-F-001` — PROCESS / NON_BLOCKING — Task 012 Result SHA corrected and general fail-closed SHA verification rule added by Task 015.
@@ -91,18 +92,19 @@ Resolved:
 - Packet / Delivery integrated and accepted.
 - Verified Packet / Delivery implementation content commit: `435a5189c52c70267f902f158ab06db321019f61`.
 - Packet / Delivery integration commit: `c0f0c97cea43ba10718d8a786361c1c0da8bbb5c`.
-- Final Result SHA verification is now mandatory: recorded `Commit` / `Remote Commit` SHAs must resolve as commit objects; Remote Commit must also be canonical-remote readable.
-- TRUSTED MODULE MODE + `builtin.text.concat@1` is submitted and under Review 016.
-- Activation / Run / RunAttempt remain serial behind integrated Packet / Delivery; next scheduling follows Review 016 and accepted-plan dependency order.
+- Final Result SHA verification is mandatory: recorded `Commit` / `Remote Commit` SHAs must resolve as commit objects; Remote Commit must also be canonical-remote readable.
+- TRUSTED MODULE MODE + `builtin.text.concat@1` remains unaccepted pending Task 017 targeted correction and Targeted Re-Review.
+- Activation / Run / RunAttempt remain serial behind accepted Trusted Host correction; do not schedule them against a known-bad Host boundary.
 - Accounting resolver/admission remains unscheduled until its shared-schema boundary is scheduled explicitly.
 
 ## Next Eligible Tasks
 
-1. Execute independent Review `NYRON-T-20260825-016` with Codex against Task 013 remote delivery.
-2. If Review 016 passes with no blocking finding, accept/integrate Task 013.
-3. Then continue the accepted runtime build order with the next serial Activation / execution-core slice; parallelize only demonstrably disjoint work.
-4. Schedule Accounting resolver/admission only with an explicit non-conflicting shared-schema boundary.
-5. `NYRON-D-006` remains independently eligible but is not scheduled ahead of the P0 System Foundation path.
+1. Execute `NYRON-T-20260825-017` with Claude Code from current main plus the existing Task 013 remote delivery.
+2. Run the full current-main kernel suite after the targeted fix; Packet / Delivery tests must remain green.
+3. Submit Task 017 remotely with verified SHA metadata.
+4. Assign Codex a Targeted Re-Review that checks only F-001, F-002, F-003 and any direct regression introduced by Task 017.
+5. If all three findings close with no new blocking finding, accept/integrate Trusted Host + builtin module and continue the serial Activation / execution-core path.
+6. `NYRON-D-006` remains independently eligible but is not scheduled ahead of the P0 System Foundation path.
 
 ## State Update Rule
 
