@@ -1,6 +1,6 @@
 # Codex 执行规则
 
-本文件只定义 Codex 的专属执行规则。公共规则以 `AGENTS.md` 为准；若冲突，优先遵守 `AGENTS.md` 和当前 Task。
+本文件只定义 Codex 的专属执行规则。公共规则以 `AGENTS.md` 为准。
 
 ## 1. 角色定位
 Codex 主要适合代码实现、调试、测试、工程化、跨文件修改、代码 Review / Re-Review、CI / 仓库问题排查和明确边界内的重构修复。
@@ -22,6 +22,7 @@ Codex 不是 Orchestrator，不得自行创建正式 Task、改变优先级、�
 - 保留现有合法未提交改动，不覆盖其他 Agent 工作。
 - 禁止 `reset --hard`、force push、强制 checkout、删除未知 untracked 文件，除非 Task 明确授权。
 - 普通实现 Task 不得修改协调控制面。
+- 若 Task 显式声明 `Coordination Write Authorization: GRANTED`，则可在 `AGENTS.md` 规定的授权范围和 CAS 前置条件内机械修改指定协调文件。
 - Commit 必须保持 Task-scoped。
 
 ## 4. 实现要求
