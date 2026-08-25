@@ -124,6 +124,30 @@ class SQLiteStore:
                 state TEXT NOT NULL,
                 UNIQUE (graph_revision_ref, definition_anchor_ref)
             );
+
+            CREATE TABLE IF NOT EXISTS execution_admissions (
+                admission_ref TEXT PRIMARY KEY,
+                execution_ref TEXT NOT NULL UNIQUE,
+                graph_revision_ref TEXT NOT NULL,
+                runtime_policy_ref TEXT NOT NULL,
+                admitted_at_owner_order INTEGER NOT NULL UNIQUE
+                    CHECK (admitted_at_owner_order > 0),
+                state TEXT NOT NULL CHECK (state = 'ADMITTED'),
+                FOREIGN KEY (graph_revision_ref)
+                    REFERENCES graph_revisions(graph_revision_ref)
+            );
+
+            CREATE TABLE IF NOT EXISTS workflow_executions (
+                execution_ref TEXT PRIMARY KEY,
+                graph_revision_ref TEXT NOT NULL,
+                admission_ref TEXT NOT NULL UNIQUE,
+                runtime_policy_ref TEXT NOT NULL,
+                state TEXT NOT NULL CHECK (state = 'ADMITTED'),
+                FOREIGN KEY (graph_revision_ref)
+                    REFERENCES graph_revisions(graph_revision_ref),
+                FOREIGN KEY (admission_ref)
+                    REFERENCES execution_admissions(admission_ref)
+            );
             """
         )
 
