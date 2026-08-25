@@ -8,8 +8,8 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `1`
-- Coordination Revision: `3`
-- Last Accepted Commit: `57e6cc14446812ee89e1deba2179345396b33180`
+- Coordination Revision: `4`
+- Last Accepted Commit: `0f82f6529f9aa614ea80d3802883c46dce8da375`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Project Phase: `SYSTEM FOUNDATION IMPLEMENTATION PLANNING`
 
@@ -17,13 +17,13 @@
 
 | Task | Type | Agent | State | Depends On |
 |---|---|---|---|---|
-| `NYRON-T-20260825-001` | Repository Coordination Bootstrap | Codex | `RESULT_SUBMITTED` | None |
+| `NYRON-T-20260825-003` | System Foundation Implementation Planning | Claude Code | `READY` | `NYRON-T-20260825-001 ACCEPTED` |
 
 ## In Review
 
 | Task | Reviews | Reviewer | State |
 |---|---|---|---|
-| `NYRON-T-20260825-002` | `NYRON-T-20260825-001` | DeepSeek | `IN_REVIEW` |
+| — | — | — | — |
 
 ## Blocked
 
@@ -31,9 +31,15 @@
 |---|---|---|
 | — | — | — |
 
+## Accepted This Revision
+
+- `NYRON-T-20260825-001` — Repository Coordination Bootstrap — `ACCEPTED` after independent review.
+- `NYRON-T-20260825-002` — Independent Review of Task 001 — `ACCEPTED` with one NON_BLOCKING PROCESS finding.
+- Bootstrap integration merge commit: `0f82f6529f9aa614ea80d3802883c46dce8da375`.
+
 ## Pending Independent Review
 
-- `NYRON-T-20260825-001` is under independent review by DeepSeek through `NYRON-T-20260825-002`.
+- `NYRON-T-20260825-003` requires independent review by an Agent other than Claude Code after Result submission; planned reviewer: Codex.
 
 ## Review Debt
 
@@ -44,6 +50,9 @@
 ## Open Findings
 
 - None.
+
+Resolved this revision:
+- `NYRON-T-20260825-002-F-001` (`PROCESS`, `NON_BLOCKING`): Remote Commit self-reference ambiguity resolved by clarifying root and pilot `coordination/OUTPUT_FORMAT.md`. `Remote Commit` now denotes the reviewed delivery-content commit; a later branch-tip Result/Checkpoint record commit is allowed and must be separately verified by the Reviewer.
 
 ## Stable Baseline
 
@@ -73,10 +82,10 @@ The following accepted facts are inherited from `design/coordination/STATUS.md`:
 
 ## Next Eligible Tasks
 
-1. Execute independent Review Task `NYRON-T-20260825-002` with DeepSeek against remote branch `task/NYRON-T-20260825-001` and submitted branch tip `5d1d1d055a5ae19a637fb88dd1fbe63dd3c12457`.
-2. On Review Result, inspect evidence and accept/reject/fix `NYRON-T-20260825-001` as appropriate.
-3. Only after framework adoption is accepted, create System Foundation implementation planning / bootstrap tasks against the frozen baseline.
-4. `NYRON-D-006` remains independently eligible but is not scheduled ahead of the P0 coordination bootstrap.
+1. Execute `NYRON-T-20260825-003` with Claude Code to produce the first concrete System Foundation implementation plan against frozen baselines.
+2. On Result submission, inspect the remote delivery and create an independent Codex Review Task if reviewable.
+3. After the plan is ACCEPTED, create the first actual System Foundation Implementation Task and split only genuinely independent work into isolated parallel Tasks.
+4. `NYRON-D-006` remains independently eligible but is not scheduled ahead of the P0 System Foundation path.
 
 ## State Update Rule
 
