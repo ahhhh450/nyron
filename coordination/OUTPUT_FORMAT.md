@@ -23,7 +23,7 @@ Remote Branch:
 - <branch/ref | NOT_APPLICABLE>
 
 Remote Commit:
-- <remote-readable commit SHA | NOT_APPLICABLE>
+- <remote-readable delivery commit SHA | NOT_APPLICABLE>
 
 Findings:
 - NONE | <finding summary>
@@ -35,7 +35,10 @@ Blockers:
 对于要求 Repository 写入并远端提交的 Task：
 
 - `Commit` 可以记录本地 Task-scoped commit；
-- `Remote Branch` / `Remote Commit` 必须指向 Reviewer / Orchestrator 可从远端读取的正式交付；
+- `Remote Branch` 必须指向 Reviewer / Orchestrator 可从远端读取的正式交付分支或 ref；
+- `Remote Commit` 表示**被交付、被审查的内容提交**，不要求 Result 文件自引用“包含它自身的最终记录 commit”；
+- 如果 Result / Checkpoint 在 delivery commit 之后通过后续 record commit 落盘，允许 branch tip 晚于 `Remote Commit`；Reviewer 应同时核对 `Remote Commit` 的交付内容以及当前 branch tip 是否包含声明的 Result / Checkpoint；
+- 不得为了让 Result 记录自身 SHA 而制造无限自引用更新；
 - 仅存在本地、尚未 push 的 commit 不得作为正式 submitted delivery 报告 `SUCCESS`；
 - `READ_ONLY` / `LOCAL_ONLY` / 明确不要求远端提交的 Task 可填写 `NOT_APPLICABLE`。
 
