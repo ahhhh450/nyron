@@ -8,7 +8,7 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `1`
-- Coordination Revision: `7`
+- Coordination Revision: `8`
 - Last Accepted Commit: `0f82f6529f9aa614ea80d3802883c46dce8da375`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Project Phase: `SYSTEM FOUNDATION IMPLEMENTATION PLANNING`
@@ -19,12 +19,13 @@
 |---|---|---|---|---|
 | `NYRON-T-20260825-003` | System Foundation Implementation Planning | Claude Code | `FIX_REQUIRED` | `NYRON-T-20260825-001 ACCEPTED` |
 | `NYRON-T-20260825-005` | Targeted Implementation Plan Fix | Claude Code | `RESULT_SUBMITTED` | `NYRON-T-20260825-004 FAIL` |
+| `NYRON-T-20260825-007` | Targeted Test Plan Fix | Claude Code | `READY` | `NYRON-T-20260825-006 FAIL` |
 
 ## In Review
 
 | Task | Reviews | Reviewer | State |
 |---|---|---|---|
-| `NYRON-T-20260825-006` | `NYRON-T-20260825-005` | Codex | `IN_REVIEW` |
+| `NYRON-T-20260825-006` | `NYRON-T-20260825-005` | Codex | `REJECTED` |
 
 ## Blocked
 
@@ -40,13 +41,16 @@
 
 ## Review History
 
-- `NYRON-T-20260825-004` returned `FAIL` against `NYRON-T-20260825-003`.
+- `NYRON-T-20260825-004` returned `FAIL` against `NYRON-T-20260825-003` with findings F-001 through F-004.
 - `NYRON-T-20260825-005` submitted targeted corrections for all four findings.
-- Targeted Re-Review `NYRON-T-20260825-006` is now in progress against remote branch `task/NYRON-T-20260825-005` and delivery-content commit `203f94079d2792e9fe91c8ecb68e0312d66c270f`.
+- `NYRON-T-20260825-006` targeted Re-Review returned `FAIL` with no new findings.
+- `NYRON-T-20260825-006` closed F-001, F-002, and F-004.
+- Only F-003 remains open: the plan must add an executable fault-injection test for failure inside the canonical terminal transaction, after Attempt/Run terminal writes but before Output Packet/event creation, proving full rollback.
+- `NYRON-T-20260825-007` is the minimal targeted correction Task for that remaining test gap.
 
 ## Pending Independent Review
 
-- `NYRON-T-20260825-003` cannot be accepted until `NYRON-T-20260825-006` closes the findings from Review Task 004.
+- `NYRON-T-20260825-003` cannot be accepted until F-003 is closed by a targeted Codex Re-Review after Task 007 submission.
 
 ## Review Debt
 
@@ -56,10 +60,12 @@
 
 ## Open Findings
 
-- `NYRON-T-20260825-004-F-001` — CONTRACT / BLOCKING — pending targeted Re-Review.
-- `NYRON-T-20260825-004-F-002` — CONTRACT / BLOCKING — pending targeted Re-Review.
-- `NYRON-T-20260825-004-F-003` — TEST / BLOCKING — pending targeted Re-Review.
-- `NYRON-T-20260825-004-F-004` — IMPLEMENTATION / NON_BLOCKING — pending targeted Re-Review.
+- `NYRON-T-20260825-004-F-003` — TEST / BLOCKING — canonical transaction internal fault-injection rollback coverage missing.
+
+Closed by `NYRON-T-20260825-006`:
+- `NYRON-T-20260825-004-F-001` — CONTRACT / BLOCKING.
+- `NYRON-T-20260825-004-F-002` — CONTRACT / BLOCKING.
+- `NYRON-T-20260825-004-F-004` — IMPLEMENTATION / NON_BLOCKING.
 
 Resolved previously:
 - `NYRON-T-20260825-002-F-001` (`PROCESS`, `NON_BLOCKING`): Remote Commit self-reference ambiguity resolved by clarifying root and pilot `coordination/OUTPUT_FORMAT.md`.
@@ -92,10 +98,11 @@ The following accepted facts are inherited from `design/coordination/STATUS.md`:
 
 ## Next Eligible Tasks
 
-1. Execute targeted Re-Review `NYRON-T-20260825-006` with Codex against the Task 005 remote correction.
-2. If F-001 through F-004 are all closed and no new blocking finding is introduced, accept and integrate the corrected implementation plan.
-3. Then create the first actual System Foundation Implementation Task and split only genuinely independent implementation work into isolated parallel Tasks.
-4. `NYRON-D-006` remains independently eligible but is not scheduled ahead of the P0 System Foundation path.
+1. Execute `NYRON-T-20260825-007` with Claude Code as the minimal F-003 test-plan correction.
+2. On remote Result submission, create a Codex targeted Re-Review for F-003 only.
+3. If F-003 closes with no new blocking finding, accept and integrate the implementation plan.
+4. Then create the first actual System Foundation Implementation Task and split only genuinely independent implementation work into isolated parallel Tasks.
+5. `NYRON-D-006` remains independently eligible but is not scheduled ahead of the P0 System Foundation path.
 
 ## State Update Rule
 
