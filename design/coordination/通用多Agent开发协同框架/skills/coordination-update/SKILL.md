@@ -3,21 +3,40 @@
 用于 Orchestrator 已作出明确裁决后，由具备 repo 写能力的 Agent 机械执行协调文件落盘。
 
 ## 前提
-Task 必须明确给出：
-- 允许修改的 coordination 文件；
-- 目标 Coordination Epoch；
-- 基于哪个 Coordination Revision；
-- 要写入的确定内容；
-- 是否要求 commit。
+Task 必须显式包含：
+
+```text
+Coordination Write Authorization: GRANTED
+Authorized Files:
+Expected Epoch:
+Expected Revision:
+New Epoch:
+New Revision:
+Exact Approved Changes:
+```
+
+缺少 `GRANTED` 或任一必要 CAS 字段时，不执行协调写入。
 
 ## 执行规则
-1. 先读取当前 `coordination/STATUS.md`。
-2. Epoch 不一致时立即停止并返回 `STALE_CONTEXT`。
-3. Revision 与 Task 前提不一致且会影响写入时停止，不自行合并裁决。
-4. 只机械执行 Orchestrator 已批准的内容。
-5. 不同时修改业务代码。
-6. 不自行新增 Task、改 Priority、改 Gate、改变 Baseline 结论。
-7. 写入后返回 diff / commit / 新 Revision。
+1. 在任何写入前重新读取当前 `coordination/STATUS.md` 及 Task 指定的相关协调文件。
+2. 比较：
+   ```text
+   Current Epoch == Expected Epoch
+   Current Revision == Expected Revision
+   ```
+3. 任一不一致时立即停止并返回：
+   ```text
+   COORDINATION_CAS_MISMATCH
+   ```
+4. CAS 失败时不得写入、不得自行 merge、不得自行重新计算 New Epoch / Revision、不得采用 last-writer-wins。
+5. CAS 成功后，只机械执行 `Exact Approved Changes`。
+6. 只能修改 `Authorized Files`。
+7. 不同时修改业务代码。
+8. 不自行新增 Task、改 Priority、改 Gate、改变 Baseline 结论。
+9. 正常更新应满足 `New Revision = Expected Revision + 1`；Orchestrator handoff 应满足 `New Epoch = Expected Epoch + 1`。
+10. 写入后重新读取并检查结果，返回 diff / commit / Previous Revision / New Revision / Previous Epoch / New Epoch。
 
 ## 原则
-Execution Agent 在这里拥有 physical write capability，但没有 Coordination Authority。
+Execution Agent 在这里拥有受限 physical write capability，但没有 Coordination Authority。
+
+授权来源是 `AGENTS.md` 定义的 `Coordination Write Authorization` 通道，而不是 Agent 自己判断“应该同步”。
