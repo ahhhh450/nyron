@@ -1,4 +1,4 @@
-"""Minimal SQLite state store for immutable definitions and graph revisions."""
+"""Minimal SQLite state store for Nyron's current canonical facts."""
 
 from __future__ import annotations
 
@@ -49,6 +49,68 @@ class SQLiteStore:
                 UNIQUE (graph_revision_ref, module_instance_ref),
                 FOREIGN KEY (graph_revision_ref)
                     REFERENCES graph_revisions(graph_revision_ref)
+            );
+
+            CREATE TABLE IF NOT EXISTS graph_edges (
+                graph_revision_ref TEXT NOT NULL,
+                edge_ref TEXT NOT NULL,
+                source_ref TEXT NOT NULL,
+                source_port_ref TEXT NOT NULL,
+                target_module_instance_revision_ref TEXT NOT NULL,
+                target_port_ref TEXT NOT NULL,
+                edge_ordinal INTEGER NOT NULL CHECK (edge_ordinal >= 0),
+                target_port_ordinal INTEGER NOT NULL
+                    CHECK (target_port_ordinal >= 0),
+                PRIMARY KEY (graph_revision_ref, edge_ref),
+                UNIQUE (graph_revision_ref, edge_ordinal),
+                FOREIGN KEY (graph_revision_ref)
+                    REFERENCES graph_revisions(graph_revision_ref),
+                FOREIGN KEY (target_module_instance_revision_ref)
+                    REFERENCES module_instance_revisions(
+                        module_instance_revision_ref
+                    )
+            );
+
+            CREATE TABLE IF NOT EXISTS packets (
+                packet_ref TEXT PRIMARY KEY,
+                execution_ref TEXT NOT NULL,
+                graph_revision_ref TEXT NOT NULL,
+                source_kind TEXT NOT NULL,
+                source_ref TEXT NOT NULL,
+                source_port_ref TEXT,
+                value_ref TEXT NOT NULL,
+                schema_ref TEXT NOT NULL,
+                source_packet_seq INTEGER NOT NULL
+                    CHECK (source_packet_seq > 0),
+                caused_by_ref TEXT NOT NULL,
+                created_event_ref TEXT NOT NULL,
+                UNIQUE (execution_ref, source_packet_seq),
+                FOREIGN KEY (graph_revision_ref)
+                    REFERENCES graph_revisions(graph_revision_ref)
+            );
+
+            CREATE TABLE IF NOT EXISTS deliveries (
+                packet_ref TEXT NOT NULL,
+                graph_revision_ref TEXT NOT NULL,
+                edge_ref TEXT NOT NULL,
+                target_module_instance_revision_ref TEXT NOT NULL,
+                target_port_ref TEXT NOT NULL,
+                source_packet_seq INTEGER NOT NULL,
+                edge_ordinal INTEGER NOT NULL,
+                target_port_ordinal INTEGER NOT NULL,
+                PRIMARY KEY (
+                    packet_ref,
+                    graph_revision_ref,
+                    edge_ref,
+                    target_port_ref
+                ),
+                FOREIGN KEY (packet_ref) REFERENCES packets(packet_ref),
+                FOREIGN KEY (graph_revision_ref, edge_ref)
+                    REFERENCES graph_edges(graph_revision_ref, edge_ref),
+                FOREIGN KEY (target_module_instance_revision_ref)
+                    REFERENCES module_instance_revisions(
+                        module_instance_revision_ref
+                    )
             );
             """
         )
