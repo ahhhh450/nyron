@@ -8,7 +8,7 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `1`
-- Coordination Revision: `31`
+- Coordination Revision: `32`
 - Last Accepted Commit: `2e120ee2dff7b456eabfd850f0374770f181593e`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Project Phase: `SYSTEM FOUNDATION IMPLEMENTATION`
@@ -17,33 +17,44 @@
 
 | Task | Type | Agent | State | Depends On |
 |---|---|---|---|---|
-| `NYRON-T-20260825-031` | First Slice Closure Audit (read-only supplemental) | DeepSeek | `READY` | `NYRON-T-20260825-029 ACCEPTED` + accepted prior execution chain |
+| `NYRON-T-20260825-032` | First Slice real end-to-end executable test | DeepSeek | `READY` | `NYRON-T-20260825-029 ACCEPTED`; closes `NYRON-T-20260825-031-F-001` |
 
 ## In Review
 
 | Task | Reviews | Reviewer | State |
 |---|---|---|---|
-| `NYRON-T-20260825-031` | First Slice end-to-end closure | DeepSeek | `READY / READ_ONLY` |
+| — | — | — | — |
 
 ## Blocked / Conditional
 
 | Item | Reason | Blocked By |
 |---|---|---|
-| First Slice Closure | Task 029 is accepted, but closure still requires no blocking finding from the end-to-end audit | `NYRON-T-20260825-031 PASS` |
+| First Slice Closure | All production layers are accepted, but no single executable test currently proves the real AccountingScope + ExecutionAdmissionGate path connects through Packet/Delivery/Activation/Run/AttemptExecutor to final Output Packet | `NYRON-T-20260825-031-F-001`; Task 032 + targeted re-review |
 | Capability / Resource / Effect next phase | Must not open before First Slice Closure is formally cleared | First Slice Closure |
 
-## Accepted This Revision
+## Current Closure Finding
 
-- `NYRON-T-20260825-030` — independent Claude Review of Task 029 — `PASS / ACCEPTED`; Findings `NONE`; full kernel suite independently observed `110/110 PASS`.
-- `NYRON-T-20260825-029` — Attempt dispatch + PURE execute + terminal canonical commit — `ACCEPTED`.
-- Task 029 final remotely reviewed content commit: `6f53691ddc2c755183a439a5c9d42e049432a988`.
-- Task 029 Result-record branch tip: `5c5163d1aef57d9706c601f372af0a6bc96ed1fe`.
-- Task 029 integration merge commit: `2e120ee2dff7b456eabfd850f0374770f181593e`.
-- Review 030 independently confirmed: durable `CREATED -> ACTIVE` before execute, ambiguous ACTIVE no silent re-execute, immutable Activation/Delivery/Packet/value execution evidence, TrustedModuleHost boundary, durable output before canonical Packet truth, full six-component current-attempt fencing, atomic Attempt/Run/Packet/event terminal commit, Failed boundary, reopen durability, and Packet refactor regression-safety.
-- The substantial Task 029 `packet.py` refactor was independently verified as preserving Task 012 immutable Packet / uniqueness / source ordering / routing / replay semantics while enabling Packet creation inside an outer canonical transaction.
+### NYRON-T-20260825-031-F-001
+
+- Type: `TEST`
+- Severity: `BLOCKING`
+- Source: `NYRON-T-20260825-031 First Slice Closure Audit`
+- Status: `OPEN`
+- Evidence: existing Task 029 happy-path directly inserts `execution_admissions` / `workflow_executions`; admission tests stop at admission; activation tests stop at Activation. Therefore no single test proves the complete connected real-owner path from AccountingScope + `ExecutionAdmissionGate.admit()` through `AttemptExecutor` and final Output Packet.
+- Impact: layer-level correctness is accepted, but integration seams across admission -> packet/delivery -> activation -> run -> execute are not yet demonstrated as one executable pipeline.
+- Required Resolution: Task 032 adds one real end-to-end test using canonical APIs with no direct SQL admission/runtime bypass, then an independent targeted closure re-review must confirm the gap is closed.
+
+## Closure Audit Result This Revision
+
+- `NYRON-T-20260825-031` — First Slice Closure Audit — `FAIL` due exactly one blocking TEST finding: `NYRON-T-20260825-031-F-001`.
+- Audit otherwise found restart/reopen durability, committed-history determinism, all seven required crash windows, authority boundaries, scope containment, Packet/Delivery replay behavior, integration hygiene, and Task 029 SHA traceability satisfactory.
+- This FAIL does **not** reject Task 029 production implementation; Task 029 and Review 030 remain ACCEPTED.
+- No Capability/Resource/Effect work is opened while the closure test gap remains.
 
 ## Accepted Previously
 
+- `NYRON-T-20260825-030` — independent Claude Review of Task 029 — `PASS / ACCEPTED`; Findings `NONE`; full kernel suite independently observed `110/110 PASS`.
+- `NYRON-T-20260825-029` — Attempt dispatch + PURE execute + terminal canonical commit — `ACCEPTED`; implementation content `6f53691ddc2c755183a439a5c9d42e049432a988`; integration merge `2e120ee2dff7b456eabfd850f0374770f181593e`.
 - `NYRON-T-20260825-028` — independent Claude Review of Task 027 — `PASS / ACCEPTED`; findings `NONE`; full kernel suite independently observed `99/99 PASS`.
 - `NYRON-T-20260825-027` — Run + initial RunAttempt current-authority/fencing foundation — `ACCEPTED`; implementation content `9feaa79533a05fa6c20f49b9dcc8684e5c09509d`; integration merge `db547ce535958f86a5aa8ea04dfa4e4236d9ad19`.
 - `NYRON-T-20260825-026` — independent Claude Review of Task 025 — `PASS / ACCEPTED`; full kernel suite independently observed `88/88 PASS`.
@@ -70,11 +81,11 @@ Final Results must include exact `SHA Verification Evidence` with the final SHA,
 
 | Delivery / Task | Review Type | Reason | Risk | Clearance Condition |
 |---|---|---|---|---|
-| First Slice | End-to-End Closure Audit | Layer-level correctness is already accepted; the connected PURE Module execution path and critical restart/crash/replay windows must still be demonstrated as one closure claim | HIGH | Task 031 returns no blocking closure finding |
+| `NYRON-T-20260825-032` | Test Implementation + targeted independent re-review | The missing connected real-owner E2E proof blocks First Slice closure | MEDIUM | new E2E test passes; full kernel suite passes; no production code changes; targeted independent reviewer closes `031-F-001` |
 
 ## Open Findings
 
-- NONE pending Task 031 closure classification.
+- `NYRON-T-20260825-031-F-001` — TEST / BLOCKING — missing single real end-to-end First Slice executable test.
 
 ## Stable Baseline
 
@@ -108,15 +119,15 @@ Final Results must include exact `SHA Verification Evidence` with the final SHA,
 
 `AccountingScope resolver -> ExecutionAdmission -> Packet / Delivery -> Activation -> Run / RunAttempt -> execute -> durable output -> fenced terminal canonical commit -> Output Packet -> Delivery projection`
 
-The implementation chain is now formally accepted through Task 029. First Slice closure is still not declared until Task 031 completes the connected end-to-end audit.
+All production implementation layers in the first PURE Module slice are accepted. Closure remains blocked only by `NYRON-T-20260825-031-F-001`, the missing connected E2E test proof.
 
 ## Next Eligible Tasks
 
-1. Execute read-only `NYRON-T-20260825-031` with DeepSeek against the integrated/accepted Task 029 semantics.
-2. If Task 031 PASS: formally close the First Slice and then decide the next phase.
-3. If Task 031 reports a blocking test/closure gap: assign the narrowest fix/test Task to Codex/Claude/DeepSeek as appropriate; do not solve complex implementation in the Orchestrator window.
-4. Do not open Capability/Resource/Effect implementation before First Slice Closure is PASS.
-5. Keep retry/replacement/cancellation/suspension and later lifecycle work separate unless explicitly authorized.
+1. Execute `NYRON-T-20260825-032` with DeepSeek; TEST-ONLY, no production `src/` changes.
+2. If Task 032 cannot make the real path pass without production changes, it must fail closed and report the smallest implementation/contract Finding instead of modifying `src/`.
+3. After Task 032 remote delivery, assign Claude Code a targeted read-only closure re-review; close `031-F-001` only if the real end-to-end test genuinely traverses AccountingScopeResolver + ExecutionAdmissionGate through final Output Packet and replay-safe projection.
+4. Only after `031-F-001` is CLOSED may the Orchestrator declare First Slice Closure PASS and consider the next phase.
+5. Do not open Capability/Resource/Effect implementation before First Slice Closure is PASS.
 6. `NYRON-D-006` remains deferred behind P0 System Foundation.
 
 ## Orchestrator Implementation Boundary
