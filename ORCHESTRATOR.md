@@ -182,3 +182,63 @@ Orchestrator 必须在以下任一时点执行一次 Archive Sweep：
 归档前必须确认：Task 已终态、不再处于 Review/Fix/Integration、无活跃依赖、无未清 Review Debt / Blocking Finding、不会破坏 Baseline / Release 审计引用。
 
 Archive 的目的只是把历史移出默认读取面，不改变事实。详细规则见 `coordination/WORKFLOW.md` 与 `coordination/archive/README.md`。
+
+## 14. Task 生命周期记录与用户进度简述
+
+每个正式 Task 都必须保持可恢复的最小执行链，不依赖聊天上下文：
+
+- `coordination/tasks/<Task>.md`：作为 START 记录，定义起点、目标、边界、Agent、Epoch/Revision、Stale Policy 与验收条件；
+- `coordination/checkpoints/`：在长任务、关键阶段转换、上下文中断、Agent handoff 或出现 Finding/Blocker 时记录 PROGRESS / HANDOFF；
+- `coordination/results/`：作为最终 RESULT，记录交付、验证、SHA、Findings、Blockers；
+- `coordination/STATUS.md`：记录项目级当前状态、Review Debt、Open Findings、Gate 与 Next Eligible Actions。
+
+Checkpoint 至少应回答：
+
+```text
+Current Step:
+Completed:
+Remaining:
+Current Files / Branch / Commit:
+Findings:
+Blockers:
+Next Action:
+```
+
+只要任务尚未终态，就必须能够从 Repository 记录中回答“现在做到哪里、还剩什么、下一步是什么”。
+
+此外，Active Orchestrator 每次向用户报告调度结果时，都应附带一个**简短任务进度说明**。通常包含：
+
+```text
+当前 Task / Gate
+状态
+本次完成
+Finding / Blocker（如有）
+下一步
+```
+
+该简述用于用户快速掌握项目，不替代 Repository 的正式记录。
+
+## 15. 设计思路与可复用经验落库
+
+有长期参考价值的设计 reasoning（推理）、工程取舍、拒绝方案、延期边界和可复用开发经验，不应只存在于聊天上下文。
+
+统一落入：
+
+`docs/development/notes/`
+
+规则见：
+
+`docs/development/notes/README.md`
+
+必须优先记录以下内容：
+
+- 非显然的架构 / ownership / lifecycle / fencing / recovery / security 取舍；
+- 为什么拒绝某个看似方便的实现；
+- 为什么把某个机制推迟到后续真实边界；
+- Finding 暴露出的可复用设计规律；
+- 可抽象成通用 AI 开发调度、Review、测试、上下文、交付方法的经验；
+- 用户明确要求保留、以后整理成通用文档的开发或设计思路。
+
+Design Note 默认是 `NON-NORMATIVE / WORKING REFERENCE`，不能覆盖 Frozen Design、Contract、Baseline 或正式 Coordination state。
+
+当某条思路成熟为正式约束时，必须通过正式 Task / Review 流程晋升为 Design、Contract、Amendment 或 Development Guide；不能因为写进 notes 就自动获得规范权威。
