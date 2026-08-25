@@ -22,6 +22,17 @@ WAIVED
 
 `WAIVED` 不等于独立审查已完成。
 
+当本应执行的独立 Review 被 `WAIVED` 时，必须产生显式 `Review Debt`，由 Orchestrator 记录到协调状态中。不得因为后续继续开发而自动消失。
+
+Review Debt 至少记录：
+- 对应 Task / Delivery；
+- 被 Waive 的 Review 类型；
+- 原因；
+- 风险等级；
+- 清偿条件。
+
+只有真正满足清偿条件的独立 Review / Re-Review 完成并被 Orchestrator 接受后，Review Debt 才能关闭。
+
 ## 2. 高风险交付
 
 以下内容在进入稳定 Baseline / Release 前必须完成真正独立 Review：
@@ -37,6 +48,10 @@ WAIVED
 ```text
 PENDING_INDEPENDENT_REVIEW
 ```
+
+并形成 Review Debt。
+
+高风险交付存在未清偿 Review Debt 时，不得进入稳定 Baseline / Release。
 
 ## 3. Review 默认只读
 
@@ -80,6 +95,8 @@ NON_BLOCKING
 ## 5. Re-Review
 
 Re-Review 应优先做 targeted verification，只验证原 Finding 是否关闭以及修复是否引入新问题，不默认重复完整审查。
+
+如果 Re-Review 的目标是清偿 Review Debt，Task 必须明确指出所清偿的 Debt / Delivery，避免一次无关 Review 被错误当成债务已关闭。
 
 ## 6. Reviewer 选择
 
