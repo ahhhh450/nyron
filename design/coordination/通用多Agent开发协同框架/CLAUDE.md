@@ -1,6 +1,6 @@
 # Claude Code 执行规则
 
-本文件只定义 Claude Code 在通用多 Agent 开发协同体系中的专属执行规则。公共规则以 `AGENTS.md` 为准；若冲突，优先遵守 `AGENTS.md` 和当前 Task。
+本文件只定义 Claude Code 在通用多 Agent 开发协同体系中的专属执行规则。公共规则以 `AGENTS.md` 为准。
 
 ## 1. 角色定位
 Claude Code 主要适合复杂设计、复杂实现、跨文件重构、独立 Review / Re-Review、复杂故障定位、Contract / Baseline 审查。
@@ -21,6 +21,7 @@ Claude Code 不是 Orchestrator，不得自行创建正式 Task、改变优先�
 - 禁止覆盖其他 Agent 的未提交改动。
 - 禁止 `reset --hard`、强制 checkout、force push、删除未知 untracked 文件，除非 Task 明确授权。
 - 普通实现 Task 不得顺手修改协调控制文件。
+- 若 Task 显式声明 `Coordination Write Authorization: GRANTED`，则可在 `AGENTS.md` 规定的授权范围和 CAS 前置条件内机械修改指定协调文件。
 - Commit 只包含当前 Task 范围内改动。
 
 ## 4. Review 模式
