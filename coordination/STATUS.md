@@ -8,36 +8,32 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `1`
-- Coordination Revision: `45`
-- Last Accepted Commit: `18541069a4e4987c97dae7bf8ba3b5ab6c31844c`
+- Coordination Revision: `46`
+- Last Accepted Commit: `128a2d1afaa94e7cd92a38df27c924ac18a980be`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Project Phase: `SYSTEM FOUNDATION IMPLEMENTATION`
 - First Slice Closure: `PASS / CLOSED`
-- Current Frozen Implementation Gate: `ARE-GATE-3 — EffectOperation Foundation / Debt Interlock before 3B`
+- Current Frozen Implementation Gate: `ARE-GATE-3 — Pre-3B Resource Provenance Hardening`
 
 ## Active Tasks
 
 | Task | Type | Agent | State | Depends On |
 |---|---|---|---|---|
-| `NYRON-T-20260826-044` | Concurrency / Trust debt settlement analysis before ARE-GATE-3B | Claude Code | `READY` | Task 042 accepted/integrated; Task 043 accepted |
+| `NYRON-T-20260826-045` | Resource provenance TOCTOU security hardening | Codex | `READY` | Task 044 accepted/integrated |
 
 ## Accepted This Revision
 
-- `NYRON-T-20260826-043` — independent HIGH-risk bounded EffectOperation review — `PASS_WITH_FINDINGS / ACCEPTED`; Blocking Findings `NONE`.
-- Task 043 independently verified EffectOperation ownership, durable PREPARED-before-dispatch, exact authority-consumption linearization, Capability+Lease+Attempt binding, deterministic bounded filesystem mutation, crash evidence/recovery classification, replay/non-transferability and SQLite storage invariants.
-- Independent validation included more than rerunning Executor tests: Reviewer ran a real two-thread/two-independent-connection file-backed SQLite `BEGIN IMMEDIATE` serialization probe and confirmed the linearization is genuine SQLite engine behavior under the current writer discipline.
-- `NYRON-T-20260826-043-F-001` — `ARCHITECTURE / NON_BLOCKING / OPEN` — current authority-consumption linearization is sound but load-bearing on canonical authority-mutating writes using `SQLiteStore.transaction()` with `BEGIN IMMEDIATE`; genuine multi-threaded Runtime, connection pooling, raw writer connections, materially changed locking/transaction mode, distributed/process-separated authority or equivalent changes require explicit revalidation before relying on the proof.
-- `NYRON-T-20260825-042` — Bounded EffectOperation foundation — `ACCEPTED / INTEGRATED`.
-- Task 042 reviewed delivery content commit: `15b01a3efd49011fa7919b913d1acd3cd11d0b84`.
-- Task 042 Result-record branch tip: `d75339220b0f742b49fb5859025a2bd795528c53`.
-- Integration PR: `#17`.
-- Integration merge commit: `18541069a4e4987c97dae7bf8ba3b5ab6c31844c`.
-- Task 042 Review Debt is `CLOSED`.
-- `ARE-GATE-3A — Bounded EffectOperation Foundation` is `PASS / CLOSED`.
-- First real accepted external/foreign authority-consumption path is now: durable EffectOperation PREPARED -> exact race-safe dispatch admission against Runtime Attempt/fencing + CapabilityGrant + Resource/ResourceLease -> deterministic bounded trusted external mutation -> exact completion/UNKNOWN evidence.
-- `ORCHESTRATOR.md` now requires HIGH-risk Review to include at least one Reviewer-originated adversarial validation beyond simply rerunning the Executor's standard validation when materially applicable; test-green alone is not sufficient architecture proof.
-- `docs/development/notes/2026-08-26_Effect_Linearization_Concurrency_Interlock.md` records the load-bearing SQLite writer/BEGIN IMMEDIATE assumption and mandatory future revalidation triggers.
-- No `ARE-GATE-3B` implementation is opened in Revision 45. Before 3B, Task `NYRON-T-20260826-044` must settle the activation conditions and resolution/defer plan for `NYRON-T-20260825-038-F-001` and `NYRON-T-20260826-043-F-001` so future threat-model expansion is not tracked only by human memory.
+- `NYRON-T-20260826-044` — Concurrency / Trust debt settlement analysis before ARE-GATE-3B — `SUCCESS / ACCEPTED / INTEGRATED`.
+- Task 044 delivery content commit: `7dc42ac83bfe7b9016643a81567878bd0df12677`; Result-record tip: `9646dc0065825a53fbf161838a54f51d2ee3ee7d`.
+- Integration PR: `#18`; integration merge commit: `128a2d1afaa94e7cd92a38df27c924ac18a980be`.
+- Accepted working candidate: `docs/development/notes/2026-08-26_ARE_GATE_3B_Debt_Settlement_Candidate.md` (`NON-NORMATIVE`). Unresolved Architecture Finding: `NONE`.
+- Task 044 establishes explicit activation conditions for both current threat-model-dependent findings and adopts the rule that crossing an activation condition makes that finding a blocking prerequisite until closed or formally reclassified on current evidence.
+- `NYRON-T-20260825-038-F-001` remains `SECURITY / NON_BLOCKING / OPEN`; Task 044 recommends a dedicated pre-3B hardening task now rather than repeated deferral to ARE-GATE-5.
+- `NYRON-T-20260826-043-F-001` remains `ARCHITECTURE / NON_BLOCKING / OPEN`; no code change is required while the Kernel stays logically single-writer under canonical `SQLiteStore.transaction()` / `BEGIN IMMEDIATE` discipline.
+- Planned ARE-GATE-3B may proceed after the Resource hardening only if it remains explicitly logically single-writer: no real background thread/process/async callback, no connection-pool/multi-writer change, and no changed transaction discipline.
+- Task `NYRON-T-20260826-045` is opened for the smallest local Resource provenance/path-substitution hardening before 3B. Independent HIGH-risk Claude review is mandatory.
+- Task 045 must not claim Finding 038-F-001 closed merely because descriptor-relative APIs are added; independent review must prove closure or state the exact residual race/platform assumption.
+- ARE-GATE-3B remains `NOT OPEN` in Revision 46.
 
 ## First Slice Closure
 
@@ -102,12 +98,14 @@ Final Results must include exact full 40-character `SHA Verification Evidence` w
 
 ## Review Debt
 
-- No open implementation Review Debt. Task 042 HIGH-risk Review Debt was cleared by accepted independent Task 043.
+| Delivery / Task | Review Type | Reason | Risk | Clearance Condition |
+|---|---|---|---|---|
+| `NYRON-T-20260826-045` | Independent Security Review | Resource provenance/path-substitution hardening changes filesystem identity and destructive-operation assumptions | HIGH | after Task 045 remote Result, independent Claude review proves no blocking regression and determines 038-F-001 disposition |
 
 ## Open Findings
 
-- `NYRON-T-20260825-038-F-001` — `SECURITY / NON_BLOCKING / OPEN` — Resource provisioning `mkdir` -> provenance-marker TOCTOU under concurrent less-trusted mutation of the exact managed root. Current threat model keeps it non-blocking only while the managed root is not concurrently writable by less-trusted actors. Activation condition must be settled by Task 044 before 3B; hardening is mandatory no later than Module filesystem I/O, less-trusted co-resident root mutation or Host trust-boundary exposure.
-- `NYRON-T-20260826-043-F-001` — `ARCHITECTURE / NON_BLOCKING / OPEN` — Effect authority-consumption linearization depends on canonical SQLite writer discipline and `BEGIN IMMEDIATE`. Activation condition: any genuine multi-threaded/worker-pool Runtime, connection pooling, independent writer path, materially changed SQLite locking/transaction discipline, distributed/process-separated authority, or long/async Effect model that changes the admission ordering proof. Revalidation is required before relying on the proof after such a change.
+- `NYRON-T-20260825-038-F-001` — `SECURITY / NON_BLOCKING / OPEN` — Resource provisioning `mkdir` -> provenance-marker TOCTOU under concurrent mutation of the exact managed root/path namespace. Activation Condition: any less-trusted/co-resident actor gains concurrent write capability to the managed root or relevant parent/path namespace; Module filesystem access, Host trust-boundary exposure, shared/network-root assumptions or equivalent path-substitution capability cross the condition. Task 045 is the dedicated pre-3B hardening; closure is not assumed in advance.
+- `NYRON-T-20260826-043-F-001` — `ARCHITECTURE / NON_BLOCKING / OPEN` — Effect authority-consumption linearization depends on every authority-mutating write preserving canonical `SQLiteStore.transaction()` / `BEGIN IMMEDIATE` discipline and admission revalidation+durable admission remaining in the same transaction. Activation Condition: genuine multi-threaded/worker-pool Runtime, connection pooling, independent/raw writer path, materially changed SQLite locking/transaction discipline, distributed/process-separated authority, or long/async execution that changes the current ordering proof. Such a change requires real-concurrency revalidation before acceptance.
 
 ## Stable Baseline
 
@@ -146,11 +144,15 @@ Frozen D-004 §26 route remains:
 - `ARE-GATE-3` remains OPEN for later bounded Effect work;
 - later replacement fencing / Host mediated boundary / Accounting-Recovery integration gates remain future work.
 
-Revision 45 intentionally does **not** open `ARE-GATE-3B`.
+Revision 46 intentionally keeps `ARE-GATE-3B` closed while Task 045 performs the dedicated Resource provenance/path-substitution hardening recommended by accepted Task 044.
 
-The immediate interlock is Task `NYRON-T-20260826-044`: determine whether planned 3B semantics activate the Resource provenance TOCTOU or SQLite concurrency assumptions, define exact activation conditions and validation obligations for both findings, and recommend one smallest safe next gate. This is analysis/debt settlement only, not new functionality.
+Task 045 must preserve Resource ownership/lifecycle and current trusted-root semantics while using the narrowest local descriptor/no-follow/object-identity primitives available. It must not overclaim security closure: independent review decides whether `NYRON-T-20260825-038-F-001` is actually CLOSED or only NARROWED/OPEN with an exact residual.
 
-Threat-model-dependent NON_BLOCKING findings must no longer rely only on human memory: when a future Task crosses an accepted finding's activation condition, that finding becomes a blocking prerequisite until closed or formally reclassified on current evidence.
+After Task 045 and its independent review are accepted, the Orchestrator may open the smallest safe ARE-GATE-3B described by the accepted Task 044 candidate: exercise durable `PREPARED -> ACTIVE` before external mutation and `ACTIVE -> COMPLETED/UNKNOWN` exact-evidence recovery across multiple synchronous calls, while remaining logically single-writer and introducing no real background concurrency.
+
+`NYRON-T-20260826-043-F-001` remains a hard interlock on future concurrency-model change. Any 3B Task must explicitly state that its scope does not cross that activation condition, and its independent review must verify the delivered diff actually preserves the single-writer model.
+
+Threat-model-dependent NON_BLOCKING findings must be re-evaluated against every future Task that touches their subject area. If a Task crosses an accepted activation condition, the finding becomes a blocking prerequisite until closed or formally reclassified on current evidence.
 
 ## Design / Development Notes
 
@@ -160,6 +162,7 @@ Threat-model-dependent NON_BLOCKING findings must no longer rely only on human m
 - `docs/development/notes/2026-08-25_EffectOperation_Gate3_Subdivision.md` — rationale for splitting frozen ARE-GATE-3 into independently reviewable implementation sub-gates.
 - `docs/development/notes/2026-08-25_Stale_Policy_and_Parallel_Coordination.md` — choose stale policy according to semantic coupling and task risk.
 - `docs/development/notes/2026-08-26_Effect_Linearization_Concurrency_Interlock.md` — explicit load-bearing SQLite writer/BEGIN IMMEDIATE invariant and future revalidation triggers.
+- `docs/development/notes/2026-08-26_ARE_GATE_3B_Debt_Settlement_Candidate.md` — accepted non-normative debt-settlement candidate and next-gate recommendation.
 
 ## Orchestrator Implementation Boundary
 
@@ -172,10 +175,10 @@ The Active Orchestrator does not perform complex production implementation. Comp
 
 ## Next Eligible Tasks
 
-1. Execute Claude Code analysis Task `NYRON-T-20260826-044` against Epoch 1 / Revision 45 to settle concurrency/trust debt before ARE-GATE-3B.
-2. Do not open or implement ARE-GATE-3B until Task 044 is accepted and the Orchestrator explicitly selects the next bounded gate.
-3. Do not expose managed Resource roots to less-trusted concurrent filesystem actors or Module filesystem APIs until `NYRON-T-20260825-038-F-001` is hardened/closed or formally reclassified on current evidence.
-4. If future Runtime/Effect work activates `NYRON-T-20260826-043-F-001`, re-run real-concurrency linearization validation before accepting the changed writer/execution model.
+1. Execute Codex security-hardening Task `NYRON-T-20260826-045` against Epoch 1 / Revision 46.
+2. After Task 045 remote Result, assign an independent Claude HIGH-risk security review; the review must include at least one Reviewer-originated adversarial validation beyond the Executor's standard tests.
+3. Do not open ARE-GATE-3B until Task 045 and its independent review are accepted and `NYRON-T-20260825-038-F-001` has a current evidence-based disposition.
+4. Preserve `NYRON-T-20260826-043-F-001` as an explicit single-writer/concurrency activation interlock in every later Effect Task touching long/async semantics.
 5. `NYRON-D-006` remains deferred behind P0 System Foundation unless explicitly reprioritized.
 
 ## State Update Rule
