@@ -12,8 +12,10 @@ from .activation import (
     ActivationRepository,
     InputBinding,
 )
+from .attempt import RunAttempt
 from .delivery import Delivery, DeliveryError, DeliveryProjector
 from .packet import Packet, PacketError, PacketRepository
+from .run import Run, RunError, RunRepository
 
 __all__ = [
     "Activation",
@@ -29,5 +31,9 @@ __all__ = [
     "Packet",
     "PacketError",
     "PacketRepository",
+    "Run",
+    "RunAttempt",
+    "RunError",
+    "RunRepository",
     "WorkflowExecution",
 ]

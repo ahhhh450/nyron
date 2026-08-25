@@ -203,6 +203,39 @@ class SQLiteStore:
             """
         )
 
+    def create_run_attempt_schema(self) -> None:
+        """Install the Task-scoped Run and RunAttempt authority tables."""
+
+        self.create_activation_schema()
+        self.connection.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS runs (
+                run_ref TEXT PRIMARY KEY,
+                activation_ref TEXT NOT NULL UNIQUE,
+                execution_ref TEXT NOT NULL,
+                current_attempt_seq INTEGER NOT NULL
+                    CHECK (current_attempt_seq > 0),
+                fencing_generation INTEGER NOT NULL
+                    CHECK (fencing_generation > 0),
+                state TEXT NOT NULL,
+                FOREIGN KEY (activation_ref)
+                    REFERENCES activations(activation_ref),
+                FOREIGN KEY (execution_ref)
+                    REFERENCES workflow_executions(execution_ref)
+            );
+
+            CREATE TABLE IF NOT EXISTS run_attempts (
+                run_ref TEXT NOT NULL,
+                attempt_seq INTEGER NOT NULL CHECK (attempt_seq > 0),
+                fencing_token TEXT NOT NULL UNIQUE
+                    CHECK (length(fencing_token) > 0),
+                state TEXT NOT NULL,
+                PRIMARY KEY (run_ref, attempt_seq),
+                FOREIGN KEY (run_ref) REFERENCES runs(run_ref)
+            );
+            """
+        )
+
     @contextmanager
     def transaction(self) -> Iterator[sqlite3.Connection]:
         """Commit all writes together, or roll the entire transaction back."""
