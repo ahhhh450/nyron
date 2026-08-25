@@ -348,6 +348,106 @@ class SQLiteStore:
             """
         )
 
+    def create_resource_schema(self) -> None:
+        """Install ARE-GATE-2 Resource Manager canonical tables."""
+
+        self.create_run_attempt_schema()
+        self.connection.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS resources (
+                resource_ref TEXT PRIMARY KEY,
+                resource_type TEXT NOT NULL,
+                resource_owner_ref TEXT NOT NULL,
+                scope_json TEXT NOT NULL,
+                state TEXT NOT NULL CHECK (state IN (
+                    'PROVISIONING', 'AVAILABLE', 'DESTROYING',
+                    'DESTROYED', 'UNKNOWN'
+                )),
+                external_ref TEXT NOT NULL UNIQUE,
+                provenance_json TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS resource_leases (
+                lease_ref TEXT PRIMARY KEY,
+                resource_ref TEXT NOT NULL,
+                lease_holder_ref TEXT NOT NULL,
+                execution_ref TEXT NOT NULL,
+                activation_ref TEXT NOT NULL,
+                run_ref TEXT NOT NULL,
+                attempt_seq INTEGER NOT NULL CHECK (attempt_seq > 0),
+                fencing_token TEXT NOT NULL CHECK (length(fencing_token) > 0),
+                fencing_generation INTEGER NOT NULL
+                    CHECK (fencing_generation > 0),
+                issued_at INTEGER NOT NULL,
+                expires_at INTEGER,
+                state TEXT NOT NULL CHECK (state IN (
+                    'ACTIVE', 'REVOKE_REQUESTED', 'RELEASED',
+                    'EXPIRED', 'UNKNOWN'
+                )),
+                FOREIGN KEY (resource_ref) REFERENCES resources(resource_ref),
+                FOREIGN KEY (activation_ref) REFERENCES activations(activation_ref),
+                FOREIGN KEY (run_ref, attempt_seq)
+                    REFERENCES run_attempts(run_ref, attempt_seq)
+            );
+
+            CREATE TRIGGER IF NOT EXISTS resource_immutable_fields
+            BEFORE UPDATE ON resources
+            WHEN NEW.resource_ref != OLD.resource_ref
+              OR NEW.resource_type != OLD.resource_type
+              OR NEW.resource_owner_ref != OLD.resource_owner_ref
+              OR NEW.scope_json != OLD.scope_json
+              OR NEW.external_ref != OLD.external_ref
+              OR NEW.provenance_json != OLD.provenance_json
+            BEGIN
+                SELECT RAISE(ABORT, 'resource identity immutable');
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS resource_lease_immutable_fields
+            BEFORE UPDATE ON resource_leases
+            WHEN NEW.lease_ref != OLD.lease_ref
+              OR NEW.resource_ref != OLD.resource_ref
+              OR NEW.lease_holder_ref != OLD.lease_holder_ref
+              OR NEW.execution_ref != OLD.execution_ref
+              OR NEW.activation_ref != OLD.activation_ref
+              OR NEW.run_ref != OLD.run_ref
+              OR NEW.attempt_seq != OLD.attempt_seq
+              OR NEW.fencing_token != OLD.fencing_token
+              OR NEW.fencing_generation != OLD.fencing_generation
+              OR NEW.issued_at != OLD.issued_at
+              OR NEW.expires_at IS NOT OLD.expires_at
+            BEGIN
+                SELECT RAISE(ABORT, 'resource lease identity immutable');
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS resource_state_transition
+            BEFORE UPDATE OF state ON resources
+            WHEN NOT (
+                NEW.state = OLD.state
+                OR (OLD.state = 'PROVISIONING'
+                    AND NEW.state IN ('AVAILABLE', 'UNKNOWN'))
+                OR (OLD.state = 'AVAILABLE'
+                    AND NEW.state IN ('DESTROYING', 'UNKNOWN'))
+                OR (OLD.state = 'DESTROYING'
+                    AND NEW.state IN ('DESTROYED', 'UNKNOWN'))
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'invalid resource state transition');
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS resource_lease_state_transition
+            BEFORE UPDATE OF state ON resource_leases
+            WHEN NOT (
+                NEW.state = OLD.state
+                OR (OLD.state = 'ACTIVE' AND NEW.state IN (
+                    'REVOKE_REQUESTED', 'RELEASED', 'EXPIRED', 'UNKNOWN'
+                ))
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'invalid resource lease state transition');
+            END;
+            """
+        )
+
     @contextmanager
     def transaction(self) -> Iterator[sqlite3.Connection]:
         """Commit all writes together, or roll the entire transaction back."""
