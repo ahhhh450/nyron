@@ -6,7 +6,10 @@
 Orchestrator reads STATUS
 → creates Task
 → assigns isolated Executor workspace
-→ Executor works and returns Result
+→ Executor works locally
+→ validates + creates Task-scoped commit
+→ pushes delivery to remote reviewable branch/ref
+→ returns Result with Remote Branch + Remote Commit
 → Review if required
 → Fix / Re-Review if needed
 → Orchestrator Accepts or Rejects
@@ -14,6 +17,17 @@ Orchestrator reads STATUS
 → Integration / Baseline / Release when eligible
 → Archive terminal artifacts when safe
 ```
+
+默认职责分工：
+
+```text
+Local workspace = execution state
+Remote GitHub = reviewable project state
+```
+
+本地负责实现、测试、调试、diff 与 commit；GitHub 远端负责成为跨 Agent / 跨会话可读取的正式交付与 Review 入口。
+
+未 push 的本地 commit 不视为正式 submitted delivery，除非 Task 明确声明 `LOCAL_ONLY`、`READ_ONLY` 或其他不要求远端提交的特殊模式。
 
 ## 2. Task 状态建议
 
@@ -34,6 +48,8 @@ ARCHIVED
 
 Executor 可以报告执行状态，但不得自行把项目级 Task 裁决为 `ACCEPTED`。
 
+对于 Repository 写入 Task，进入 `RESULT_SUBMITTED` 的正常前提是远端已经存在可读取的 Task delivery，并且 Result 提供可核验的 Remote Branch / Remote Commit。
+
 ## 3. 调度顺序
 
 创建 Task 前检查：
@@ -41,7 +57,8 @@ Executor 可以报告执行状态，但不得自行把项目级 Task 裁决为 `
 - `Depends On` 是否已满足；
 - 是否存在 workspace 冲突；
 - Agent 是否适合任务风险；
-- Review independence 是否可满足。
+- Review independence 是否可满足；
+- Task 是否要求远端可审查交付，及目标 branch/ref 策略是否明确。
 
 ## 4. 风险分级
 
@@ -58,7 +75,28 @@ Architecture、Contract、Security、Core Runtime、Concurrency、Replay、Basel
 
 实现代码与 Coordination 更新应分离。若 Orchestrator 无直接 repo 写权限，应单独下发机械性的 Coordination Update，不允许 Executor 在实现 commit 中顺手修改 STATUS。
 
-## 6. Checkpoint 生命周期
+## 6. Delivery Submission 与 Review 入口
+
+Repository 写入 Task 的正常交付链路：
+
+```text
+isolated local workspace
+→ implementation / validation
+→ Task-scoped commit
+→ safe push to remote Task branch/ref
+→ Result records Remote Branch + Remote Commit
+→ Reviewer reads remote diff / commit
+```
+
+原则：
+
+- Reviewer 不应依赖 Original Agent 的本地 workspace；
+- Orchestrator 不应把不可从远端核验的本地 SHA 当成正式交付事实；
+- push 失败、权限不足或远端不可读时，应报告 `PARTIAL` / `BLOCKED`，而不是正式 `SUCCESS`；
+- push 到远端不等于 merge，更不等于 ACCEPTED；
+- 是否 merge / integrate / baseline / release 仍由 Orchestrator 裁决。
+
+## 7. Checkpoint 生命周期
 
 Checkpoint 用于保证 Task 在长时间执行、换会话、换 Agent 或工具中断后仍可恢复。
 
@@ -73,7 +111,9 @@ Checkpoint 必须新建，不覆盖旧记录。
 
 Task 在触发阈值前直接结束时，Final Result 即可，不要求额外 Checkpoint。
 
-## 7. Archive 生命周期
+对于要求远端交付的 Task，需要作为 Review / Handoff 依据的 Checkpoint 应尽可能随 Task branch/ref 一并 push，使后续 Agent 不依赖原本地 workspace。
+
+## 8. Archive 生命周期
 
 `tasks/`、`results/`、`checkpoints/` 是活跃协同面，不应无限积累历史记录。
 
@@ -108,7 +148,7 @@ Orchestrator 在以下任一时点执行一次 archive sweep：
 
 Archive 只减少默认读取集合，不改变历史事实、Result 或已接受结论。
 
-## 8. Orchestrator 上下文维护
+## 9. Orchestrator 上下文维护
 
 Orchestrator 默认只读取：
 
@@ -123,7 +163,7 @@ STATUS
 
 Handoff 只携带当前活跃状态、未决风险和下一步；已经安全归档的 Task 不重新塞入主窗口上下文。
 
-## 9. Fail Closed
+## 10. Fail Closed
 
 遇到以下情况不得猜测继续：
 - Epoch 不一致；
@@ -131,6 +171,7 @@ Handoff 只携带当前活跃状态、未决风险和下一步；已经安全归
 - 依赖状态不确定；
 - Scope 冲突；
 - 并发 workspace 不安全；
+- 应远端提交但交付只存在本地；
 - 高风险 Review independence 无法满足且准备进入稳定基线。
 
 此时返回 Blocker 或请求 Orchestrator 重新裁决。
