@@ -8,7 +8,7 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `1`
-- Coordination Revision: `39`
+- Coordination Revision: `40`
 - Last Accepted Commit: `a0a840420cc25f357d451e3799581dfc21817ca6`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Project Phase: `SYSTEM FOUNDATION IMPLEMENTATION`
@@ -19,18 +19,21 @@
 
 | Task | Type | Agent | State | Depends On |
 |---|---|---|---|---|
-| `NYRON-T-20260825-036` | Capability revoke-after-expiry coverage | DeepSeek | `READY` | Task 034 accepted/integrated |
+| `NYRON-T-20260825-036` | Capability revoke-after-expiry coverage | DeepSeek | `FIX_REQUIRED` | Task 034 accepted/integrated |
 | `NYRON-T-20260825-037` | Resource / ResourceLease foundation | Codex | `IN_REVIEW` | Task 034 accepted/integrated |
 | `NYRON-T-20260825-038` | Independent Resource foundation review | Claude Code | `READY` | Task 037 remote Result submitted |
+| `NYRON-T-20260825-039` | Task 036 Final Result SHA correction | DeepSeek | `READY` | Task 036 Result submitted |
 
 ## Accepted This Revision
 
-- No new production implementation is accepted in Revision 39.
-- Orchestrator verified Task 037 remote delivery identity: content commit `835d752ba2e68507f358e2bdea0b38ce981a1d6d` exists, is based directly on Revision-38 main commit `60aaa1fa0a3dbae3cd6e5963aa9be31ea0b86585`, and is reachable from `task/NYRON-T-20260825-037`.
-- Task 037 Result-record branch tip is `9b9875462d889a2d149d7b1b5a0995a87d1349f2`, whose direct parent is the reviewed content commit `835d752ba2e68507f358e2bdea0b38ce981a1d6d`.
-- Task 037 Result reports targeted Resource tests `14/14 PASS`, Capability targeted tests `12/12 PASS`, First Slice connected E2E `1/1 PASS`, complete `tests/kernel` `137/137 PASS`, Findings `NONE`, Blockers `NONE`; these executor claims remain unaccepted pending independent review.
-- Task 037 moves to `IN_REVIEW`; independent Claude Code Review Task `NYRON-T-20260825-038` is opened at `Epoch 1 / Revision 39`.
-- Task 037 Review Debt remains open. `ARE-GATE-2` remains the current frozen implementation gate and `ARE-GATE-3 — EffectOperation Foundation` remains closed.
+- No new production implementation is accepted in Revision 40.
+- Orchestrator independently verified Task 036 delivery content commit `229f52f39462a843680c20f665218801805ad547` exists, is reachable from `task/NYRON-T-20260825-036`, is based on Revision-38 main commit `60aaa1fa0a3dbae3cd6e5963aa9be31ea0b86585`, and changes only `tests/kernel/test_capability_foundation.py` by adding the revoke-after-expiry regression coverage.
+- Task 036 current Result-record branch tip is `1528512d4648166bedabb014c9302da200cc7607`, whose direct parent is the delivery content commit.
+- Task 036 reports the new revoke-after-expiry test `1/1 PASS`, Capability suite `13/13 PASS`, complete `tests/kernel` `124/124 PASS`, no `src/` change, Findings `NONE`, Blockers `NONE`.
+- The Task 036 Final Result records only abbreviated SHA `229f52f` in `Commit`, `Remote Commit`, and SHA Verification Evidence. This violates the frozen exact Final Result SHA rule even though the underlying content commit is independently resolvable.
+- `NYRON-T-20260825-036-F-001` is opened as `PROCESS / BLOCKING` for Task 036 acceptance/integration only. Task 036 moves to `FIX_REQUIRED`; low-risk Process Fix Task `NYRON-T-20260825-039` is opened to correct only the Result metadata on the existing delivery branch without rewriting history.
+- Integration PR `#15` exists only as a DRAFT and MUST NOT merge until Task 039 closes `NYRON-T-20260825-036-F-001`.
+- Task 037/038 review state is unaffected. Task 037 Review Debt remains open; `ARE-GATE-2` remains current and `ARE-GATE-3 — EffectOperation Foundation` remains closed.
 
 ## First Slice Closure
 
@@ -74,7 +77,7 @@ The accepted connected path is:
 - `NYRON-T-20260825-023` — Runtime ExecutionAdmission — `ACCEPTED`; implementation content `28921d11a3669d41a3b3ba1fe132a72a7a064b3c`; integration merge `47c7316ab42ad47be2fa9b11554126d356c5f2cf`.
 - `NYRON-T-20260825-022` — Targeted Process Re-Review of Task 021 — `PASS / ACCEPTED`.
 - `NYRON-T-20260825-021` — Task 019 traceability + Final Result SHA hardening — `ACCEPTED`; integration merge `d22bb03761ab446c44f3d82d763eda32094e35ed`.
-- `NYRON-T-20260825-020-F-001` — PROCESS / BLOCKING — CLOSED.
+- `NYRON-T-20260825-020-F-001` — `PROCESS / BLOCKING` — `CLOSED`.
 - `NYRON-T-20260825-019` — AccountingScope Identity + Static Ancestry Resolver — `ACCEPTED`; implementation content `2fadfdfeeb4423d2c2eb5fe1b2267d61a5e5250e`; integration merge `e9dc3e9f2bc2c448fa37212d1fbf2a0a397ab61f`.
 - `NYRON-T-20260825-013/017/018` — Trusted Module Host chain — `ACCEPTED`; integration commit `75a24fb61d1ecb37137c7b52cafa1855bc5879c1`.
 - `NYRON-T-20260825-012/014/015` — Packet / Delivery + Review + SHA correction — `ACCEPTED`; integration `c0f0c97cea43ba10718d8a786361c1c0da8bbb5c`.
@@ -96,7 +99,8 @@ Final Results must include exact `SHA Verification Evidence` with the final SHA,
 
 ## Open Findings
 
-- `NYRON-T-20260825-035-F-001` — `TEST / NON_BLOCKING / OPEN` — missing direct coverage for `CapabilityAuthority.revoke()` after `expires_at`; Task 036 scheduled to close.
+- `NYRON-T-20260825-035-F-001` — `TEST / NON_BLOCKING / OPEN` — missing direct coverage for `CapabilityAuthority.revoke()` after `expires_at`; Task 036 implementation supplies the intended test but the Finding remains open until Task 036 is formally accepted/integrated.
+- `NYRON-T-20260825-036-F-001` — `PROCESS / BLOCKING / OPEN` — Task 036 Final Result uses abbreviated SHA metadata instead of the required exact full SHA; Task 039 assigned to correct the record without changing Task 036 content.
 
 ## Stable Baseline
 
@@ -131,13 +135,13 @@ Frozen D-004 §26 route remains:
 - `ARE-GATE-3` — EffectOperation foundation;
 - later replacement fencing / Host mediated boundary / Accounting-Recovery integration gates.
 
-Revision 39 keeps **ARE-GATE-2** open only for independent verification of Task 037. Task 037 is not accepted or integrated yet.
+Revision 40 keeps **ARE-GATE-2** open only for independent verification of Task 037. Task 037 is not accepted or integrated yet.
 
-Task 038 must independently verify Resource/ResourceLease ownership, managed-root confinement, filesystem provenance, all correctness-relevant provision/destroy crash windows, no silent adoption, destructive-operation safety, exact Runtime Attempt/fencing Lease binding, Lease lifecycle/non-transferability, stale-authority fail closed, advisory/non-consumptive validation, SQLite invariants, scope discipline and complexity.
+Task 038 continues independently against Task 037 content commit `835d752ba2e68507f358e2bdea0b38ce981a1d6d` and is unaffected by the Task 036 process repair.
+
+Task 036 content is test-only and independently traceable, but formal acceptance/integration is blocked solely by `NYRON-T-20260825-036-F-001`. Task 039 must correct the Final Result to the exact full content SHA before draft PR `#15` may be merged.
 
 Frozen Clarification 004 still controls actual authority consumption: no cached ValidateLease result or hypothetical authority-use permit may authorize future external/foreign consequence. That linearization remains deferred to the real Effect/Command boundary.
-
-Task 036 may continue in parallel because it is TEST-ONLY and isolated from Task 037/038.
 
 ## Orchestrator Implementation Boundary
 
@@ -151,10 +155,11 @@ The Active Orchestrator does not perform complex production implementation. Comp
 ## Next Eligible Tasks
 
 1. Execute independent Claude Code Review `NYRON-T-20260825-038` against Task 037 content commit `835d752ba2e68507f358e2bdea0b38ce981a1d6d`.
-2. Continue `NYRON-T-20260825-036` with DeepSeek in its isolated workspace; it remains a non-blocking test-debt cleanup.
-3. If Task 038 returns no blocking finding and the Orchestrator accepts the Review, clear Task 037 Review Debt and decide Task 037 acceptance/integration.
-4. Do not open `ARE-GATE-3 — EffectOperation Foundation` until Task 037 is independently accepted and integrated.
-5. `NYRON-D-006` remains deferred behind P0 System Foundation unless explicitly reprioritized.
+2. Execute DeepSeek Process Fix `NYRON-T-20260825-039` on the existing `task/NYRON-T-20260825-036` delivery branch to replace abbreviated Task 036 Result SHA fields with exact `229f52f39462a843680c20f665218801805ad547`; no code/test change is authorized.
+3. Do not merge draft PR `#15` until Task 039 closes `NYRON-T-20260825-036-F-001`.
+4. If Task 038 returns no blocking finding and the Orchestrator accepts the Review, clear Task 037 Review Debt and decide Task 037 acceptance/integration.
+5. Do not open `ARE-GATE-3 — EffectOperation Foundation` until Task 037 is independently accepted and integrated.
+6. `NYRON-D-006` remains deferred behind P0 System Foundation unless explicitly reprioritized.
 
 ## State Update Rule
 
