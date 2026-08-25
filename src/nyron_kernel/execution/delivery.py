@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from hashlib import sha256
 from collections.abc import Iterable
 from dataclasses import dataclass
 
@@ -38,6 +39,15 @@ class Delivery:
             self.edge_ref,
             self.target_port_ref,
         )
+
+    @property
+    def delivery_ref(self) -> str:
+        """Return a stable reference derived only from frozen Delivery identity."""
+
+        encoded = json.dumps(
+            self.uniqueness_key, separators=(",", ":"), ensure_ascii=True
+        ).encode("utf-8")
+        return f"delivery:sha256:{sha256(encoded).hexdigest()}"
 
     @property
     def delivery_order_key(self) -> tuple[int, int, int]:
