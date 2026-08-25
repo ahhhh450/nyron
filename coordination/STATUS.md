@@ -8,7 +8,7 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `1`
-- Coordination Revision: `35`
+- Coordination Revision: `36`
 - Last Accepted Commit: `bf81dd7fe67cd190b615f009ad0cd49e53a57c44`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Project Phase: `SYSTEM FOUNDATION IMPLEMENTATION`
@@ -23,9 +23,10 @@
 
 ## Accepted This Revision
 
-- No new implementation accepted in Revision 35.
-- Revision 35 opens the next bounded frozen implementation step after First Slice Closure: `ARE-GATE-1A — Capability Canonical Foundation`.
-- Task 034 is HIGH risk and requires independent Claude review before integration.
+- No new implementation accepted in Revision 36.
+- Revision 36 is a coordination-metadata correction only: Task 034 was opened by Revision 35 but its file still declared `Based On Coordination Revision: 34` with `FAIL_CLOSED`, causing a legitimate stale-context refusal.
+- Task 034 semantics, scope, risk, branch, frozen Gate, and independent-review requirement are unchanged.
+- Task 034 must use the corrected basis `Epoch 1 / Revision 36` before execution begins.
 
 ## First Slice Closure
 
@@ -122,7 +123,7 @@ Frozen D-004 §26 defines the next route after the PURE first slice:
 - `ARE-GATE-3` — EffectOperation foundation;
 - later replacement fencing / Host mediated boundary / Accounting-Recovery integration gates.
 
-Revision 35 opens only **ARE-GATE-1A**, the smallest Capability canonical foundation subset.
+Revision 36 continues only **ARE-GATE-1A**, the smallest Capability canonical foundation subset.
 
 Task 034 explicitly does NOT implement Resource, EffectOperation, Canonical Command, retry/replacement, Recovery, or actual external authority consumption. `ValidateCapability` in this stage is non-consumptive/advisory; Clarification 004's race-safe authority-consumption linearization remains deferred until a real mediated Effect/Command boundary exists.
 
@@ -137,7 +138,7 @@ The Active Orchestrator does not perform complex production implementation. Comp
 
 ## Next Eligible Tasks
 
-1. Execute `NYRON-T-20260825-034` with Codex.
+1. Execute `NYRON-T-20260825-034` with Codex against corrected `Epoch 1 / Revision 36`.
 2. After Task 034 remote Result submission, assign independent Claude Code review.
 3. Do not open ARE-GATE-2 Resource work until Capability Gate 1A is independently accepted and the Orchestrator decides the remaining ARE-GATE-1 boundary.
 4. `NYRON-D-006` remains deferred behind P0 System Foundation unless explicitly reprioritized.
