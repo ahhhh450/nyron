@@ -6,6 +6,16 @@ hostile-plugin sandboxing.  The host exposes the frozen
 a known, registry-resolved trusted module implementation.  Module code
 never receives the StateStore, SQLite connection, filesystem, network,
 or capability objects.
+
+This PURE-only slice does not define a RuntimeContext shape yet, so the
+host accepts only ``runtime_context=None`` and fails closed on any other
+value before module code runs — it never forwards an arbitrary Python
+object (a raw store, a DB connection, or any other handle) to a module.
+
+Before invocation, the host also requires the registered immutable
+``ModuleDefinition`` to compare equal to the canonical contract returned
+by the hosted implementation's own ``definition()`` — resolving the
+right identity/version is not sufficient; the exact contract must match.
 """
 
 from __future__ import annotations
@@ -52,6 +62,13 @@ _TRUSTED_IMPLEMENTATIONS: dict[tuple[str, str], Any] = {
     ): builtin_text_concat.execute,
 }
 
+_TRUSTED_DEFINITIONS: dict[tuple[str, str], Any] = {
+    (
+        builtin_text_concat.MODULE_REF,
+        builtin_text_concat.MODULE_VERSION,
+    ): builtin_text_concat.definition,
+}
+
 
 class TrustedModuleHost:
     """Minimal in-process host for the single seeded trusted builtin.
@@ -59,7 +76,11 @@ class TrustedModuleHost:
     TRUSTED MODULE MODE: identity/version are validated against the
     registered immutable ``ModuleDefinition`` before invocation, and the
     exact pinned ``module_ref@version`` selects the implementation — no
-    name-based / latest-by-name resolution.
+    name-based / latest-by-name resolution. The registered definition
+    must additionally compare equal to the hosted implementation's own
+    canonical contract, and ``runtime_context`` must be exactly ``None``
+    for this PURE-only slice — both checks fail closed before any module
+    code runs.
     """
 
     def __init__(self, registry: ModuleRegistry) -> None:
@@ -70,7 +91,7 @@ class TrustedModuleHost:
         module_ref_version: str,
         inputs: dict[str, Any],
         config: dict[str, Any],
-        runtime_context: object | None = None,
+        runtime_context: None = None,
     ) -> Completed | Failed:
         """Invoke the exact pinned module through the frozen execute ABI."""
         module_ref, version = self._parse_pinned_ref(module_ref_version)
@@ -82,11 +103,23 @@ class TrustedModuleHost:
                 version=version,
             )
         implementation = _TRUSTED_IMPLEMENTATIONS.get((module_ref, version))
-        if implementation is None:
+        canonical_definition = _TRUSTED_DEFINITIONS.get((module_ref, version))
+        if implementation is None or canonical_definition is None:
             raise TrustedHostError(
                 "UNSUPPORTED_MODULE_REFERENCE",
                 module_ref=module_ref,
                 version=version,
+            )
+        if definition != canonical_definition():
+            raise TrustedHostError(
+                "DEFINITION_CONTRACT_MISMATCH",
+                module_ref=module_ref,
+                version=version,
+            )
+        if runtime_context is not None:
+            raise TrustedHostError(
+                "INVALID_RUNTIME_CONTEXT",
+                runtime_context_type=type(runtime_context).__name__,
             )
         try:
             outputs = implementation(inputs, config, runtime_context)
