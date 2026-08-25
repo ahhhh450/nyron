@@ -3,6 +3,7 @@
 - Task ID: `T-YYYYMMDD-NNN`
 - Execution Result: `SUCCESS | PARTIAL | BLOCKED | FAILED`
 - Agent: `...`
+- Coordination Epoch: `...`
 - Based On Coordination Revision: `...`
 
 ## Files Changed
