@@ -210,7 +210,32 @@ Orchestrator handoff 的 Epoch +1 同样必须走该 CAS 规则。
 
 ---
 
-## 12. 工具能力不得被公共规则假设
+## 12. Local Execution / Remote Reviewable State
+
+默认采用：
+
+```text
+Local workspace = execution state
+Remote GitHub = reviewable project state
+```
+
+本地隔离 workspace 用于实现、测试、调试、diff 和 Task-scoped commit；GitHub 远端用于形成跨 Agent、跨会话可读取的正式交付与 Review 入口。
+
+除非 Task 明确声明 `LOCAL_ONLY`、`READ_ONLY` 或其他不要求远端提交的模式：
+
+- 仅存在本地的 commit 不构成正式 submitted delivery；
+- Agent 报告 Repository 写入 Task 的正式 `SUCCESS` 前，应将 Task-scoped delivery 安全 push 到远端可读取 branch/ref；
+- Final Result 应提供可核验的 `Remote Branch` 与 `Remote Commit`；
+- Task 要求落盘的 Result / Checkpoint 应随远端交付可读取；
+- Reviewer 不应依赖 Original Agent 的本地 workspace 才能完成 Review。
+
+如果实现已完成但无法安全 push，应如实报告 `PARTIAL` / `BLOCKED` 和对应 Capability / Push Blocker，不得把未 push 的本地 SHA 表述为正式已提交交付。
+
+远端可读取只表示 delivery 可审查，不表示 `ACCEPTED / INTEGRATED / FROZEN / RELEASED`。
+
+---
+
+## 13. 工具能力不得被公共规则假设
 
 公共规则不默认所有 Agent 都能 commit、创建 worktree、联网、直接修改 GitHub 或运行完整测试。
 
@@ -220,7 +245,7 @@ Orchestrator handoff 的 Epoch +1 同样必须走该 CAS 规则。
 
 ---
 
-## 13. Validation 与事实报告
+## 14. Validation 与事实报告
 
 Agent 只能报告实际执行或直接验证过的事实。
 
@@ -237,7 +262,7 @@ BLOCKED
 
 ---
 
-## 14. Findings
+## 15. Findings
 
 统一使用 `Findings`。
 
@@ -257,7 +282,7 @@ Finding 不自动授权修复。
 
 ---
 
-## 15. Independent Review
+## 16. Independent Review
 
 默认：
 
@@ -273,7 +298,7 @@ Architecture、Contract、Security-sensitive change、Core runtime、Baseline ch
 
 ---
 
-## 16. Checkpoint 与 Result
+## 17. Checkpoint 与 Result
 
 统一 Checkpoint：
 
@@ -320,9 +345,11 @@ Accepted Project State
 
 Final Result 产生后，Checkpoint 只保留历史意义，不覆盖 Final Result。
 
+对于要求远端提交的 Repository 写入 Task，Final Result 的正式提交语义还必须满足 `coordination/TASK_PROTOCOL.md` 的 `Remote Delivery Submission`。
+
 ---
 
-## 17. Violation Protocol
+## 18. Violation Protocol
 
 典型违规：
 
@@ -340,7 +367,7 @@ Final Result 产生后，Checkpoint 只保留历史意义，不覆盖 Final Resu
 
 ---
 
-## 18. Fail Closed
+## 19. Fail Closed
 
 以下情况默认停止高风险动作并报告：
 
@@ -353,6 +380,7 @@ Final Result 产生后，Checkpoint 只保留历史意义，不覆盖 Final Resu
 - Workspace 来源不明；
 - 可能破坏其他 Agent 工作；
 - 需要修改 Out of Scope 内容；
+- 应远端提交但正式交付只存在本地；
 - 无法验证关键事实。
 
 如果仍有明确、安全、Scope 内的独立部分，可以继续该部分并报告剩余 blocker。
