@@ -8,7 +8,7 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `1`
-- Coordination Revision: `36`
+- Coordination Revision: `37`
 - Last Accepted Commit: `bf81dd7fe67cd190b615f009ad0cd49e53a57c44`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Project Phase: `SYSTEM FOUNDATION IMPLEMENTATION`
@@ -19,14 +19,16 @@
 
 | Task | Type | Agent | State | Depends On |
 |---|---|---|---|---|
-| `NYRON-T-20260825-034` | Capability canonical foundation | Codex | `READY` | First Slice Closure `PASS`; frozen D-004 Capability/Resource/Effect baseline |
+| `NYRON-T-20260825-034` | Capability canonical foundation | Codex | `IN_REVIEW` | First Slice Closure `PASS`; frozen D-004 Capability/Resource/Effect baseline |
+| `NYRON-T-20260825-035` | Independent Capability foundation review | Claude Code | `READY` | Task 034 remote Result submitted |
 
 ## Accepted This Revision
 
-- No new implementation accepted in Revision 36.
-- Revision 36 is a coordination-metadata correction only: Task 034 was opened by Revision 35 but its file still declared `Based On Coordination Revision: 34` with `FAIL_CLOSED`, causing a legitimate stale-context refusal.
-- Task 034 semantics, scope, risk, branch, frozen Gate, and independent-review requirement are unchanged.
-- Task 034 must use the corrected basis `Epoch 1 / Revision 36` before execution begins.
+- No new implementation accepted in Revision 37.
+- Orchestrator independently verified Task 034 remote delivery identity: content commit `ce7ea08ed168f6009356ff6d70ef7ae3e0a1ed70` exists and is reachable from `task/NYRON-T-20260825-034`; the Result-record branch tip is `7402f5edf896b530ac0290cbbde254e7a0496b0e`, whose direct parent is the content commit.
+- Task 034 Result reports targeted Capability tests `12/12 PASS`, First Slice connected E2E `1/1 PASS`, complete `tests/kernel` `123/123 PASS`, Findings `NONE`, Blockers `NONE`; these executor claims remain unaccepted pending independent review.
+- Task 034 moves to `IN_REVIEW` and independent Claude Code Review Task `NYRON-T-20260825-035` is opened.
+- Review Debt remains open; `ARE-GATE-1A` remains frozen and no Resource work is opened.
 
 ## First Slice Closure
 
@@ -123,9 +125,11 @@ Frozen D-004 §26 defines the next route after the PURE first slice:
 - `ARE-GATE-3` — EffectOperation foundation;
 - later replacement fencing / Host mediated boundary / Accounting-Recovery integration gates.
 
-Revision 36 continues only **ARE-GATE-1A**, the smallest Capability canonical foundation subset.
+Revision 37 continues only **ARE-GATE-1A**, the smallest Capability canonical foundation subset.
 
 Task 034 explicitly does NOT implement Resource, EffectOperation, Canonical Command, retry/replacement, Recovery, or actual external authority consumption. `ValidateCapability` in this stage is non-consumptive/advisory; Clarification 004's race-safe authority-consumption linearization remains deferred until a real mediated Effect/Command boundary exists.
+
+Task 035 independently reviews exactly that boundary. Review PASS is required before Task 034 can be accepted or integrated.
 
 ## Orchestrator Implementation Boundary
 
@@ -138,8 +142,8 @@ The Active Orchestrator does not perform complex production implementation. Comp
 
 ## Next Eligible Tasks
 
-1. Execute `NYRON-T-20260825-034` with Codex against corrected `Epoch 1 / Revision 36`.
-2. After Task 034 remote Result submission, assign independent Claude Code review.
+1. Execute independent Claude Code Review `NYRON-T-20260825-035` against Task 034 content commit `ce7ea08ed168f6009356ff6d70ef7ae3e0a1ed70`.
+2. If Task 035 returns no blocking finding and the Orchestrator accepts the Review, clear Task 034 Review Debt and decide Task 034 acceptance/integration.
 3. Do not open ARE-GATE-2 Resource work until Capability Gate 1A is independently accepted and the Orchestrator decides the remaining ARE-GATE-1 boundary.
 4. `NYRON-D-006` remains deferred behind P0 System Foundation unless explicitly reprioritized.
 
