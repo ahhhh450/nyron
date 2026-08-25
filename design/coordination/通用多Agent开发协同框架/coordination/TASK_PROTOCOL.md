@@ -70,7 +70,28 @@ Exact Approved Changes:
 
 该字段是由 `AGENTS.md` 定义的特殊授权通道，可覆盖 Agent 专属文件中的普通默认禁写规则，但只对明确 Authorized Files / Exact Approved Changes 生效。
 
-## 7. Coordination CAS
+## 7. Execution Record Write
+
+本 Task 自己的 Result / Checkpoint 属于执行证据，不是项目状态裁决。
+
+当 Task 允许 Repository 写入且没有显式 `READ_ONLY` 限制时，Agent 可以写入与自己 Task ID 匹配的：
+
+```text
+coordination/results/
+coordination/checkpoints/
+```
+
+不要求 `Coordination Write Authorization: GRANTED`。
+
+但不得借此：
+- 改 `STATUS.md`；
+- 改 Task 权威 Status / Priority / Gate；
+- 改其他 Task 的记录；
+- 改 Baseline / Release 结论。
+
+Repository `READ_ONLY` Task 只返回记录内容，不自行落盘。
+
+## 8. Coordination CAS
 协调写入必须在落盘前重新读取当前状态，并比较：
 ```text
 Current Epoch == Expected Epoch
@@ -84,10 +105,22 @@ COORDINATION_CAS_MISMATCH
 
 正常协调更新的 `New Revision` 应为 `Expected Revision + 1`。Orchestrator handoff 的 `New Epoch` 应为 `Expected Epoch + 1`。
 
-## 8. Result
+## 9. Checkpoint Cadence
+
+只要 Task 尚未形成 Final Result，以下任一条件触发 `PROGRESS` Checkpoint：
+
+- 完成一个 Task milestone 且仍有后续工作；
+- 自上次 Checkpoint 起触及 5 个新的不同文件且仍需继续；
+- 自上次 Checkpoint 起产生 3 个 Task-scoped commit 且仍需继续。
+
+Agent / session / workspace 交接、暂停、quota/tool 中断或 Blocking Failure 导致当前执行停止时，必须形成 `HANDOFF` Checkpoint。
+
+Checkpoint 创建新文件，不覆盖旧记录。短任务在阈值前直接完成时，Final Result 足够。
+
+## 10. Result
 Task 完成后必须按 `OUTPUT_FORMAT.md` 提交 Result。Executor 的 SUCCESS 不等于 ACCEPTED。
 
-## 9. Stale Task
+## 11. Stale Task
 如果 Task 的 Epoch 与当前项目 Epoch 不一致，默认失效并 fail closed。
 
 如果 Revision 已变化，按 `Stale Policy` 执行；未声明时默认 `FAIL_CLOSED`。
