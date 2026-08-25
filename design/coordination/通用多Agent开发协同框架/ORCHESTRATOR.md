@@ -41,21 +41,57 @@ Executor 不参与编号竞争。
 
 这只是默认策略，不是硬编码能力表。
 
-## 5. Review 独立性
+## 5. Agent 会话窗口与命名
+
+不要默认“一个 Task 一个会话”。一个 Agent 会话可以在职责边界稳定、上下文仍健康的前提下连续处理多个 Task。
+
+优先复用合适的现有窗口。仅在以下情况开启新窗口：
+- 当前窗口上下文压力明显，继续工作可能降低判断质量；
+- 需要独立 Review / 对抗性审查，必须保持 reasoning independence；
+- 新工作形成长期独立职责 lane，适合与现有窗口隔离；
+- 并行工作需要独立上下文或 workspace；
+- 原窗口已发生正式 HANDOFF 或不再适合继续承担该职责。
+
+当 Orchestrator 决定开启新 Agent 会话时，必须在发给用户/Agent 的开始指令中显式要求：
+
+```text
+请将当前对话名称修改为：<稳定角色/职责名称>
+```
+
+会话名称应描述**长期角色或职责 lane**，而不是当前 Task ID，因为同一窗口预期可以连续处理多个 Task。
+
+推荐命名示例：
+
+```text
+Nyron开发工程师1号-Codex
+Nyron开发工程师2号-Claude
+Nyron低风险审查员-DeepSeek
+Nyron核心实现审查员-Claude
+Nyron集成与测试-Codex
+```
+
+规则：
+- Task ID 不作为会话名称的默认组成部分；
+- Task ID 仍必须出现在正式 Task 文件和当前任务指令中；
+- 复用已有窗口时通常不改名，除非该窗口的长期职责已经正式改变；
+- 新窗口名称应尽量稳定，避免每处理一个 Task 就重命名；
+- 若同一角色需要多个并行窗口，可使用稳定编号，例如“开发工程师1号 / 2号”。
+
+## 6. Review 独立性
 创建 Review Task 前必须核对：
 ```text
 Assigned Reviewer != Original Agent
 ```
 高风险交付如果无法独立 Review，不得伪装为已通过；保持 `PENDING_INDEPENDENT_REVIEW`。
 
-## 6. 并发
+## 7. 并发
 并发前确认：
 - Task 之间无未解决写冲突；
 - workspace 可物理隔离；
 - Depends On 不要求串行；
 - 同一协调文件不会被多个 Execution Task 同时修改。
 
-## 7. Result 验收
+## 8. Result 验收
 Executor 的 SUCCESS / PASS 不是自动 ACCEPTED。
 Orchestrator 应根据风险选择：
 - 直接接受低风险事实；
@@ -65,7 +101,7 @@ Orchestrator 应根据风险选择：
 
 如果 Web GPT 当前没有足够工具验证关键事实，应安排具备能力的独立验证，而不是假装自己已验证。
 
-## 8. Coordination 写入
+## 9. Coordination 写入
 若 Web GPT 可直接写 repo，可直接更新协调文件。
 
 若不能直接写：
@@ -80,7 +116,7 @@ Orchestrator 应根据风险选择：
 
 不得让普通实现 Agent在代码 Task 中顺手改变 STATUS。
 
-## 9. Coordination CAS
+## 10. Coordination CAS
 任何修改 Active Orchestrator、Epoch、Revision、Gate、Task 状态或 Baseline 状态的协调写入，都必须基于 compare-and-set 前置条件。
 
 最小字段：
@@ -98,7 +134,7 @@ COORDINATION_CAS_MISMATCH
 
 禁止继续写入、禁止自行合并、禁止采用“最后写入者获胜”。
 
-## 10. Orchestrator Handoff
+## 11. Orchestrator Handoff
 一个项目同一时间只允许一个 Active Orchestrator。
 
 新窗口接管时：
@@ -114,7 +150,7 @@ COORDINATION_CAS_MISMATCH
 
 Handoff 默认只携带：Active / In Review / Blocked Task、Open Findings、Review Debt、Pending Decisions、当前 Baseline 和 Next Eligible Actions。已经安全归档的历史 Task 不重新塞入新主窗口上下文。
 
-## 11. Stale Policy
+## 12. Stale Policy
 Task 应显式写入 `Stale Policy`。
 
 允许：
@@ -130,7 +166,7 @@ FAIL_CLOSED
 
 Orchestrator 不应把 stale 处理留给 Executor 自由判断。
 
-## 12. 上下文与 Archive 维护
+## 13. 上下文与 Archive 维护
 主调度窗口只保留调度所需的最小事实。
 复杂设计、实现、深入 Review 优先派给专门 Agent / 会话。
 需要换 Web GPT 会话时先形成最小 handoff，不依赖聊天记忆维持项目真相。
