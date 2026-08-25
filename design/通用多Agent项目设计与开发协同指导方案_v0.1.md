@@ -256,6 +256,8 @@ Orchestrator 作出确定裁决
 
 CAS 不匹配时 fail closed，不允许 last-writer-wins。
 
+Task 自己的 Result / Checkpoint 属于 Execution Record，不属于项目级状态裁决。具备 Repository 写权限且 Task 非 READ_ONLY 时，Agent 可以落自己 Task ID 对应的执行记录，但不能借此修改 STATUS、Gate、Task 权威状态或 Baseline。
+
 ---
 
 ## 11. 上下文与长期维护
@@ -266,9 +268,34 @@ Repository 才是项目长期事实载体，聊天上下文只用于当前推理
 
 - 新 Agent 读取最小必要上下文；
 - 不默认扫描全部历史 Task / logs / archive；
-- context 或 quota 中断时写 HANDOFF checkpoint；
 - 新 Orchestrator 会话从 README / AGENTS / ORCHESTRATOR / STATUS 恢复；
 - 不依赖模型“记得以前聊过什么”维持项目正确性。
+
+### 11.1 Checkpoint 不依赖“上下文快满了”的自我感知
+
+只要 Task 尚未形成 Final Result，以下任一条件触发 `PROGRESS` Checkpoint：
+
+- 一个 Task milestone 已完成且仍有后续工作；
+- 自上次 Checkpoint 起已触及 5 个新的不同文件且仍需继续；
+- 自上次 Checkpoint 起已产生 3 个 Task-scoped commit 且仍需继续。
+
+发生 Agent / session / workspace 交接、暂停、quota/tool 中断、Blocking Failure 时形成 `HANDOFF` Checkpoint。
+
+Checkpoint 采用递增编号的新文件保存，不覆盖旧记录。
+
+### 11.2 Archive 用于控制主协同面的长期膨胀
+
+终态 Task 在满足以下条件后移出活跃协同面：
+
+- 已 `ACCEPTED | REJECTED | CANCELLED`；
+- 不再处于 Review / Fix / Integration；
+- 无活跃依赖需要原路径；
+- 无未清 Review Debt / Blocking Finding；
+- 不会破坏 Baseline / Release 审计引用。
+
+在 Project Phase 切换、Baseline 冻结、Release 完成、满足条件的终态 Task 达到 10 个或 Orchestrator handoff 前活跃面明显膨胀时，执行一次 Archive Sweep。
+
+Archive 默认不进入新 Agent / 新 Orchestrator 的读取集合，只有明确需要历史追溯时才读取。
 
 ---
 
@@ -310,7 +337,27 @@ Repository 才是项目长期事实载体，聊天上下文只用于当前推理
 
 ---
 
-## 14. 当前采用状态
+## 14. 试运行观察项（暂不启用）
+
+以下能力目前**明确不作为上线前要求**，只在真实项目证明有必要后再引入：
+
+### 14.1 Task Event Stream
+
+当前 Task / Result / Checkpoint 已足以恢复工作，但没有完整 append-only 状态事件流。
+
+只有当试运行中出现“需要频繁追溯多轮状态转换、Review 轮次或责任链，而现有记录拼接成本明显过高”时，再考虑增加 Task History / EVENTS 机制。
+
+### 14.2 Cross-Task Known Issues
+
+当前 Findings 绑定具体 Task，不建立独立跨 Task 错误知识库。
+
+只有当同类 Finding 在多个 Task 中重复出现、造成明显重复发现和重复修复成本时，再考虑增加项目级 `known-issues` / recurring-findings 资产。
+
+原则：**先由实际摩擦证明需求，再增加长期治理结构。**
+
+---
+
+## 15. 当前采用状态
 
 自 2026-08-25 起，本指导方案与配套 `通用多Agent开发协同框架` 进入真实项目试运行。
 
