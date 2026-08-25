@@ -13,6 +13,7 @@ from .activation import (
     InputBinding,
 )
 from .attempt import AttemptAuthority, RunAttempt
+from .authority import RuntimeAuthorityResolver
 from .delivery import Delivery, DeliveryError, DeliveryProjector
 from .packet import Packet, PacketError, PacketRepository
 from .executor import AttemptExecutionError, AttemptExecutor
@@ -42,5 +43,6 @@ __all__ = [
     "RunAttempt",
     "RunError",
     "RunRepository",
+    "RuntimeAuthorityResolver",
     "WorkflowExecution",
 ]

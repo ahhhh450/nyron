@@ -276,6 +276,78 @@ class SQLiteStore:
             """
         )
 
+    def create_capability_schema(self) -> None:
+        """Install ARE-GATE-1A Capability Authority canonical tables."""
+
+        self.connection.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS capability_types (
+                capability_type_ref TEXT NOT NULL,
+                version TEXT NOT NULL,
+                contract_json TEXT NOT NULL,
+                PRIMARY KEY (capability_type_ref, version)
+            );
+
+            CREATE TABLE IF NOT EXISTS capability_grants (
+                grant_ref TEXT PRIMARY KEY,
+                capability_type_ref TEXT NOT NULL,
+                capability_type_version TEXT NOT NULL,
+                execution_ref TEXT NOT NULL,
+                activation_ref TEXT NOT NULL,
+                run_ref TEXT NOT NULL,
+                attempt_seq INTEGER NOT NULL CHECK (attempt_seq > 0),
+                fencing_token TEXT NOT NULL CHECK (length(fencing_token) > 0),
+                fencing_generation INTEGER NOT NULL
+                    CHECK (fencing_generation > 0),
+                scope_json TEXT NOT NULL,
+                issued_by TEXT NOT NULL,
+                policy_decision_ref TEXT,
+                issued_at INTEGER NOT NULL,
+                not_before INTEGER,
+                expires_at INTEGER,
+                state TEXT NOT NULL
+                    CHECK (state IN ('ACTIVE', 'REVOKED', 'EXPIRED')),
+                FOREIGN KEY (capability_type_ref, capability_type_version)
+                    REFERENCES capability_types(capability_type_ref, version),
+                FOREIGN KEY (activation_ref) REFERENCES activations(activation_ref),
+                FOREIGN KEY (run_ref, attempt_seq)
+                    REFERENCES run_attempts(run_ref, attempt_seq)
+            );
+
+            CREATE TRIGGER IF NOT EXISTS capability_grant_immutable_fields
+            BEFORE UPDATE ON capability_grants
+            WHEN NEW.grant_ref != OLD.grant_ref
+              OR NEW.capability_type_ref != OLD.capability_type_ref
+              OR NEW.capability_type_version != OLD.capability_type_version
+              OR NEW.execution_ref != OLD.execution_ref
+              OR NEW.activation_ref != OLD.activation_ref
+              OR NEW.run_ref != OLD.run_ref
+              OR NEW.attempt_seq != OLD.attempt_seq
+              OR NEW.fencing_token != OLD.fencing_token
+              OR NEW.fencing_generation != OLD.fencing_generation
+              OR NEW.scope_json != OLD.scope_json
+              OR NEW.issued_by != OLD.issued_by
+              OR NEW.policy_decision_ref IS NOT OLD.policy_decision_ref
+              OR NEW.issued_at != OLD.issued_at
+              OR NEW.not_before IS NOT OLD.not_before
+              OR NEW.expires_at IS NOT OLD.expires_at
+            BEGIN
+                SELECT RAISE(ABORT, 'capability grant immutable');
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS capability_grant_state_transition
+            BEFORE UPDATE OF state ON capability_grants
+            WHEN NOT (
+                NEW.state = OLD.state
+                OR (OLD.state = 'ACTIVE'
+                    AND NEW.state IN ('REVOKED', 'EXPIRED'))
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'invalid capability state transition');
+            END;
+            """
+        )
+
     @contextmanager
     def transaction(self) -> Iterator[sqlite3.Connection]:
         """Commit all writes together, or roll the entire transaction back."""
