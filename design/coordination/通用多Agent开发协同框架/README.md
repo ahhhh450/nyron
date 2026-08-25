@@ -20,6 +20,7 @@
 project/
 │
 ├─ README.md
+├─ DEVELOPMENT_ORCHESTRATOR_START.md
 ├─ AGENTS.md
 ├─ ORCHESTRATOR.md
 ├─ CLAUDE.md
@@ -96,7 +97,9 @@ Web GPT 是 Coordination Authority，负责：
 - 决定 Integration / Baseline / Release；
 - 管理 Orchestrator handoff。
 
-读取 `ORCHESTRATOR.md`。
+新调度窗口可先使用 `DEVELOPMENT_ORCHESTRATOR_START.md` 作为启动入口，再按其中要求读取正式规则。
+
+正式调度规则读取 `ORCHESTRATOR.md`。
 
 ### Codex
 
@@ -147,6 +150,9 @@ Web GPT 是 Coordination Authority，负责：
 
 ## 4. 文件职责
 
+### `DEVELOPMENT_ORCHESTRATOR_START.md`
+新 Web GPT 调度窗口的快捷启动入口。只提供最小启动指令并引用正式规则，不复制完整协议。
+
 ### `AGENTS.md`
 所有 Execution Agent 的公共强制规则：权限、Scope、Git、workspace、validation、Review independence、违规处理、fail closed。
 
@@ -181,7 +187,8 @@ Web GPT 调度规则：状态恢复、Task ID、Agent 分配、验收、Review�
 ### 新 Web GPT 调度窗口
 
 ```text
-README.md
+DEVELOPMENT_ORCHESTRATOR_START.md
+→ README.md
 → AGENTS.md
 → ORCHESTRATOR.md
 → coordination/STATUS.md
