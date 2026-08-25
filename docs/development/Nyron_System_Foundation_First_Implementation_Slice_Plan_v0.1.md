@@ -2,7 +2,7 @@
 
 **Task:** `NYRON-T-20260825-003`
 **Type:** Implementation Planning (this document proposes no runtime code and changes no frozen semantics)
-**Coordination basis:** Epoch `1` / Revision `6` (revised under `NYRON-T-20260825-005`; originally authored under Revision `4`)
+**Coordination basis:** Epoch `1` / Revision `8` (revised under `NYRON-T-20260825-007`; previously revised under `NYRON-T-20260825-005` at Revision `6`; originally authored under Revision `4`)
 **Authoritative sources this plan traces to:**
 - `design/Nyron_Overall_System_Architecture_Frozen_Baseline_v0.1.md`
 - `design/Universal_Runtime_Module_Design_Report_v0.1.md`
@@ -23,6 +23,10 @@ This revision targetedly closes all four findings from independent Review `NYRON
 - **F-004** (SQLite overclaim — IMPLEMENTATION/NON_BLOCKING): §3's storage recommendation is reworded to an overridable engineering choice justified only on current simplicity/dependency grounds, with no claim that the frozen architecture selected or presupposed SQLite.
 
 Everything not touched by these four findings is unchanged from the original `NYRON-T-20260825-003` delivery.
+
+## Revision Note (`NYRON-T-20260825-007`)
+
+Targeted Re-Review `NYRON-T-20260825-006` (against the `NYRON-T-20260825-005` correction) closed F-001, F-002 and F-004 but kept **F-003 open**: the plan's crash-window test coverage tested the boundaries *around* the §12 canonical transaction (before it opens; after it commits) but did not prove the transaction is all-or-nothing *internally* across all four of its writes. This revision adds exactly that missing test to §6 — a fault injected after the in-transaction Attempt-terminal-state and Run-terminal-state writes but before Output Packet/canonical-event creation, asserting full rollback with no partial state, followed by a clean single retry with no duplication. F-001, F-002 and F-004 are not reopened or re-touched.
 
 ---
 
@@ -207,7 +211,17 @@ Restricted to the Phase 1–2-applicable subset of the frozen §42/§43 checklis
 - Consumptive Delivery double-binding prevention: two concurrent Activation-creation attempts racing on the same `TRIGGER`/`REQUIRED_NEXT` Delivery — assert exactly one succeeds and the Delivery is bound to exactly one `activation_ref` (RT-INV-06).
 - Delivery uniqueness: replaying the same Packet->Edge projection twice does not create a second Delivery for the same `(packet_ref, graph_revision_ref, edge_ref, target_port_ref)` key.
 - Interrupted fan-out / projection replay idempotency: inject a crash mid-fan-out across multiple Edges from one Packet; on replay, assert existing Deliveries are not duplicated and missing Deliveries are created (Candidate §17.1).
-- Output/Attempt/Run atomic-commit crash windows: inject a crash (a) before the §12 canonical transaction opens (assert orphan durable output value but no Output Packet, no Attempt/Run terminal commit), and (b) after the canonical transaction commits but before Delivery projection runs (assert projection replay repairs it without duplicating the Output Packet) (Candidate §17.4).
+- Output/Attempt/Run atomic-commit crash windows: inject a crash (a) before the §12 canonical transaction opens (assert orphan durable output value but no Output Packet, no Attempt/Run terminal commit), (b) **inside** the canonical transaction, after the Attempt-terminal-state write and the Run-terminal-state write have occurred but before Output Packet creation and canonical event creation complete (see the dedicated in-transaction test below), and (c) after the canonical transaction commits but before Delivery projection runs (assert projection replay repairs it without duplicating the Output Packet) (Candidate §17.4).
+- **In-transaction all-or-nothing fault injection (closes `NYRON-T-20260825-004-F-003`):** this test exists specifically to prove that Attempt-terminal-state write, Run-terminal-state write, Output Packet creation, and canonical event creation are one single atomic transaction — not four separately-committing steps that merely happen to run in sequence.
+  1. Begin the §12 canonical commit transaction (current-attempt fencing tuple already re-verified per §7).
+  2. Execute the in-transaction Attempt-terminal-state write (e.g. `RunAttempt.state -> SUCCEEDED`).
+  3. Execute the in-transaction Run-terminal-state write (e.g. `Run.terminal_attempt_seq` set).
+  4. Inject failure at this exact point — after step 2 and step 3 have executed within the open transaction, but strictly before Output Packet creation and canonical event append complete.
+  5. Assert the transaction rolls back as a whole (single `ROLLBACK`, not partial undo of only some writes).
+  6. Post-rollback assertions, all against durable state (not in-memory/pre-rollback views): the Attempt's persisted state is unchanged from its pre-transaction value (**no** partial/leaked `SUCCEEDED`/terminal write survives the rollback); the Run's persisted state is likewise unchanged (**no** partial/leaked terminal write survives); no Output Packet exists for this Attempt; no canonical event for this failed transaction exists in the durable event log.
+  7. Drive a subsequent retry/recovery pass over the same (now again non-terminal, per step 6) Attempt and assert it completes exactly one canonical commit transaction successfully — Attempt terminal state, Run terminal state, Output Packet, and canonical event all become durable together in that one successful transaction.
+  8. Assert no duplication versus the failed attempt: exactly one terminal `RunAttempt` state, exactly one Run-terminal association, exactly one Output Packet, exactly one canonical event for the Activation — the rolled-back transaction from steps 1–5 left no residue for the retry to collide with or duplicate.
+  This directly targets the Runtime Orchestration Candidate §17.4 sequence ("verify current Attempt → commit Attempt/Run success → create output Packet manifests → append canonical events" inside one `BEGIN...COMMIT` boundary) and RT-INV-14 (stale/failed transactions cannot leave partial canonical truth); crash windows (a) and (c) above test the boundary *around* this transaction, while this test proves the boundary *inside* it is all-or-nothing.
 - Duplicate/late `Completed`: a Module returning `Completed` twice for the same Attempt, and a `Completed` arriving after the Attempt has already been superseded, both produce no additional Output Packet and no error state inconsistency.
 - Replay/determinism against the **same committed durable history**: given one fixed sequence of already-committed canonical facts, replaying `delivery_order_key` derivation and next-Activation selection under two different in-process replay/projector orderings yields the identical result every time. This test does not assert determinism *across different concurrent histories* — which commit wins a genuine race is historical fact, not something replay must reproduce differently (Candidate §18.1) — only that replaying one fixed history is deterministic.
 - Process restart between the §10 transaction commit and the §12 transaction commit recomputes the same next pending work from durable state alone (§39 Committed-History Determinism); no reliance on in-memory state that a crash would destroy.
