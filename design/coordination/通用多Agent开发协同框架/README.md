@@ -146,6 +146,22 @@ Web GPT 是 Coordination Authority，负责：
 7. **Executor Reports Facts, Orchestrator Accepts State**  
    Agent 的 SUCCESS / PASS 不自动等于 ACCEPTED / COMPLETED / FROZEN / RELEASED。
 
+8. **Minimum Necessary Complexity**  
+   Task / Frozen Contract 决定必须实现什么；Implementation Skill 决定多个合规方案中默认选择必要复杂度最低、最直接、最可读的实现。复杂度必须能追溯到当前 requirement，而不是“以后可能需要”。
+
+实现层默认遵循：
+
+```text
+Simple Correct First
+KISS
+YAGNI
+Small Task-Scoped Diff
+No Premature Abstraction
+Complexity Must Be Justified
+```
+
+但这些原则不能被用来删除已经由当前 coordination、audit、security、recovery、crash/replay correctness 明确证明必要的结构。
+
 ---
 
 ## 4. 文件职责
@@ -160,7 +176,7 @@ Web GPT 是 Coordination Authority，负责：
 Web GPT 调度规则：状态恢复、Task ID、Agent 分配、验收、Review、并发、协调写入、handoff。
 
 ### `CLAUDE.md` / `CODEX.md` / `DEEPSEEK.md`
-只保存各 Agent 特有的能力和执行差异，不重新定义公共权限。
+只保存各 Agent 特有的能力和执行差异，不重新定义公共权限。Implementation / Review 模式会进一步引用对应 Skill。
 
 ### `coordination/`
 项目协同控制面。
@@ -169,10 +185,13 @@ Web GPT 调度规则：状态恢复、Task ID、Agent 分配、验收、Review�
 - `results/`：最终结果；
 - `checkpoints/`：进度/交接恢复点；
 - `archive/`：退出活跃控制面的历史记录；
-- `templates/`：可复制模板，不与真实记录混放。
+- `templates/`：可复制模板，不与真实记录混放；
+- `REVIEW_PROTOCOL.md`：包含 correctness 以及 `OVER_ENGINEERING` 等标准化 Review 检查。
 
 ### `skills/`
-保存“某类任务怎么做”的可复用方法，不保存项目当前事实。
+保存“某类任务怎么做”的可复用默认方法，不保存项目当前事实，也不产生新的需求或 Authority。
+
+`skills/implementation/SKILL.md` 定义实现简洁策略；它位于 Skill 层，因此显式 Task / Frozen Contract 要求优先。
 
 ### `design/`
 保存“为什么这样设计”：Architecture、Module、Contract、Decision、Baseline。
@@ -204,6 +223,7 @@ AGENTS.md
 → coordination/STATUS.md
 → 当前 Task
 → Task.Required Reading
+→ 当前 Task 类型对应 Skill
 ```
 
 ### Claude Code
@@ -214,6 +234,7 @@ AGENTS.md
 → coordination/STATUS.md
 → 当前 Task
 → Task.Required Reading
+→ 当前 Task 类型对应 Skill
 ```
 
 ### DeepSeek
@@ -224,6 +245,7 @@ AGENTS.md
 → coordination/STATUS.md
 → 当前 Task
 → Task.Required Reading
+→ 当前 Task 类型对应 Skill
 ```
 
 默认不扫描全部历史 Task / archive。
@@ -247,6 +269,15 @@ Web GPT reads STATUS
 ```
 
 低风险机械任务可以简化；Architecture、Contract、Security、Core Runtime、Concurrency、Replay、Baseline、Release-critical 等高风险工作提高 Review 要求。
+
+Implementation / Refactor / Fix Review 还应检查复杂度是否有当前 requirement trace。无依据的显著复杂度统一使用：
+
+```text
+Type: IMPLEMENTATION
+Code: OVER_ENGINEERING
+```
+
+这使 KISS / YAGNI 从“Agent 自觉”变成可独立 Review 的工程规则。
 
 ---
 
@@ -306,6 +337,8 @@ Web GPT 作出裁决
 
 不要求小项目从第一天启用所有机制。
 
+同样，项目成熟度机制本身也遵循“required structural complexity”原则：没有真实治理需求时，不为了形式提前启用 CONTROLLED 级别的全部结构。
+
 ---
 
 ## 10. 当前状态
@@ -324,6 +357,16 @@ Blocking Findings：`0`
 → 记录实际摩擦与失败模式
 → 仅针对真实问题修正
 → 累积足够运行证据后再决定是否冻结为正式通用 Baseline
+```
+
+本次真实项目运行新增并已落地的工程规则：
+
+```text
+Implementation simplicity is a Skill-level default
+Task / Frozen Contract remains authoritative
+Complexity claims are independently reviewable
+OVER_ENGINEERING is a standardized Finding Code
+DRY uses semantic concept + same reason-to-change, not visual duplication alone
 ```
 
 详细设计来源：
