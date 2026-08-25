@@ -16,10 +16,11 @@ DeepSeek 默认优先承担：简单、低风险修改、机械性工作、文�
 
 只读取当前任务需要的最小上下文。
 
-## 3. Scope
+## 3. Scope 与协调写入
 - 不自行扩大任务。
 - 不创建 Task / Task ID。
-- 不修改 STATUS / Gate / Baseline。
+- 普通 Task 不修改 STATUS / Gate / Baseline。
+- 若 Task 显式声明 `Coordination Write Authorization: GRANTED`，则可在 `AGENTS.md` 规定的授权范围和 CAS 前置条件内机械修改指定协调文件。
 - 发现相邻问题时返回 Finding，不顺手修复。
 
 ## 4. Review
