@@ -91,7 +91,29 @@ coordination/checkpoints/
 
 Repository `READ_ONLY` Task 只返回记录内容，不自行落盘。
 
-## 8. Coordination CAS
+## 8. Remote Delivery Submission
+
+项目默认采用：
+
+```text
+Local workspace = execution state
+Remote GitHub = reviewable project state
+```
+
+Agent 可以在本地隔离 branch / worktree / sandbox 中实现、测试和形成 Task-scoped commit，但**仅存在本地的 commit 不构成正式 submitted delivery**。
+
+除非 Task 明确声明 `LOCAL_ONLY`、`READ_ONLY` 或其他不要求远端提交的特殊模式，Implementation / Fix / Refactor / Documentation 等 Repository 写入 Task 在报告可供 Review 的 Final Result 前，应满足：
+
+1. Task-scoped commit 已 push 到远端可读取 branch / ref；
+2. Final Result 中记录可核验的 `Remote Branch` 与 `Remote Commit`；
+3. Task 要求落盘的 Result / Checkpoint 已包含在该远端交付中；
+4. Reviewer / Orchestrator 不需要依赖 Executor 的本地 workspace 才能读取交付事实。
+
+如果本地 commit 已完成但无法安全 push，应报告 `PARTIAL` 或 `BLOCKED`，并明确 Push / Capability Blocker；不得把未 push 的 SHA 表述为正式已提交交付。
+
+远端可审查不等于项目级 ACCEPTED。是否接受、集成、merge、Baseline / Release 仍由 Orchestrator 决定。
+
+## 9. Coordination CAS
 协调写入必须在落盘前重新读取当前状态，并比较：
 ```text
 Current Epoch == Expected Epoch
@@ -105,7 +127,7 @@ COORDINATION_CAS_MISMATCH
 
 正常协调更新的 `New Revision` 应为 `Expected Revision + 1`。Orchestrator handoff 的 `New Epoch` 应为 `Expected Epoch + 1`。
 
-## 9. Checkpoint Cadence
+## 10. Checkpoint Cadence
 
 只要 Task 尚未形成 Final Result，以下任一条件触发 `PROGRESS` Checkpoint：
 
@@ -117,10 +139,12 @@ Agent / session / workspace 交接、暂停、quota/tool 中断或 Blocking Fail
 
 Checkpoint 创建新文件，不覆盖旧记录。短任务在阈值前直接完成时，Final Result 足够。
 
-## 10. Result
+## 11. Result
 Task 完成后必须按 `OUTPUT_FORMAT.md` 提交 Result。Executor 的 SUCCESS 不等于 ACCEPTED。
 
-## 11. Stale Task
+对于要求 Repository 写入并提交远端的 Task，`SUCCESS` 还要求交付已经满足本文件的 `Remote Delivery Submission`；只有本地 commit 不足以报告正式 SUCCESS。
+
+## 12. Stale Task
 如果 Task 的 Epoch 与当前项目 Epoch 不一致，默认失效并 fail closed。
 
 如果 Revision 已变化，按 `Stale Policy` 执行；未声明时默认 `FAIL_CLOSED`。
