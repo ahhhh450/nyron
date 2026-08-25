@@ -448,6 +448,132 @@ class SQLiteStore:
             """
         )
 
+    def create_effect_schema(self) -> None:
+        """Install ARE-GATE-3A Effect Authority canonical tables."""
+
+        self.create_capability_schema()
+        self.create_resource_schema()
+        self.connection.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS effect_operations (
+                operation_ref TEXT PRIMARY KEY,
+                effect_class TEXT NOT NULL,
+                execution_ref TEXT NOT NULL,
+                activation_ref TEXT NOT NULL,
+                run_ref TEXT NOT NULL,
+                attempt_seq INTEGER NOT NULL CHECK (attempt_seq > 0),
+                fencing_token TEXT NOT NULL CHECK (length(fencing_token) > 0),
+                fencing_generation INTEGER NOT NULL
+                    CHECK (fencing_generation > 0),
+                capability_grant_ref TEXT NOT NULL,
+                resource_ref TEXT NOT NULL,
+                resource_lease_ref TEXT NOT NULL,
+                target_ref TEXT NOT NULL UNIQUE,
+                payload_json TEXT NOT NULL,
+                payload_hash TEXT NOT NULL,
+                caused_by_ref TEXT NOT NULL,
+                state TEXT NOT NULL CHECK (state IN (
+                    'PREPARED', 'ACTIVE', 'REVOKE_REQUESTED',
+                    'FENCED', 'COMPLETED', 'UNKNOWN'
+                )),
+                prepared_at INTEGER NOT NULL,
+                dispatch_admission_ref TEXT UNIQUE,
+                dispatch_admitted_at INTEGER,
+                completion_evidence_json TEXT,
+                FOREIGN KEY (capability_grant_ref)
+                    REFERENCES capability_grants(grant_ref),
+                FOREIGN KEY (resource_ref) REFERENCES resources(resource_ref),
+                FOREIGN KEY (resource_lease_ref)
+                    REFERENCES resource_leases(lease_ref),
+                FOREIGN KEY (run_ref, attempt_seq)
+                    REFERENCES run_attempts(run_ref, attempt_seq),
+                CHECK (
+                    (dispatch_admission_ref IS NULL
+                     AND dispatch_admitted_at IS NULL)
+                    OR
+                    (dispatch_admission_ref IS NOT NULL
+                     AND dispatch_admitted_at IS NOT NULL)
+                ),
+                CHECK (
+                    (state = 'COMPLETED'
+                     AND dispatch_admission_ref IS NOT NULL
+                     AND completion_evidence_json IS NOT NULL)
+                    OR
+                    (state != 'COMPLETED'
+                     AND completion_evidence_json IS NULL)
+                )
+            );
+
+            CREATE TRIGGER IF NOT EXISTS effect_operation_immutable_fields
+            BEFORE UPDATE ON effect_operations
+            WHEN NEW.operation_ref != OLD.operation_ref
+              OR NEW.effect_class != OLD.effect_class
+              OR NEW.execution_ref != OLD.execution_ref
+              OR NEW.activation_ref != OLD.activation_ref
+              OR NEW.run_ref != OLD.run_ref
+              OR NEW.attempt_seq != OLD.attempt_seq
+              OR NEW.fencing_token != OLD.fencing_token
+              OR NEW.fencing_generation != OLD.fencing_generation
+              OR NEW.capability_grant_ref != OLD.capability_grant_ref
+              OR NEW.resource_ref != OLD.resource_ref
+              OR NEW.resource_lease_ref != OLD.resource_lease_ref
+              OR NEW.target_ref != OLD.target_ref
+              OR NEW.payload_json != OLD.payload_json
+              OR NEW.payload_hash != OLD.payload_hash
+              OR NEW.caused_by_ref != OLD.caused_by_ref
+              OR NEW.prepared_at != OLD.prepared_at
+            BEGIN
+                SELECT RAISE(ABORT, 'effect operation identity immutable');
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS effect_dispatch_admission_immutable
+            BEFORE UPDATE ON effect_operations
+            WHEN OLD.dispatch_admission_ref IS NOT NULL
+             AND (
+                NEW.dispatch_admission_ref IS NOT OLD.dispatch_admission_ref
+                OR NEW.dispatch_admitted_at IS NOT OLD.dispatch_admitted_at
+             )
+            BEGIN
+                SELECT RAISE(ABORT, 'effect dispatch admission immutable');
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS effect_dispatch_admission_requires_prepared
+            BEFORE UPDATE OF dispatch_admission_ref, dispatch_admitted_at
+            ON effect_operations
+            WHEN OLD.dispatch_admission_ref IS NULL
+             AND NEW.dispatch_admission_ref IS NOT NULL
+             AND (OLD.state != 'PREPARED' OR NEW.state != 'PREPARED')
+            BEGIN
+                SELECT RAISE(ABORT, 'effect dispatch admission requires prepared');
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS effect_completion_evidence_immutable
+            BEFORE UPDATE ON effect_operations
+            WHEN OLD.completion_evidence_json IS NOT NULL
+             AND NEW.completion_evidence_json IS NOT OLD.completion_evidence_json
+            BEGIN
+                SELECT RAISE(ABORT, 'effect completion evidence immutable');
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS effect_operation_state_transition
+            BEFORE UPDATE OF state ON effect_operations
+            WHEN NOT (
+                NEW.state = OLD.state
+                OR (OLD.state = 'PREPARED'
+                    AND NEW.state IN ('COMPLETED', 'FENCED', 'UNKNOWN'))
+                OR (OLD.state = 'ACTIVE'
+                    AND NEW.state IN (
+                        'COMPLETED', 'REVOKE_REQUESTED', 'UNKNOWN'
+                    ))
+                OR (OLD.state = 'REVOKE_REQUESTED'
+                    AND NEW.state IN ('FENCED', 'COMPLETED', 'UNKNOWN'))
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'invalid effect operation state transition');
+            END;
+            """
+        )
+
     @contextmanager
     def transaction(self) -> Iterator[sqlite3.Connection]:
         """Commit all writes together, or roll the entire transaction back."""
