@@ -113,6 +113,25 @@ Agent 可以在本地隔离 branch / worktree / sandbox 中实现、测试和形
 
 远端可审查不等于项目级 ACCEPTED。是否接受、集成、merge、Baseline / Release 仍由 Orchestrator 决定。
 
+### Canonical Commit Semantics for Remote Delivery
+
+对于任何要求正式 remote Repository delivery 的 Task，以下规则为强制语义：
+
+```text
+Commit == Remote Commit == final remotely reviewable delivery-content commit
+```
+
+含义：
+
+- `Commit` MUST NOT 记录 local-only、pre-amend、pre-rebase、pre-recreate、已被 supersede 或 transient 的 SHA；
+- final delivery-content commit 确定并 push 之后，`Commit` 与 `Remote Commit` 记录同一个最终内容提交 SHA；
+- 后续用于落盘 Result / Checkpoint 的 record commit 可以让远端 branch tip 晚于该内容提交，但不得改变 `Commit` / `Remote Commit` 指向被审查内容提交的语义；
+- 若正式提交前发生 amend / rebase / recreate 等历史重写，只有重新验证后的最终 delivery-content commit 才能出现在任一字段中；
+- `LOCAL_ONLY` Task 在显式授权时仍可记录本地 `Commit`，`Remote Commit` 填 `NOT_APPLICABLE`；
+- `READ_ONLY` Task 按实际情况填 `NOT_APPLICABLE`。
+
+禁止引入“`Remote Commit` 必须自引用最终 branch tip”的新要求；tip 可能因后续 record commit 而推进，但被审查的 delivery content 不变。
+
 ### Final Result SHA Verification
 
 在把任何 SHA 写入 Final Result 的 `Commit` 或 `Remote Commit` 字段前，Execution Agent 必须执行：
@@ -130,6 +149,21 @@ commit
 `Remote Commit` 还必须从 canonical remote / 声明的 remote branch history 中可读取；仅在本地对象库可解析不足以构成远端交付证据。无法完成任一验证时必须 fail closed，不得写入该 SHA 或报告正式 `SUCCESS`。
 
 如果 commit 曾被 amend、rebase 或 recreate，导致旧 SHA 已不存在或不再属于声明的交付历史，禁止把旧 SHA 写入 Result；必须使用重新验证后的真实 commit 坐标。
+
+Repository 写入 Task 的 Final Result 必须提供显式 `SHA Verification Evidence`，至少包含：
+
+```text
+SHA Verification Evidence:
+- Commit Object: git cat-file -t <final-content-sha> => commit
+- Remote Reachability: <final-content-sha> is present in canonical remote branch history => PASS
+```
+
+规则：
+
+- 证据中的 SHA 必须与 `Commit` / `Remote Commit` 完全一致（remote-delivery Task）；
+- 验证必须发生在 final content commit 形成之后、以及任何会改变其 SHA 的 amend / rebase / recreate 之后；
+- 只有 `SHA verified` / `both SHAs verified` 之类的泛化声明、未附 exact SHA + observed result 的，不满足本协议；
+- 无法产出真实证据时 fail closed，不得写入该 SHA 或报告正式 `SUCCESS`。
 
 ## 9. Coordination CAS
 协调写入必须在落盘前重新读取当前状态，并比较：
