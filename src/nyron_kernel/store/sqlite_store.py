@@ -112,6 +112,18 @@ class SQLiteStore:
                         module_instance_revision_ref
                     )
             );
+
+            CREATE TABLE IF NOT EXISTS accounting_scopes (
+                accounting_scope_ref TEXT PRIMARY KEY,
+                graph_revision_ref TEXT NOT NULL,
+                definition_anchor_ref TEXT NOT NULL,
+                parent_accounting_scope_ref TEXT,
+                scope_kind TEXT NOT NULL,
+                ancestry_hash TEXT NOT NULL,
+                created_from_definition_ref TEXT NOT NULL,
+                state TEXT NOT NULL,
+                UNIQUE (graph_revision_ref, definition_anchor_ref)
+            );
             """
         )
 
