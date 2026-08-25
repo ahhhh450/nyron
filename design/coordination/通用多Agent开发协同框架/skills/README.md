@@ -15,11 +15,23 @@ skills/
 
 Task 可以在 Required Reading 中引用某个 Skill，避免每次重复粘贴长篇执行方法。
 
-优先级：
+优先级遵循 `AGENTS.md`：
 ```text
-AGENTS.md / 当前 Task
+明确的人类指令
+> 已冻结项目规则 / Baseline
+> AGENTS.md
+> Task 中由 AGENTS.md 明确定义的特殊授权字段
 > Agent 专属规则
-> Skill
+> Task 一般执行内容
+> Skill / 执行建议
 ```
 
-Skill 不得自行扩大 Task Scope 或获得 Coordination Authority。
+因此 Skill 是**默认执行方法**，不是新的需求或权限来源。
+
+例如 `skills/implementation/SKILL.md` 中的 KISS / YAGNI / simplicity policy：
+
+- 不能否定 Task 已明确要求的 extensibility / multi-provider / plugin / isolation 等结构；
+- 不能否定由 correctness / coordination / audit / recovery / security 已证明必要的协议结构；
+- 只在多个满足当前要求的方案之间，优先选择必要复杂度更低、可读性更好的实现。
+
+Skill 不得自行扩大 Task Scope、改写 Frozen Contract 或获得 Coordination Authority。
