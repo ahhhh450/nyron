@@ -8,30 +8,34 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `1`
-- Coordination Revision: `34`
+- Coordination Revision: `35`
 - Last Accepted Commit: `bf81dd7fe67cd190b615f009ad0cd49e53a57c44`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Project Phase: `SYSTEM FOUNDATION IMPLEMENTATION`
 - First Slice Closure: `PASS / CLOSED`
+- Current Frozen Implementation Gate: `ARE-GATE-1A — Capability Canonical Foundation`
 
 ## Active Tasks
 
 | Task | Type | Agent | State | Depends On |
 |---|---|---|---|---|
-| — | — | — | — | — |
+| `NYRON-T-20260825-034` | Capability canonical foundation | Codex | `READY` | First Slice Closure `PASS`; frozen D-004 Capability/Resource/Effect baseline |
 
 ## Accepted This Revision
+
+- No new implementation accepted in Revision 35.
+- Revision 35 opens the next bounded frozen implementation step after First Slice Closure: `ARE-GATE-1A — Capability Canonical Foundation`.
+- Task 034 is HIGH risk and requires independent Claude review before integration.
+
+## First Slice Closure
 
 - `NYRON-T-20260825-033` — targeted Claude First Slice closure re-review — `PASS / ACCEPTED`; Closed Finding `NYRON-T-20260825-031-F-001`; Open Findings `NONE`; New Findings `NONE`.
 - `NYRON-T-20260825-032` — TEST-ONLY real First Slice connected E2E proof — `ACCEPTED`.
 - Task 032 final remotely reviewed content commit: `9e191f716b33d8d99c2f9a46148b8f900d35fd28`.
 - Task 032 integration merge commit: `bf81dd7fe67cd190b615f009ad0cd49e53a57c44`.
 - Independent Task 033 verification observed the new test alone `1/1 PASS` and complete `tests/kernel` suite `111/111 PASS`, with no production `src/` changes.
-- The connected executable proof now traverses the real owner/runtime chain: canonical AccountingScope resolution -> real `ExecutionAdmissionGate.admit()` -> Packet / Delivery -> Activation -> Run / initial RunAttempt -> durable ACTIVE boundary -> `AttemptExecutor` / real `TrustedModuleHost` -> durable output -> full fenced terminal canonical commit -> immutable Output Packet -> replay-safe Delivery projection.
 - `NYRON-T-20260825-031-F-001` — `TEST / BLOCKING` — `CLOSED`.
 - First Slice Closure — `PASS / CLOSED`.
-
-## First Slice Closure Evidence
 
 The accepted connected path is:
 
@@ -50,8 +54,6 @@ The accepted connected path is:
 `-> Attempt SUCCEEDED / Run SUCCESS`
 `-> immutable source-bound Output Packet`
 `-> replay-safe Delivery projection`
-
-Critical restart/crash/replay windows remain covered by the accepted layer tests, and the new Task 032 test supplies the previously missing single connected happy-path proof.
 
 ## Accepted Production Baseline
 
@@ -79,11 +81,11 @@ For formal remote Repository delivery:
 
 Final Results must include exact `SHA Verification Evidence` with the final SHA, observed commit-object result, and canonical remote reachability evidence. Later Result/Checkpoint record commits may advance branch tip without changing content identity.
 
-## Review / Closure Debt
+## Review Debt
 
 | Delivery / Task | Review Type | Reason | Risk | Clearance Condition |
 |---|---|---|---|---|
-| — | — | — | — | — |
+| `NYRON-T-20260825-034` | Independent Code Review | CapabilityGrant ownership, scope, Attempt/fencing binding, revoke/expiry and stale-authority validation are authority/security correctness boundaries | HIGH | independent Claude review returns no blocking finding |
 
 ## Open Findings
 
@@ -108,31 +110,21 @@ Final Results must include exact `SHA Verification Evidence` with the final SHA,
 ## Implementation Baseline
 
 - Accepted Plan: `docs/development/Nyron_System_Foundation_First_Implementation_Slice_Plan_v0.1.md`.
-- Segment A integrated and accepted.
-- Packet / Delivery integrated and accepted.
-- TRUSTED MODULE MODE + `builtin.text.concat@1` integrated and accepted.
-- AccountingScope Identity + Static Ancestry Resolver integrated and accepted.
-- ExecutionAdmission integrated and accepted.
-- Transactional Activation integrated and accepted.
-- Run + initial RunAttempt current-authority/fencing foundation integrated and accepted.
-- Attempt dispatch + PURE execute + durable output + fenced terminal canonical commit + Output Packet integrated and accepted.
-- Connected First Slice E2E proof integrated and independently re-reviewed.
+- First PURE Module System Foundation slice: `PASS / CLOSED`.
+- Packet / Delivery, Trusted Host, AccountingScope, ExecutionAdmission, Activation, Run/RunAttempt, Attempt execution/terminal commit and connected E2E proof are integrated and accepted.
 
-## Current Execution-Path Order
+## Current Next-Phase Decision
 
-`AccountingScope resolver -> ExecutionAdmission -> Packet / Delivery -> Activation -> Run / RunAttempt -> execute -> durable output -> fenced terminal canonical commit -> Output Packet -> Delivery projection`
+Frozen D-004 §26 defines the next route after the PURE first slice:
 
-The first PURE Module System Foundation slice is formally closed.
+- `ARE-GATE-1` — Capability foundation;
+- `ARE-GATE-2` — Resource foundation;
+- `ARE-GATE-3` — EffectOperation foundation;
+- later replacement fencing / Host mediated boundary / Accounting-Recovery integration gates.
 
-## Next Phase Decision
+Revision 35 opens only **ARE-GATE-1A**, the smallest Capability canonical foundation subset.
 
-First Slice closure no longer blocks the next phase. No new production phase is opened by this revision itself.
-
-The Orchestrator must next read the accepted implementation plan plus the frozen Capability / Resource / Effect and Accounting / Recovery boundaries, then issue the narrowest next implementation Task to an execution Agent. Complex production implementation remains delegated.
-
-Retry/replacement/cancellation/suspension remain separate unless the selected next phase explicitly requires them.
-
-`NYRON-D-006` remains deferred behind P0 System Foundation unless explicitly reprioritized.
+Task 034 explicitly does NOT implement Resource, EffectOperation, Canonical Command, retry/replacement, Recovery, or actual external authority consumption. `ValidateCapability` in this stage is non-consumptive/advisory; Clarification 004's race-safe authority-consumption linearization remains deferred until a real mediated Effect/Command boundary exists.
 
 ## Orchestrator Implementation Boundary
 
@@ -142,6 +134,13 @@ The Active Orchestrator does not perform complex production implementation. Comp
 
 - `coordination/incidents/NYRON-PROCESS-20260825-001.md` — `PROCESS / NON_BLOCKING / CLOSED`.
 - Two accidental non-production file creates by the Orchestrator were immediately removed by normal commits; production semantics, accepted task identities, and First Slice closure evidence were unaffected.
+
+## Next Eligible Tasks
+
+1. Execute `NYRON-T-20260825-034` with Codex.
+2. After Task 034 remote Result submission, assign independent Claude Code review.
+3. Do not open ARE-GATE-2 Resource work until Capability Gate 1A is independently accepted and the Orchestrator decides the remaining ARE-GATE-1 boundary.
+4. `NYRON-D-006` remains deferred behind P0 System Foundation unless explicitly reprioritized.
 
 ## State Update Rule
 
@@ -153,4 +152,4 @@ Any key coordination change must:
 4. increment Epoch on Orchestrator handoff;
 5. obey CAS before write;
 6. keep implementation commits separate from coordination-state writes unless explicit authorization exists;
-7. preserve Review/Closure Debt until its clearance condition is satisfied.
+7. preserve Review Debt until its clearance condition is satisfied.
