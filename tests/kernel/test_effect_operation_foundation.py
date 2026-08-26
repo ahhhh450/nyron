@@ -565,22 +565,50 @@ class EffectOperationFoundationTest(unittest.TestCase):
         self.assertIsNotNone(completed.completion_evidence)
         self.assertIsNone(completed.fence_evidence)
 
-    def test_revoke_resolution_exact_cessation_is_fenced_with_distinct_evidence(self):
+    def test_resolver_absence_cannot_claim_executor_cessation(self):
         self._leave_active()
         self.effect.request_revoke(OPERATION)
-        fenced = self.effect.resolve_revoke(OPERATION)
+        resolved = self.effect.resolve_revoke(OPERATION)
+        self.assertEqual("UNKNOWN", resolved.state)
+        self.assertIsNone(resolved.completion_evidence)
+        self.assertIsNone(resolved.fence_evidence)
+
+    def test_executor_observes_revoke_and_fences_before_first_mutation(self):
+        def revoke_after_active(stage, operation):
+            if stage == "AFTER_ACTIVE_COMMIT":
+                self.effect.request_revoke(operation.operation_ref)
+
+        fenced = self._effect_authority(revoke_after_active).execute(self._request())
         self.assertEqual("FENCED", fenced.state)
+        self.assertFalse(Path(fenced.target_ref).exists())
         self.assertIsNone(fenced.completion_evidence)
         self.assertEqual(
-            "SYNCHRONOUS_NO_CONTINUATION", fenced.fence_evidence["basis"]
+            "EXECUTOR_STOPPED_BEFORE_FIRST_MUTATION",
+            fenced.fence_evidence["basis"],
         )
-        self.assertEqual("ABSENT", fenced.fence_evidence["target_observation"])
-        self.assertEqual(fenced, self.effect.resolve_revoke(OPERATION))
         with self.assertRaises(sqlite3.IntegrityError):
             self.store.connection.execute(
                 "UPDATE effect_operations SET fence_evidence_json = '{}' WHERE operation_ref = ?",
                 (OPERATION,),
             )
+
+    def test_reviewer_race_resolver_unknown_prevents_original_mutation(self):
+        observed = []
+
+        def revoke_and_resolve(stage, operation):
+            if stage == "AFTER_ACTIVE_COMMIT":
+                self.effect.request_revoke(operation.operation_ref)
+                observed.append(self.effect.resolve_revoke(operation.operation_ref))
+
+        with self.assertRaises(EffectError) as raised:
+            self._effect_authority(revoke_and_resolve).execute(self._request())
+        self.assertEqual("EFFECT_OPERATION_NOT_MUTABLE", raised.exception.code)
+        self.assertEqual("UNKNOWN", observed[0].state)
+        final = self.effect.resolve(OPERATION)
+        assert final is not None
+        self.assertEqual("UNKNOWN", final.state)
+        self.assertIsNone(final.fence_evidence)
+        self.assertFalse(Path(final.target_ref).exists())
 
     def test_revoke_resolution_mismatch_or_substitution_is_unknown(self):
         for index, substitute in enumerate((False, True)):

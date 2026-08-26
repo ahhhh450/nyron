@@ -213,7 +213,7 @@ class EffectAuthority:
         if evidence == "EXACT":
             self._commit_completed(operation)
         elif evidence == "ABSENT":
-            self._commit_fenced(operation, "SYNCHRONOUS_NO_CONTINUATION")
+            self._mark_unknown(operation_ref)
         else:
             self._mark_unknown(operation_ref)
         return self._require_operation(operation_ref)
@@ -328,6 +328,14 @@ class EffectAuthority:
     def _mutate_and_complete(self, operation: EffectOperation) -> EffectOperation:
         evidence = self._target_evidence(operation)
         if evidence == "ABSENT":
+            current = self._require_operation(operation.operation_ref)
+            if current.state == "REVOKE_REQUESTED":
+                self._commit_fenced(
+                    current, "EXECUTOR_STOPPED_BEFORE_FIRST_MUTATION"
+                )
+                return self._require_operation(operation.operation_ref)
+            if current.state != "ACTIVE":
+                raise EffectError("EFFECT_OPERATION_NOT_MUTABLE")
             target = Path(operation.target_ref)
             data = operation.payload.encode("utf-8")
             try:
