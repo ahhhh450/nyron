@@ -34,6 +34,18 @@ It does not authorize BudgetReservation settlement, Recovery Owner / Reconciliat
 - Cross-track dependency or overlapping write-surface discovery => `WAITING / BLOCKED` or `ESCALATION_REQUIRED`; never silently implement Track B responsibilities.
 - Frozen contract insufficiency => STOP and raise Architecture / Contract Finding. Track A does not reinterpret frozen design.
 
+## Agent Allocation Policy
+
+Default Track-A routing hierarchy:
+
+- `Claude Code` — primary development Agent for core implementation, difficult fixes, contract-sensitive implementation, and other high-value production work.
+- `Codex` — primary development Agent and independent high-risk reviewer; may own core implementation, difficult fixes, targeted refactors, exact-SHA semantic review, or cross-checks where independence from Claude is useful.
+- `DeepSeek` — auxiliary Agent for simple/mechanical work only by default: bounded mechanical audit, changed-file/scope verification, documentation consistency checks, deterministic validation, repetitive checks, straightforward test-gap identification, and other low-risk tasks with explicit boundaries.
+
+Claude Code and Codex are the principal development capacity. DeepSeek should not be the default owner for architecture-sensitive core implementation or final high-risk semantic acceptance review unless the Orchestrator explicitly overrides this policy for a bounded reason.
+
+Multiple concurrent sessions of Claude Code or Codex are allowed when their write surfaces and dependencies are independent and the active-slot policy permits it. DeepSeek tasks should preferentially remain read-only or mechanically bounded so they can assist the main development line without becoming an implicit architecture authority.
+
 ## Agent Session Naming Rule
 
 Every newly opened Agent conversation must begin by self-declaring a unique session name before execution.
@@ -117,7 +129,7 @@ Outcome:
 
 ### A3 — Fix and Re-Review loop, only if required
 
-Preferred implementation Agent: reuse the original Claude Code implementation session when context remains valid; otherwise open another uniquely named Claude session.
+Preferred implementation Agent: reuse the original Claude Code implementation session when context remains valid; otherwise open another uniquely named Claude session. Codex may instead own a fix when independence, workload balancing, or task characteristics make it the better primary developer.
 
 Rules:
 
