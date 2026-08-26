@@ -8,32 +8,34 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `1`
-- Coordination Revision: `46`
+- Coordination Revision: `47`
 - Last Accepted Commit: `128a2d1afaa94e7cd92a38df27c924ac18a980be`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Project Phase: `SYSTEM FOUNDATION IMPLEMENTATION`
 - First Slice Closure: `PASS / CLOSED`
-- Current Frozen Implementation Gate: `ARE-GATE-3 — Pre-3B Resource Provenance Hardening`
+- Current Frozen Implementation Gate: `ARE-GATE-3 — Pre-3B Resource Provenance Hardening / Independent Review`
 
 ## Active Tasks
 
 | Task | Type | Agent | State | Depends On |
 |---|---|---|---|---|
-| `NYRON-T-20260826-045` | Resource provenance TOCTOU security hardening | Codex | `READY` | Task 044 accepted/integrated |
+| `NYRON-T-20260826-045` | Resource provenance TOCTOU security hardening | Codex | `IN_REVIEW` | Task 044 accepted/integrated |
+| `NYRON-T-20260826-046` | Independent Resource provenance / namespace TOCTOU security review | Claude Code | `READY` | Task 045 remote delivery submitted |
 
 ## Accepted This Revision
 
-- `NYRON-T-20260826-044` — Concurrency / Trust debt settlement analysis before ARE-GATE-3B — `SUCCESS / ACCEPTED / INTEGRATED`.
-- Task 044 delivery content commit: `7dc42ac83bfe7b9016643a81567878bd0df12677`; Result-record tip: `9646dc0065825a53fbf161838a54f51d2ee3ee7d`.
-- Integration PR: `#18`; integration merge commit: `128a2d1afaa94e7cd92a38df27c924ac18a980be`.
-- Accepted working candidate: `docs/development/notes/2026-08-26_ARE_GATE_3B_Debt_Settlement_Candidate.md` (`NON-NORMATIVE`). Unresolved Architecture Finding: `NONE`.
-- Task 044 establishes explicit activation conditions for both current threat-model-dependent findings and adopts the rule that crossing an activation condition makes that finding a blocking prerequisite until closed or formally reclassified on current evidence.
-- `NYRON-T-20260825-038-F-001` remains `SECURITY / NON_BLOCKING / OPEN`; Task 044 recommends a dedicated pre-3B hardening task now rather than repeated deferral to ARE-GATE-5.
-- `NYRON-T-20260826-043-F-001` remains `ARCHITECTURE / NON_BLOCKING / OPEN`; no code change is required while the Kernel stays logically single-writer under canonical `SQLiteStore.transaction()` / `BEGIN IMMEDIATE` discipline.
-- Planned ARE-GATE-3B may proceed after the Resource hardening only if it remains explicitly logically single-writer: no real background thread/process/async callback, no connection-pool/multi-writer change, and no changed transaction discipline.
-- Task `NYRON-T-20260826-045` is opened for the smallest local Resource provenance/path-substitution hardening before 3B. Independent HIGH-risk Claude review is mandatory.
-- Task 045 must not claim Finding 038-F-001 closed merely because descriptor-relative APIs are added; independent review must prove closure or state the exact residual race/platform assumption.
-- ARE-GATE-3B remains `NOT OPEN` in Revision 46.
+- No new Resource hardening production implementation is accepted in Revision 47.
+- Task `NYRON-T-20260826-045` returned Executor `SUCCESS` on the exact Epoch 1 / Revision 46 basis.
+- Orchestrator independently verified remote branch `task/NYRON-T-20260826-045` currently points to delivery content commit `e2978722199fbab2034268a62c7ee629d9ebb7c0`.
+- Task 045 content commit is based directly on Revision-46 main commit `1a519c465c5fea91b8d2c3681fb272ffcb267f0a`; compare is `ahead 1 / behind 0`.
+- Authorized delivery delta is exactly: `src/nyron_kernel/resource/manager.py`, `tests/kernel/test_resource_foundation.py`, and `coordination/checkpoints/NYRON-T-20260826-045-CP-001.md`.
+- Executor claims recorded for independent review: complete `tests/kernel` 160 passed with 2 capability skips and 54 subtests; POSIX Resource suite 19 tests with 1 Windows-only skip; Windows junction/reparse adversarial test PASS; EffectOperation/Capability/First Slice E2E PASS; `git diff --check` and authorized-scope PASS.
+- Executor reports `NYRON-T-20260825-038-F-001` as `NARROWED / OPEN`, not CLOSED: reparse-point adoption is eliminated, while residual namespace TOCTOU and non-descriptor fallback still require a trusted managed-root namespace against concurrent mutation.
+- The Executor's statement that an "Independent Claude HIGH-risk re-review" already passed is **not accepted as formal Review Debt clearance**, because no Orchestrator-created independent Review Task existed for that work.
+- Task 045 moves to `IN_REVIEW`; its existing HIGH-risk Review Debt remains open.
+- Independent Claude Review Task `NYRON-T-20260826-046` is opened against exact content commit `e2978722199fbab2034268a62c7ee629d9ebb7c0` on current Coordination Revision 47.
+- Task 046 must independently determine whether `NYRON-T-20260825-038-F-001` is `CLOSED` or `NARROWED / OPEN`, with exact residual race/platform/trust assumptions and at least one Reviewer-originated adversarial validation beyond rerunning Executor tests.
+- `ARE-GATE-3B` remains `NOT OPEN`.
 
 ## First Slice Closure
 
@@ -100,11 +102,11 @@ Final Results must include exact full 40-character `SHA Verification Evidence` w
 
 | Delivery / Task | Review Type | Reason | Risk | Clearance Condition |
 |---|---|---|---|---|
-| `NYRON-T-20260826-045` | Independent Security Review | Resource provenance/path-substitution hardening changes filesystem identity and destructive-operation assumptions | HIGH | after Task 045 remote Result, independent Claude review proves no blocking regression and determines 038-F-001 disposition |
+| `NYRON-T-20260826-045` | Independent Security Review | Resource provenance/path-substitution hardening changes filesystem identity and destructive-operation assumptions | HIGH | Task 046 current-basis independent Claude review returns no blocking finding and determines `NYRON-T-20260825-038-F-001` disposition |
 
 ## Open Findings
 
-- `NYRON-T-20260825-038-F-001` — `SECURITY / NON_BLOCKING / OPEN` — Resource provisioning `mkdir` -> provenance-marker TOCTOU under concurrent mutation of the exact managed root/path namespace. Activation Condition: any less-trusted/co-resident actor gains concurrent write capability to the managed root or relevant parent/path namespace; Module filesystem access, Host trust-boundary exposure, shared/network-root assumptions or equivalent path-substitution capability cross the condition. Task 045 is the dedicated pre-3B hardening; closure is not assumed in advance.
+- `NYRON-T-20260825-038-F-001` — `SECURITY / NON_BLOCKING / OPEN` — Resource provisioning `mkdir` -> provenance-marker TOCTOU under concurrent mutation of the exact managed root/path namespace. Activation Condition: any less-trusted/co-resident actor gains concurrent write capability to the managed root or relevant parent/path namespace; Module filesystem access, Host trust-boundary exposure, shared/network-root assumptions or equivalent path-substitution capability cross the condition. Task 045 hardening is submitted but not accepted; Task 046 independently decides whether this finding is CLOSED or only NARROWED/OPEN.
 - `NYRON-T-20260826-043-F-001` — `ARCHITECTURE / NON_BLOCKING / OPEN` — Effect authority-consumption linearization depends on every authority-mutating write preserving canonical `SQLiteStore.transaction()` / `BEGIN IMMEDIATE` discipline and admission revalidation+durable admission remaining in the same transaction. Activation Condition: genuine multi-threaded/worker-pool Runtime, connection pooling, independent/raw writer path, materially changed SQLite locking/transaction discipline, distributed/process-separated authority, or long/async execution that changes the current ordering proof. Such a change requires real-concurrency revalidation before acceptance.
 
 ## Stable Baseline
@@ -132,6 +134,7 @@ Final Results must include exact full 40-character `SHA Verification Evidence` w
 - Resource / ResourceLease foundation is integrated and accepted: one real managed-directory Resource, durable PROVISIONING/AVAILABLE/DESTROYING/DESTROYED/UNKNOWN lifecycle, exact provenance/recovery, exact Attempt/fencing-bound Lease lifecycle, non-transferability, release/revoke/expiry and advisory/non-consumptive validation.
 - Capability revoke-after-expiry branch is directly covered by accepted regression test.
 - Bounded EffectOperation foundation is integrated and accepted: Effect Authority-owned durable PREPARED identity; exact current Runtime/Capability/Resource+Lease admission linearized under the current SQLite writer discipline; one deterministic trusted bounded filesystem mutation; exact external evidence; crash recovery to COMPLETED only on exact evidence and UNKNOWN on ambiguity; replay/non-transferability and storage invariants.
+- Task 045 Resource provenance hardening is submitted for independent review and is not yet part of the accepted production baseline.
 - Long/async Effect semantics, later revoke/fencing behavior, replacement/retry, Canonical Command, generalized conflict/recovery and Module filesystem trust-boundary work remain unimplemented.
 
 ## Current Next-Phase Decision
@@ -144,11 +147,11 @@ Frozen D-004 §26 route remains:
 - `ARE-GATE-3` remains OPEN for later bounded Effect work;
 - later replacement fencing / Host mediated boundary / Accounting-Recovery integration gates remain future work.
 
-Revision 46 intentionally keeps `ARE-GATE-3B` closed while Task 045 performs the dedicated Resource provenance/path-substitution hardening recommended by accepted Task 044.
+Revision 47 keeps `ARE-GATE-3B` closed while independent Task 046 reviews the submitted Resource provenance/path-substitution hardening.
 
-Task 045 must preserve Resource ownership/lifecycle and current trusted-root semantics while using the narrowest local descriptor/no-follow/object-identity primitives available. It must not overclaim security closure: independent review decides whether `NYRON-T-20260825-038-F-001` is actually CLOSED or only NARROWED/OPEN with an exact residual.
+Task 046 must determine whether the hardening actually eliminates the parent substitution/adoption class or only materially narrows it. Symlink/reparse rejection alone is not enough for closure; replacement by another real directory, namespace races around descriptor acquisition, cross-platform fallback behavior and destructive-operation redirection must all be reviewed explicitly.
 
-After Task 045 and its independent review are accepted, the Orchestrator may open the smallest safe ARE-GATE-3B described by the accepted Task 044 candidate: exercise durable `PREPARED -> ACTIVE` before external mutation and `ACTIVE -> COMPLETED/UNKNOWN` exact-evidence recovery across multiple synchronous calls, while remaining logically single-writer and introducing no real background concurrency.
+After Task 045 and Task 046 are accepted, the Orchestrator may open the smallest safe ARE-GATE-3B described by accepted Task 044: durable `PREPARED -> ACTIVE` before external mutation and `ACTIVE -> COMPLETED/UNKNOWN` exact-evidence recovery across multiple synchronous calls, while remaining logically single-writer and introducing no real background concurrency.
 
 `NYRON-T-20260826-043-F-001` remains a hard interlock on future concurrency-model change. Any 3B Task must explicitly state that its scope does not cross that activation condition, and its independent review must verify the delivered diff actually preserves the single-writer model.
 
@@ -175,9 +178,9 @@ The Active Orchestrator does not perform complex production implementation. Comp
 
 ## Next Eligible Tasks
 
-1. Execute Codex security-hardening Task `NYRON-T-20260826-045` against Epoch 1 / Revision 46.
-2. After Task 045 remote Result, assign an independent Claude HIGH-risk security review; the review must include at least one Reviewer-originated adversarial validation beyond the Executor's standard tests.
-3. Do not open ARE-GATE-3B until Task 045 and its independent review are accepted and `NYRON-T-20260825-038-F-001` has a current evidence-based disposition.
+1. Execute independent Claude Code Review `NYRON-T-20260826-046` against Task 045 content commit `e2978722199fbab2034268a62c7ee629d9ebb7c0`.
+2. Do not integrate Task 045 or open ARE-GATE-3B until Task 046 returns no blocking finding and the Orchestrator accepts the finding disposition.
+3. If Task 046 returns `NARROWED / OPEN`, preserve the exact residual activation condition in STATUS and every later filesystem/trust-boundary Task; do not mislabel the debt as CLOSED.
 4. Preserve `NYRON-T-20260826-043-F-001` as an explicit single-writer/concurrency activation interlock in every later Effect Task touching long/async semantics.
 5. `NYRON-D-006` remains deferred behind P0 System Foundation unless explicitly reprioritized.
 
