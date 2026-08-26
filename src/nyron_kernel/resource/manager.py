@@ -12,6 +12,7 @@ import json
 import os
 import shutil
 import sqlite3
+import stat
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
@@ -92,6 +93,9 @@ class ResourceManager:
         self._crash_hook = crash_hook or (lambda _stage, _resource: None)
         self._root = Path(managed_root).absolute()
         self._manager_id = self._open_root()
+        self._root_identity = self._path_identity(self._root)
+        if self._root_identity is None:
+            raise ResourceError("MANAGED_ROOT_INVALID")
         self._store.create_resource_schema()
 
     def provision(self, request: ResourceRequest) -> Resource:
@@ -139,11 +143,7 @@ class ResourceManager:
         if resource.state == "PROVISIONING":
             evidence = self._directory_evidence(path, resource.provenance)
             if evidence == "ABSENT":
-                try:
-                    path.mkdir()
-                    self._write_exclusive_json(path / self._RESOURCE_MARKER, resource.provenance)
-                except FileExistsError:
-                    pass
+                self._create_proven_directory(path, resource)
                 evidence = self._directory_evidence(path, resource.provenance)
             if evidence == "EXACT":
                 self._crash_hook("AFTER_DIRECTORY_CREATE", resource)
@@ -153,8 +153,18 @@ class ResourceManager:
         elif resource.state == "DESTROYING":
             evidence = self._directory_evidence(path, resource.provenance)
             if evidence == "EXACT":
-                shutil.rmtree(path)
-                self._crash_hook("AFTER_DIRECTORY_REMOVE", resource)
+                proven_identity = self._path_identity(path)
+                self._crash_hook("AFTER_DESTROY_IDENTITY_CHECK", resource)
+                # Recheck after the injection boundary.  On capable POSIX
+                # platforms rmtree also performs its traversal relative to the
+                # already verified manager root and refuses symlink traversal.
+                if (
+                    proven_identity is not None
+                    and self._path_identity(path) == proven_identity
+                    and self._directory_evidence(path, resource.provenance) == "EXACT"
+                ):
+                    if self._remove_directory(path):
+                        self._crash_hook("AFTER_DIRECTORY_REMOVE", resource)
                 evidence = self._directory_evidence(path, resource.provenance)
             if evidence == "ABSENT":
                 self._set_resource_state(resource_ref, "DESTROYED")
@@ -347,9 +357,15 @@ class ResourceManager:
         return self._require_lease(lease_ref)
 
     def _open_root(self) -> str:
-        if self._root.exists() and (not self._root.is_dir() or self._root.is_symlink()):
+        if self._root.exists() and (
+            self._path_identity(self._root) is None
+            or not self._root.is_dir()
+            or self._root.is_symlink()
+        ):
             raise ResourceError("MANAGED_ROOT_INVALID")
         self._root.mkdir(parents=True, exist_ok=True)
+        if self._path_identity(self._root) is None:
+            raise ResourceError("MANAGED_ROOT_INVALID")
         marker = self._root / self._ROOT_MARKER
         if marker.exists():
             try:
@@ -380,9 +396,17 @@ class ResourceManager:
         return stored
 
     def _directory_evidence(self, path: Path, expected: dict[str, Any]) -> str:
+        if self._path_identity(self._root) != self._root_identity:
+            return "MISMATCH"
+        if self._descriptor_operations_supported():
+            return self._descriptor_directory_evidence(path, expected)
         if not path.exists():
             return "ABSENT"
-        if not path.is_dir() or path.is_symlink():
+        if (
+            self._path_identity(path) is None
+            or not path.is_dir()
+            or path.is_symlink()
+        ):
             return "MISMATCH"
         marker = path / self._RESOURCE_MARKER
         try:
@@ -390,6 +414,179 @@ class ResourceManager:
         except (OSError, ValueError):
             return "MISMATCH"
         return "EXACT" if value == expected else "MISMATCH"
+
+    def _create_proven_directory(self, path: Path, resource: Resource) -> None:
+        if self._descriptor_operations_supported():
+            self._create_proven_directory_descriptor(path, resource)
+            return
+
+        # Compatibility path for platforms without safe directory-relative
+        # primitives. Identity checks catch deterministic substitution, while
+        # the managed root remains a trusted/exclusive boundary.
+        try:
+            path.mkdir()
+        except FileExistsError:
+            return
+        try:
+            created_identity = self._path_identity(path)
+            self._crash_hook("AFTER_DIRECTORY_OPEN_BEFORE_MARKER", resource)
+            if created_identity is None or self._path_identity(path) != created_identity:
+                return
+            self._write_exclusive_json(path / self._RESOURCE_MARKER, resource.provenance)
+            if self._path_identity(path) != created_identity:
+                return
+        except (FileExistsError, OSError):
+            return
+
+    def _create_proven_directory_descriptor(self, path: Path, resource: Resource) -> None:
+        root_fd = child_fd = None
+        try:
+            root_fd = self._open_verified_root_fd()
+            try:
+                os.mkdir(path.name, dir_fd=root_fd)
+            except FileExistsError:
+                return
+            child_fd = os.open(
+                path.name,
+                os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+                dir_fd=root_fd,
+            )
+            opened_identity = self._fd_identity(child_fd)
+            self._crash_hook("AFTER_DIRECTORY_OPEN_BEFORE_MARKER", resource)
+            if not self._path_matches_fd(path, child_fd, opened_identity):
+                return
+            self._write_exclusive_json_at(
+                child_fd, self._RESOURCE_MARKER, resource.provenance
+            )
+            if not self._path_matches_fd(path, child_fd, opened_identity):
+                return
+        except (FileExistsError, OSError):
+            return
+        finally:
+            if child_fd is not None:
+                os.close(child_fd)
+            if root_fd is not None:
+                os.close(root_fd)
+
+    def _descriptor_directory_evidence(
+        self, path: Path, expected: dict[str, Any]
+    ) -> str:
+        root_fd = child_fd = marker_fd = None
+        try:
+            root_fd = self._open_verified_root_fd()
+            child_fd = os.open(
+                path.name,
+                os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+                dir_fd=root_fd,
+            )
+            identity = self._fd_identity(child_fd)
+            if not self._path_matches_fd(path, child_fd, identity):
+                return "MISMATCH"
+            marker_fd = os.open(
+                self._RESOURCE_MARKER,
+                os.O_RDONLY | os.O_NOFOLLOW,
+                dir_fd=child_fd,
+            )
+            with os.fdopen(marker_fd, "r", encoding="utf-8") as handle:
+                marker_fd = None
+                value = json.load(handle)
+            if not self._path_matches_fd(path, child_fd, identity):
+                return "MISMATCH"
+            return "EXACT" if value == expected else "MISMATCH"
+        except FileNotFoundError:
+            try:
+                return "ABSENT" if not path.exists() else "MISMATCH"
+            except OSError:
+                return "MISMATCH"
+        except (OSError, ValueError):
+            return "MISMATCH"
+        finally:
+            if marker_fd is not None:
+                os.close(marker_fd)
+            if child_fd is not None:
+                os.close(child_fd)
+            if root_fd is not None:
+                os.close(root_fd)
+
+    def _open_verified_root_fd(self) -> int:
+        root_fd = os.open(
+            self._root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+        )
+        if not self._path_matches_fd(self._root, root_fd, self._root_identity):
+            os.close(root_fd)
+            raise OSError("managed root identity changed")
+        return root_fd
+
+    def _remove_directory(self, path: Path) -> bool:
+        root_fd = None
+        try:
+            if (
+                self._descriptor_operations_supported()
+                and shutil.rmtree.avoids_symlink_attacks
+            ):
+                root_fd = self._open_verified_root_fd()
+                shutil.rmtree(path.name, dir_fd=root_fd)
+            else:
+                shutil.rmtree(path)
+            return True
+        except OSError:
+            return False
+        finally:
+            if root_fd is not None:
+                os.close(root_fd)
+
+    @staticmethod
+    def _descriptor_operations_supported() -> bool:
+        return (
+            hasattr(os, "O_DIRECTORY")
+            and hasattr(os, "O_NOFOLLOW")
+            and os.open in os.supports_dir_fd
+            and os.mkdir in os.supports_dir_fd
+            and os.stat in os.supports_follow_symlinks
+        )
+
+    @staticmethod
+    def _fd_identity(fd: int) -> tuple[int, int]:
+        value = os.fstat(fd)
+        return value.st_dev, value.st_ino
+
+    @staticmethod
+    def _path_identity(path: Path) -> tuple[int, int] | None:
+        try:
+            value = os.stat(path, follow_symlinks=False)
+        except OSError:
+            return None
+        if getattr(value, "st_file_attributes", 0) & getattr(
+            stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0
+        ):
+            return None
+        return value.st_dev, value.st_ino
+
+    @classmethod
+    def _path_matches_fd(
+        cls, path: Path, fd: int, identity: tuple[int, int]
+    ) -> bool:
+        try:
+            value = os.stat(path, follow_symlinks=False)
+            return (value.st_dev, value.st_ino) == identity == cls._fd_identity(fd)
+        except OSError:
+            return False
+
+    @staticmethod
+    def _write_exclusive_json_at(
+        directory_fd: int, name: str, value: dict[str, Any]
+    ) -> None:
+        data = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+        marker_fd = os.open(
+            name,
+            os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+            0o600,
+            dir_fd=directory_fd,
+        )
+        with os.fdopen(marker_fd, "w", encoding="utf-8", newline="\n") as handle:
+            handle.write(data)
+            handle.flush()
+            os.fsync(handle.fileno())
 
     @staticmethod
     def _write_exclusive_json(path: Path, value: dict[str, Any]) -> None:
