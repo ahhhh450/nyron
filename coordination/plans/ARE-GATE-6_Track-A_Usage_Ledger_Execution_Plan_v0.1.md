@@ -52,17 +52,15 @@ Every newly opened Track-A Agent conversation must begin by self-declaring a uni
 
 Required format:
 
-`TRACK_A_TASK_<TASK_NUMBER>_<SESSION_NUMBER>`
+`TRACK_A_TASK_<TASK_NUMBER>`
 
 Examples:
 
-- first session for Task 090: `TRACK_A_TASK_090_1`
-- second session for Task 090: `TRACK_A_TASK_090_2`
-- first session for Task 095: `TRACK_A_TASK_095_1`
+- Task 090: `TRACK_A_TASK_090`
+- Task 093: `TRACK_A_TASK_093`
+- Task 095: `TRACK_A_TASK_095`
 
-The session number is scoped to that Task and starts at `1`.
-
-Multiple concurrent sessions of the same Agent family are allowed only when write surfaces and dependencies are independent and the active-slot policy permits it. Session identity is not a substitute for formal Task ID or exact production SHA.
+The formal Task number is the session identity. Multiple concurrent conversations of the same Agent family are allowed when they are assigned different formal Tasks and their write surfaces/dependencies are independent. Session identity is not a substitute for exact production SHA.
 
 ## Planned Route
 
