@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import dataclasses
 import inspect
+import json
 import re
 import tempfile
 import unittest
@@ -1016,6 +1017,288 @@ class BudgetReservationFoundationTest(unittest.TestCase):
         # The original canonical reservation and its exposure are untouched.
         self.assertEqual(original, self.authority.resolve(original.reservation_ref))
         self.assertEqual((9, 0), self.authority.exposure(CHILD_SCOPE, "tokens"))
+
+    # ------------------------------------------------------------------
+    # 077-F-002 correction (Task-086): frozen same-scope BudgetPolicyRevision
+    # chain/publication/current-selection semantics from Lead Clarification
+    # 003 (design/clarifications/NYRON-D-005_Lead_Integration_Clarification_003.md).
+    # ------------------------------------------------------------------
+
+    def test_second_genesis_on_same_scope_rejected(self) -> None:
+        self._publish_policy(ROOT_SCOPE, (self._rule("rule:1", "tokens", 100),))
+
+        with self.assertRaises(BudgetAuthorityError) as raised:
+            self._publish_policy(
+                ROOT_SCOPE,
+                (self._rule("rule:2", "tokens", 200),),
+                ref="policy:root@second-genesis",
+            )
+        self.assertEqual(
+            "BUDGET_POLICY_REVISION_SUPERSEDES_REQUIRED", raised.exception.code
+        )
+
+    def test_successor_missing_supersedes_ref_rejected(self) -> None:
+        self._publish_policy(ROOT_SCOPE, (self._rule("rule:1", "tokens", 100),))
+
+        with self.assertRaises(BudgetAuthorityError) as raised:
+            self.authority.publish_policy_revision(
+                self._unpublished_revision(
+                    ROOT_SCOPE,
+                    (BudgetDimension("tokens", "count", "sem:tokens@1"),),
+                    (self._rule("rule:2", "tokens", 200),),
+                    ref="policy:root@missing-supersedes",
+                )
+            )
+        self.assertEqual(
+            "BUDGET_POLICY_REVISION_SUPERSEDES_REQUIRED", raised.exception.code
+        )
+
+    def test_cross_scope_supersession_rejected(self) -> None:
+        root_v1 = self._publish_policy(ROOT_SCOPE, (self._rule("rule:root", "tokens", 100),))
+        self._publish_policy(CHILD_SCOPE, (self._rule("rule:child", "tokens", 100),))
+
+        with self.assertRaises(BudgetAuthorityError) as raised:
+            self._publish_policy(
+                CHILD_SCOPE,
+                (self._rule("rule:child-2", "tokens", 200),),
+                ref="policy:cross-scope@1",
+                effective_from=1,
+                supersedes_ref=root_v1.budget_policy_revision_ref,
+            )
+        self.assertEqual(
+            "BUDGET_POLICY_REVISION_SUPERSESSION_CROSS_SCOPE", raised.exception.code
+        )
+
+    def test_non_tip_branch_successor_rejected(self) -> None:
+        v1 = self._publish_policy(ROOT_SCOPE, (self._rule("rule:1", "tokens", 100),))
+        self._publish_policy(
+            ROOT_SCOPE,
+            (self._rule("rule:2", "tokens", 200),),
+            ref="policy:root@2",
+            effective_from=1,
+            supersedes_ref=v1.budget_policy_revision_ref,
+        )
+
+        # v1 is no longer the tip; a second branch off it must be rejected,
+        # not silently accepted as an alternate committed branch.
+        with self.assertRaises(BudgetAuthorityError) as raised:
+            self._publish_policy(
+                ROOT_SCOPE,
+                (self._rule("rule:branch", "tokens", 300),),
+                ref="policy:root@branch",
+                effective_from=2,
+                supersedes_ref=v1.budget_policy_revision_ref,
+            )
+        self.assertEqual(
+            "BUDGET_POLICY_REVISION_SUPERSESSION_NOT_TIP", raised.exception.code
+        )
+
+    def test_equal_effective_successor_rejected(self) -> None:
+        v1 = self._publish_policy(
+            ROOT_SCOPE, (self._rule("rule:1", "tokens", 100),), effective_from=10
+        )
+
+        with self.assertRaises(BudgetAuthorityError) as raised:
+            self._publish_policy(
+                ROOT_SCOPE,
+                (self._rule("rule:2", "tokens", 200),),
+                ref="policy:root@equal-effective",
+                effective_from=10,
+                supersedes_ref=v1.budget_policy_revision_ref,
+            )
+        self.assertEqual(
+            "BUDGET_POLICY_REVISION_EFFECTIVE_FROM_NOT_INCREASING", raised.exception.code
+        )
+
+    def test_open_predecessor_bounded_by_successor_effective_from(self) -> None:
+        self.now = 5
+        v1 = self._publish_policy(
+            ROOT_SCOPE, (self._rule("rule:v1", "tokens", 1000),), effective_from=0
+        )
+        before = self.authority.reserve(self._request("req:before-boundary", amount=1))
+        self.assertIn(v1.budget_policy_revision_ref, before.policy_revision_refs)
+
+        v2 = self._publish_policy(
+            ROOT_SCOPE,
+            (self._rule("rule:v2", "tokens", 5),),
+            ref="policy:root@v2",
+            effective_from=10,
+            supersedes_ref=v1.budget_policy_revision_ref,
+        )
+
+        # v1 is open (no explicit effective_until); v2's effective_from is its
+        # logical upper bound. At t == 10 (the boundary), v1 is excluded and
+        # v2 is the sole applicable revision -- the half-open interval is
+        # [effective_from, logical_effective_until).
+        self.now = 10
+        at_boundary = self.authority.reserve(self._request("req:at-boundary", amount=1))
+        self.assertIn(v2.budget_policy_revision_ref, at_boundary.policy_revision_refs)
+        self.assertNotIn(v1.budget_policy_revision_ref, at_boundary.policy_revision_refs)
+
+    def test_explicit_overlap_rejected(self) -> None:
+        v1 = self._publish_policy(
+            ROOT_SCOPE,
+            (self._rule("rule:v1", "tokens", 100),),
+            effective_from=0,
+            effective_until=20,
+        )
+
+        with self.assertRaises(BudgetAuthorityError) as raised:
+            self._publish_policy(
+                ROOT_SCOPE,
+                (self._rule("rule:v2", "tokens", 200),),
+                ref="policy:root@overlap",
+                effective_from=10,
+                supersedes_ref=v1.budget_policy_revision_ref,
+            )
+        self.assertEqual(
+            "BUDGET_POLICY_REVISION_PREDECESSOR_OVERLAP", raised.exception.code
+        )
+
+    def test_permitted_gap_fails_closed_during_gap(self) -> None:
+        v1 = self._publish_policy(
+            ROOT_SCOPE,
+            (self._rule("rule:v1", "tokens", 100),),
+            effective_from=0,
+            effective_until=10,
+        )
+        self._publish_policy(
+            ROOT_SCOPE,
+            (self._rule("rule:v2", "tokens", 100),),
+            ref="policy:root@gap",
+            effective_from=20,
+            supersedes_ref=v1.budget_policy_revision_ref,
+        )
+
+        self.now = 15  # inside the permitted (10, 20) gap
+        with self.assertRaises(BudgetAuthorityError) as raised:
+            self.authority.reserve(self._request("req:in-gap", amount=1))
+        self.assertEqual("POLICY_NOT_RESOLVABLE", raised.exception.code)
+
+        self.assertIsNone(self.authority.resolve_by_request("req:in-gap"))
+        self.assertEqual((0, 0), self.authority.exposure(ROOT_SCOPE, "tokens"))
+
+    def test_multiple_future_successors_form_strict_linear_chain(self) -> None:
+        v1 = self._publish_policy(
+            ROOT_SCOPE, (self._rule("rule:v1", "tokens", 100),), effective_from=0
+        )
+        v2 = self._publish_policy(
+            ROOT_SCOPE,
+            (self._rule("rule:v2", "tokens", 200),),
+            ref="policy:root@future-1",
+            effective_from=100,
+            supersedes_ref=v1.budget_policy_revision_ref,
+        )
+        v3 = self._publish_policy(
+            ROOT_SCOPE,
+            (self._rule("rule:v3", "tokens", 300),),
+            ref="policy:root@future-2",
+            effective_from=200,
+            supersedes_ref=v2.budget_policy_revision_ref,
+        )
+
+        # Cannot branch off v1 even though it names a future effective_from
+        # that would not literally overlap v2's interval -- v1 is no longer
+        # the tip, full stop.
+        with self.assertRaises(BudgetAuthorityError) as raised:
+            self._publish_policy(
+                ROOT_SCOPE,
+                (self._rule("rule:branch", "tokens", 400),),
+                ref="policy:root@bad-branch",
+                effective_from=150,
+                supersedes_ref=v1.budget_policy_revision_ref,
+            )
+        self.assertEqual(
+            "BUDGET_POLICY_REVISION_SUPERSESSION_NOT_TIP", raised.exception.code
+        )
+
+        # A further future successor is fine when it supersedes the true tip.
+        v4 = self._publish_policy(
+            ROOT_SCOPE,
+            (self._rule("rule:v4", "tokens", 500),),
+            ref="policy:root@future-3",
+            effective_from=300,
+            supersedes_ref=v3.budget_policy_revision_ref,
+        )
+        self.assertEqual(v3.budget_policy_revision_ref, v4.supersedes_ref)
+
+    def test_malformed_stored_chain_fails_closed_not_lexical_tiebreak(self) -> None:
+        # Two independent "genesis" rows for the same scope, inserted
+        # directly (bypassing publish_policy_revision's chain validation) to
+        # simulate already-corrupted or legacy stored history. Selection must
+        # still refuse to silently resolve one via ref/row ordering.
+        dimensions_json = json.dumps(
+            [{"dimension_ref": "tokens", "unit": "count", "measurement_semantics_ref": "sem:tokens@1"}]
+        )
+        with self.store.transaction() as connection:
+            for ref, limit in (
+                ("policy:root@corrupt-a", 100),
+                ("policy:root@corrupt-z", 200),
+            ):
+                connection.execute(
+                    """
+                    INSERT INTO budget_policy_revisions(
+                        budget_policy_revision_ref, accounting_scope_ref,
+                        effective_from, effective_until, dimensions_json,
+                        enforcement_rules_json, created_by_ref, supersedes_ref
+                    ) VALUES (?, ?, 0, NULL, ?, ?, 'admin:test', NULL)
+                    """,
+                    (
+                        ref,
+                        ROOT_SCOPE,
+                        dimensions_json,
+                        json.dumps(
+                            [
+                                {
+                                    "rule_ref": f"rule:{ref}",
+                                    "dimension_ref": "tokens",
+                                    "limit_amount": limit,
+                                    "limit_kind": "LIFETIME_LIMIT",
+                                    "enforcement": "HARD",
+                                }
+                            ]
+                        ),
+                    ),
+                )
+
+        with self.assertRaises(BudgetAuthorityError) as raised:
+            self.authority.reserve(self._request("req:corrupt-history", amount=1))
+        self.assertEqual("POLICY_NOT_RESOLVABLE", raised.exception.code)
+        self.assertIsNone(self.authority.resolve_by_request("req:corrupt-history"))
+        self.assertEqual((0, 0), self.authority.exposure(ROOT_SCOPE, "tokens"))
+
+    def test_historical_reservation_pins_survive_multi_hop_chain_growth(self) -> None:
+        self.now = 0
+        v1 = self._publish_policy(
+            ROOT_SCOPE, (self._rule("rule:v1", "tokens", 1000),), effective_from=0
+        )
+        original = self.authority.reserve(self._request("req:pin-survives", amount=10))
+        self.assertIn(v1.budget_policy_revision_ref, original.policy_revision_refs)
+
+        v2 = self._publish_policy(
+            ROOT_SCOPE,
+            (self._rule("rule:v2", "tokens", 5),),
+            ref="policy:root@v2",
+            effective_from=10,
+            supersedes_ref=v1.budget_policy_revision_ref,
+        )
+        v3 = self._publish_policy(
+            ROOT_SCOPE,
+            (self._rule("rule:v3", "tokens", 5000),),
+            ref="policy:root@v3",
+            effective_from=20,
+            supersedes_ref=v2.budget_policy_revision_ref,
+        )
+
+        unchanged = self.authority.resolve(original.reservation_ref)
+        self.assertEqual(original, unchanged)
+        self.assertIn(v1.budget_policy_revision_ref, unchanged.policy_revision_refs)
+        self.assertNotIn(v2.budget_policy_revision_ref, unchanged.policy_revision_refs)
+        self.assertNotIn(v3.budget_policy_revision_ref, unchanged.policy_revision_refs)
+
+        self.now = 25
+        fresh = self.authority.reserve(self._request("req:pin-fresh", amount=10))
+        self.assertIn(v3.budget_policy_revision_ref, fresh.policy_revision_refs)
 
     def test_malformed_reservation_request_rejected(self) -> None:
         with self.assertRaises(BudgetAuthorityError) as raised:

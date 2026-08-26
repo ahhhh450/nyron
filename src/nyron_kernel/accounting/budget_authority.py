@@ -173,6 +173,7 @@ class BudgetAuthority:
             )
         try:
             with self._store.transaction() as connection:
+                self._validate_chain_linkage(connection, revision)
                 connection.execute(
                     """
                     INSERT INTO budget_policy_revisions(
@@ -235,7 +236,7 @@ class BudgetAuthority:
                 policy_revision_refs: list[str] = []
                 deny_reason: str | None = None
                 for scope in ancestry:
-                    revision_row = self._current_policy_revision(
+                    revision_row = self._select_current_policy_revision(
                         connection, scope.accounting_scope_ref, now
                     )
                     if revision_row is None:
@@ -426,19 +427,174 @@ class BudgetAuthority:
             "committed_amount": row["committed_amount"],
         }
 
-    def _current_policy_revision(
+    def _resolve_chain(
+        self, connection: sqlite3.Connection, accounting_scope_ref: str
+    ) -> tuple[sqlite3.Row, ...]:
+        """Return the validated genesis-to-tip same-scope revision chain, or
+        an empty tuple when that scope has no published history.
+
+        Clarification-003 SS2/SS3/SS8: fails closed with POLICY_NOT_RESOLVABLE
+        if stored history is not a single unambiguous linear chain -- zero or
+        multiple genesis rows, a branch, a cycle, a disconnected row, a
+        non-increasing effective_from step, or a predecessor/successor
+        overlap. Never repairs or guesses; never tie-breaks on ref/row/arrival
+        order.
+        """
+
+        rows = connection.execute(
+            "SELECT * FROM budget_policy_revisions WHERE accounting_scope_ref = ?",
+            (accounting_scope_ref,),
+        ).fetchall()
+        if not rows:
+            return ()
+
+        successors: dict[str | None, list[sqlite3.Row]] = {}
+        for row in rows:
+            successors.setdefault(row["supersedes_ref"], []).append(row)
+
+        genesis_candidates = successors.get(None, [])
+        if len(genesis_candidates) != 1:
+            raise BudgetAuthorityError(
+                "POLICY_NOT_RESOLVABLE", accounting_scope_ref=accounting_scope_ref
+            )
+
+        chain = [genesis_candidates[0]]
+        visited = {chain[0]["budget_policy_revision_ref"]}
+        while True:
+            next_candidates = successors.get(
+                chain[-1]["budget_policy_revision_ref"], []
+            )
+            if not next_candidates:
+                break
+            if len(next_candidates) != 1:
+                raise BudgetAuthorityError(
+                    "POLICY_NOT_RESOLVABLE", accounting_scope_ref=accounting_scope_ref
+                )
+            next_row = next_candidates[0]
+            if next_row["budget_policy_revision_ref"] in visited:
+                raise BudgetAuthorityError(
+                    "POLICY_NOT_RESOLVABLE", accounting_scope_ref=accounting_scope_ref
+                )
+            chain.append(next_row)
+            visited.add(next_row["budget_policy_revision_ref"])
+
+        if len(chain) != len(rows):
+            raise BudgetAuthorityError(
+                "POLICY_NOT_RESOLVABLE", accounting_scope_ref=accounting_scope_ref
+            )
+
+        for predecessor, successor in zip(chain, chain[1:]):
+            if successor["effective_from"] <= predecessor["effective_from"]:
+                raise BudgetAuthorityError(
+                    "POLICY_NOT_RESOLVABLE", accounting_scope_ref=accounting_scope_ref
+                )
+            if (
+                predecessor["effective_until"] is not None
+                and predecessor["effective_until"] > successor["effective_from"]
+            ):
+                raise BudgetAuthorityError(
+                    "POLICY_NOT_RESOLVABLE", accounting_scope_ref=accounting_scope_ref
+                )
+
+        return tuple(chain)
+
+    def _select_current_policy_revision(
         self, connection: sqlite3.Connection, accounting_scope_ref: str, now: int
     ) -> sqlite3.Row | None:
+        """Deterministic half-open-interval current selection (Clarification-003
+        SS1/SS7). ``None`` means this scope has no published history at all --
+        it contributes no local rule but does not block the reservation.
+        A scope WITH history but zero or more than one applicable revision at
+        ``now`` fails the whole new authorization closed instead.
+        """
+
+        chain = self._resolve_chain(connection, accounting_scope_ref)
+        if not chain:
+            return None
+
+        applicable: list[sqlite3.Row] = []
+        for index, row in enumerate(chain):
+            if row["effective_until"] is not None:
+                logical_until = row["effective_until"]
+            elif index + 1 < len(chain):
+                logical_until = chain[index + 1]["effective_from"]
+            else:
+                logical_until = None
+            if row["effective_from"] <= now and (
+                logical_until is None or now < logical_until
+            ):
+                applicable.append(row)
+
+        if len(applicable) != 1:
+            raise BudgetAuthorityError(
+                "POLICY_NOT_RESOLVABLE", accounting_scope_ref=accounting_scope_ref
+            )
+        return applicable[0]
+
+    def _validate_chain_linkage(
+        self, connection: sqlite3.Connection, revision: BudgetPolicyRevision
+    ) -> None:
+        """Fail closed unless ``revision`` is a valid genesis or a valid direct
+        successor of the exact current same-scope chain tip (Clarification-003
+        SS2-SS5), evaluated inside the same transaction as its insert.
+        """
+
+        chain = self._resolve_chain(connection, revision.accounting_scope_ref)
+
+        if not chain:
+            if revision.supersedes_ref is not None:
+                raise BudgetAuthorityError(
+                    "BUDGET_POLICY_REVISION_GENESIS_SUPERSEDES_FORBIDDEN",
+                    budget_policy_revision_ref=revision.budget_policy_revision_ref,
+                )
+            return
+
+        if revision.supersedes_ref is None:
+            raise BudgetAuthorityError(
+                "BUDGET_POLICY_REVISION_SUPERSEDES_REQUIRED",
+                budget_policy_revision_ref=revision.budget_policy_revision_ref,
+            )
+
+        target = self._load_revision_row(connection, revision.supersedes_ref)
+        if target is None:
+            raise BudgetAuthorityError(
+                "BUDGET_POLICY_REVISION_SUPERSESSION_TARGET_UNRESOLVED",
+                supersedes_ref=revision.supersedes_ref,
+            )
+        if target["accounting_scope_ref"] != revision.accounting_scope_ref:
+            raise BudgetAuthorityError(
+                "BUDGET_POLICY_REVISION_SUPERSESSION_CROSS_SCOPE",
+                supersedes_ref=revision.supersedes_ref,
+            )
+
+        tip = chain[-1]
+        if target["budget_policy_revision_ref"] != tip["budget_policy_revision_ref"]:
+            raise BudgetAuthorityError(
+                "BUDGET_POLICY_REVISION_SUPERSESSION_NOT_TIP",
+                supersedes_ref=revision.supersedes_ref,
+            )
+
+        if revision.effective_from <= tip["effective_from"]:
+            raise BudgetAuthorityError(
+                "BUDGET_POLICY_REVISION_EFFECTIVE_FROM_NOT_INCREASING",
+                budget_policy_revision_ref=revision.budget_policy_revision_ref,
+            )
+        if (
+            tip["effective_until"] is not None
+            and tip["effective_until"] > revision.effective_from
+        ):
+            raise BudgetAuthorityError(
+                "BUDGET_POLICY_REVISION_PREDECESSOR_OVERLAP",
+                budget_policy_revision_ref=revision.budget_policy_revision_ref,
+            )
+
+    @staticmethod
+    def _load_revision_row(
+        connection: sqlite3.Connection, budget_policy_revision_ref: str
+    ) -> sqlite3.Row | None:
         return connection.execute(
-            """
-            SELECT * FROM budget_policy_revisions
-            WHERE accounting_scope_ref = ?
-              AND effective_from <= ?
-              AND (effective_until IS NULL OR effective_until > ?)
-            ORDER BY effective_from DESC, budget_policy_revision_ref DESC
-            LIMIT 1
-            """,
-            (accounting_scope_ref, now, now),
+            "SELECT * FROM budget_policy_revisions WHERE budget_policy_revision_ref = ?",
+            (budget_policy_revision_ref,),
         ).fetchone()
 
     def _load_revision(
