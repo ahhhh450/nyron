@@ -8,39 +8,31 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `1`
-- Coordination Revision: `54`
+- Coordination Revision: `55`
 - Last Accepted Commit: `96698eda3e708945e9e12933ce8fe8793137db7f`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Project Phase: `SYSTEM FOUNDATION IMPLEMENTATION`
 - First Slice Closure: `PASS / CLOSED`
-- Current Frozen Implementation Gate: `ARE-GATE-4 — Replacement Fencing / Implementation Planning`
+- Current Frozen Implementation Gate: `ARE-GATE-4 — Replacement Fencing / Plan Correction`
 
 ## Active Tasks
 
 | Task | Type | Agent | State | Depends On |
 |---|---|---|---|---|
-| `NYRON-T-20260826-053` | Gate-4 Replacement Fencing implementation planning | Claude Code | `READY` | ARE-GATE-3 PASS/CLOSED; corrected Tasks 049/051 integrated; Task 052 accepted |
+| `NYRON-T-20260826-053` | Gate-4 Replacement Fencing implementation planning | Claude Code | `CHANGES_REQUIRED` | Blocking plan Finding `NYRON-T-20260826-053-F-001` |
+| `NYRON-T-20260826-054` | targeted exact-Attempt Gate-4 plan correction | Claude Code | `READY` | Task 053 remote candidate; Finding `NYRON-T-20260826-053-F-001` |
 
 ## Accepted This Revision
 
-- `NYRON-T-20260826-052` — targeted independent HIGH-risk re-review of Task 051 — `PASS / ACCEPTED`; New Findings `NONE`.
-- Task 052 independently reproduced the exact Task 050 false-FENCED exploit against correction commit `8c5823aaa01a86c926daa887fe74744ac9264a5f` and confirmed it is fixed: resolver-side target absence now fails closed to `UNKNOWN`, the original executor cannot mutate after observing `UNKNOWN`, and no false `FENCED` evidence remains.
-- Task 052 also independently proved the revoke-only variant: the actual executor observes `REVOKE_REQUESTED`, stops before first mutation, and records truthful `EXECUTOR_STOPPED_BEFORE_FIRST_MUTATION` fence evidence with the target still absent.
-- Reviewer added a distinct mismatch/foreign-target adversarial variant; it resolved to `UNKNOWN`, refused mutation and preserved the foreign content unchanged.
-- `NYRON-T-20260826-050-F-001` — `SECURITY / BLOCKING` — `CLOSED` by accepted Task 052 evidence.
-- `NYRON-T-20260826-048-F-002` — `TEST / NON_BLOCKING` — `CLOSED`; corrected lineage preserves the direct application + raw-SQL regression proving `COMPLETED/FENCED/UNKNOWN` cannot reactivate to `ACTIVE/PREPARED`.
-- Corrected Task 049 + Task 051 lineage is `ACCEPTED / INTEGRATED` as one unit. Task 049 was never accepted independently in its defective form.
-- Task 049 content commit: `4e4aa98c464a1a5f588080bd3c2873c862b8f441`.
-- Task 051 correction content commit: `8c5823aaa01a86c926daa887fe74744ac9264a5f`.
-- Task 051 Result-record tip: `02451483a524d94f62858f6b9f194256c705837e`.
-- Integration PR: `#21`.
-- Integration merge commit: `96698eda3e708945e9e12933ce8fe8793137db7f`.
-- Task 049/051 HIGH-risk Review Debt is `CLOSED` by accepted Task 052.
-- `ARE-GATE-3C — Effect Revoke / Fence Foundation` is `PASS / CLOSED`.
-- Overall frozen `ARE-GATE-3 — EffectOperation Foundation` is `PASS / CLOSED`.
-- Gate-3 accepted proof now includes durable PREPARED-before-dispatch, exact authority-consumption admission, durable ACTIVE-before-mutation, crashes on both sides of dispatch, exact completion/UNKNOWN recovery, durable revoke request, truthful executor-originated fencing, no fabricated FENCED evidence, terminal non-reactivation and `FENCED != semantic retry clearance`.
-- Both long-lived interlocks remain un-crossed: managed Resource namespace remains trusted against less-trusted concurrent mutation, and Effect/authority writes remain in the logically-single-writer canonical SQLite `BEGIN IMMEDIATE` discipline.
-- `ARE-GATE-4 — Replacement Fencing` is opened only for implementation planning via Task `NYRON-T-20260826-053`; no Gate-4 production code is yet authorized.
+- No Gate-4 production implementation is accepted or authorized in Revision 55.
+- `NYRON-T-20260826-053` returned Executor `SUCCESS` on the exact Epoch 1 / Revision 54 basis and delivered non-normative candidate `docs/development/notes/2026-08-26_ARE_GATE_4_Replacement_Fencing_Implementation_Plan.md`.
+- Orchestrator independently verified Task 053 content commit `3da2189f38171ea112c64e595f33783961a64d6c` is a direct child of Revision-54 main commit `09f3884587c044875f5d9ae8f8f8b0912c0ac72c`; compare is `ahead 1 / behind 0` and the content delta is exactly one new working note. Result-record tip `8e82744d74fba293fd160cbd2b1af9cccac5d52a` is a direct child of the content commit.
+- Task 053 correctly established several repository facts: no Attempt replacement primitive exists; `RuntimeAuthorityResolver` already makes `runs.current_attempt_seq` a load-bearing stale-authority cutover fact; current Capability/Resource/Effect admission paths already re-check current Attempt authority; existing Effect/Lease revoke/fence methods are reusable; and minimal synchronous Gate-4 work need not activate the existing concurrency/filesystem interlocks.
+- `NYRON-T-20260826-053-F-001` — `ARCHITECTURE / BLOCKING / OPEN` — the candidate's illustrative Gate-4C conflict query uses `run_ref != R2.run_ref`, but R1 and R2 replacement Attempts belong to the same Run. A literal implementation would therefore exclude stale-R1 EffectOperations from the very conflict barrier meant to fence them. Related Gate-4B discovery language is also too coarse if it targets R1 outstanding EffectOperations/ResourceLeases by `run_ref` alone, because that cannot distinguish R1 from R2 in the same Run.
+- Task 053's statement that same-Run/same-Attempt overlap can be deferred to implementation-time is not accepted: exact R1/R2 targeting and self-overlap behavior are part of Gate-4 correctness and must be resolved in the plan before production opens.
+- Task 053's SQLite-trigger wording is also tightened: storage triggers may enforce structural transition/monotonicity invariants but cannot prove Python caller provenance (for example, that a write came specifically from `replace_attempt()`) without a separate authority mechanism.
+- Task `NYRON-T-20260826-054` is opened as analysis-only correction on Epoch 1 / Revision 55. It must preserve the valid Task 053 analysis while replacing Run-level targeting with exact Attempt-bound predicates grounded in current schema, correcting the conflict barrier, resolving same-Run/same-Attempt overlap semantics, and rechecking both standing interlocks.
+- `ARE-GATE-4 — Replacement Fencing` remains `OPEN FOR PLANNING ONLY / BLOCKED FOR PRODUCTION` until Task 054 is accepted. No 4A/4B/4C production Task is yet authorized.
 
 ## First Slice Closure
 
@@ -96,13 +88,14 @@ Final Results must include exact full 40-character `SHA Verification Evidence` w
 ## Review Debt
 
 - No OPEN Review Debt remains from `ARE-GATE-3`.
-- Task `NYRON-T-20260826-053` is analysis-only and produces a non-normative Gate-4 implementation plan; Orchestrator acceptance is required before any Gate-4 production Task is opened.
+- Task 053/054 are analysis-only planning work. No production Review Debt exists yet for Gate 4 because Gate-4 production is not open.
 
 ## Open Findings
 
 - `NYRON-T-20260825-038-F-001` — `SECURITY / NARROWED / OPEN` — final-component symlink/junction/reparse adoption is rejected and post-first-identity substitution is hardened, but substitution before the first identity/descriptor read remains possible. Activation Condition: any less-trusted/co-resident actor gains concurrent mutation capability over the managed root or relevant path namespace. Module filesystem access, Host trust-boundary exposure, shared/network-root assumptions or equivalent namespace attacker capability make this a blocking prerequisite.
 - `NYRON-T-20260826-043-F-001` — `ARCHITECTURE / NON_BLOCKING / OPEN` — authority-consumption linearization depends on every authority-mutating write preserving canonical `SQLiteStore.transaction()` / `BEGIN IMMEDIATE` discipline. Activation Condition: genuine multi-threaded/worker-pool Runtime, connection pooling, independent/raw writer path, changed SQLite locking/transaction discipline, process/distributed authority, or long/async execution that changes the ordering proof. Real concurrency revalidation is required if crossed.
 - `NYRON-T-20260826-048-F-001` — `IMPLEMENTATION / NON_BLOCKING / OPEN` — replaying `execute()` after mutation-before-completion crash safely heals durable state to `COMPLETED` without duplicate mutation but returns `EFFECT_OPERATION_NOT_DISPATCHABLE` rather than the recovered operation; caller-ergonomics/observability debt only.
+- `NYRON-T-20260826-053-F-001` — `ARCHITECTURE / BLOCKING / OPEN` — Gate-4 plan uses a Run-level exclusion (`run_ref != R2.run_ref`) where replacement correctness requires exact Attempt identity. Since R1 and R2 share a Run, this can exclude stale-R1 conflict rows; Run-only cleanup can also mix R1 and R2. Blocks Gate-4 production until Task 054 corrects exact R1/R2 targeting and conflict scope.
 
 ## Stable Baseline
 
@@ -129,7 +122,7 @@ Final Results must include exact full 40-character `SHA Verification Evidence` w
 - Resource / ResourceLease foundation is integrated and accepted: one real managed-directory Resource, durable PROVISIONING/AVAILABLE/DESTROYING/DESTROYED/UNKNOWN lifecycle, exact provenance/recovery, exact Attempt/fencing-bound Lease lifecycle, non-transferability, release/revoke/expiry and advisory/non-consumptive validation.
 - Resource provenance hardening is integrated and accepted under the explicit trusted-root residual assumption.
 - EffectOperation Gate 3 is integrated and accepted: durable PREPARED, exact authority admission, durable ACTIVE, bounded external mutation, exact completion/UNKNOWN recovery, durable revoke request, truthful fencing, evidence immutability, terminal non-reactivation and no semantic retry clearance from FENCED.
-- R1->R2 Attempt replacement fencing, conflicting-R2 clearance barrier and non-conflicting eligibility proof remain unimplemented and are now the subject of Gate 4 planning.
+- R1->R2 Attempt replacement fencing, conflicting-R2 clearance barrier and non-conflicting eligibility proof remain unimplemented. Gate-4 production remains blocked until the analysis plan is corrected for exact Attempt identity.
 - Real async/background execution, Canonical Command, generalized Recovery/Reconciliation, Accounting integration and Module filesystem trust-boundary work remain future work.
 
 ## Current Next-Phase Decision
@@ -139,13 +132,15 @@ Frozen D-004 §26 route:
 - `ARE-GATE-1` — Capability foundation — PASS / CLOSED;
 - `ARE-GATE-2` — Resource foundation — PASS / CLOSED;
 - `ARE-GATE-3` — EffectOperation foundation — PASS / CLOSED;
-- `ARE-GATE-4` — Replacement Fencing — OPEN FOR IMPLEMENTATION PLANNING ONLY via Task 053;
+- `ARE-GATE-4` — Replacement Fencing — `OPEN FOR PLANNING ONLY / BLOCKED FOR PRODUCTION` pending Task 054;
 - `ARE-GATE-5` — Module Host trust boundary — future;
 - `ARE-GATE-6` — Accounting/Recovery integration — future.
 
-Task 053 must map frozen Gate-4 requirements onto the current accepted Runtime/Capability/Resource/Effect implementations and recommend the smallest independently reviewable implementation subdivision before any production code is authorized.
+Task 053's useful repository analysis is retained as candidate evidence, but the plan is not accepted because exact Attempt scoping is load-bearing for replacement correctness. Task 054 must correct the candidate before any 4A implementation Task is opened.
 
-Gate 4 planning must explicitly distinguish logical overlapping lifetimes/non-conflicting eligibility from genuine OS/thread/process concurrency. If a proposed implementation crosses any activation condition of `NYRON-T-20260826-043-F-001`, the plan must stop and identify concurrency revalidation as a prerequisite rather than silently proceeding.
+The corrected plan must bind R1/R2 discovery to exact Attempt identity rather than Run identity, must define conflict behavior for stale R1 vs current R2, same-Attempt overlap, and other Run/Activation overlap, and must exclude only the current admitting operation itself rather than excluding its whole Run.
+
+Gate 4 planning must continue to distinguish logical overlapping lifetimes/non-conflicting eligibility from genuine OS/thread/process concurrency. If the corrected plan crosses any activation condition of `NYRON-T-20260826-043-F-001`, it must stop and identify concurrency revalidation as a prerequisite.
 
 Gate 4 must preserve the orthogonality between active-conflict clearance and semantic retry clearance: `FENCED` may clear active continuation for the exact old operation but never proves that no historical consequence occurred or that retrying the same semantic effect is safe.
 
@@ -173,8 +168,8 @@ The Active Orchestrator does not perform complex production implementation. Comp
 
 ## Next Eligible Tasks
 
-1. Execute analysis-only Task `NYRON-T-20260826-053` against Epoch 1 / Revision 54.
-2. Do not open Gate-4 production implementation until Task 053 is accepted and the Orchestrator selects the exact minimal sub-gate.
+1. Execute analysis-only correction Task `NYRON-T-20260826-054` against Epoch 1 / Revision 55 and the exact Task 053 content lineage.
+2. Do not open Gate-4 production implementation until Task 054 is accepted and `NYRON-T-20260826-053-F-001` is closed.
 3. Do not introduce genuine multi-thread/process/worker or connection-pool authority while `NYRON-T-20260826-043-F-001` remains un-revalidated.
 4. Do not expose managed Resource namespaces to less-trusted concurrent mutation while `NYRON-T-20260825-038-F-001` remains `NARROWED / OPEN`.
 5. Preserve `NYRON-T-20260826-048-F-001` as explicit non-blocking caller-ergonomics debt unless separately resolved.
