@@ -48,17 +48,19 @@ Multiple concurrent sessions of Claude Code or Codex are allowed when their writ
 
 ## Agent Session Naming Rule
 
-Every newly opened Agent conversation must begin by self-declaring a unique session name before execution.
+Every newly opened Track-A Agent conversation must begin by self-declaring a unique session name before execution.
 
 Required format:
 
-`NYRON-TA-<TASKID>-<ROLE>-<AGENT>-<N>`
+`TRACK_A_TASK_<TASK_NUMBER>_<SESSION_NUMBER>`
 
 Examples:
 
-- `NYRON-TA-090-IMPL-CLAUDE-1`
-- `NYRON-TA-<TASKID>-MECH-DEEPSEEK-1`
-- `NYRON-TA-<TASKID>-REVIEW-CODEX-1`
+- first session for Task 090: `TRACK_A_TASK_090_1`
+- second session for Task 090: `TRACK_A_TASK_090_2`
+- first session for Task 095: `TRACK_A_TASK_095_1`
+
+The session number is scoped to that Task and starts at `1`.
 
 Multiple concurrent sessions of the same Agent family are allowed only when write surfaces and dependencies are independent and the active-slot policy permits it. Session identity is not a substitute for formal Task ID or exact production SHA.
 
