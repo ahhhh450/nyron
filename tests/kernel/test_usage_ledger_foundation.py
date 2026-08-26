@@ -160,6 +160,43 @@ class UsageLedgerFoundationTest(unittest.TestCase):
                 (fact.usage_fact_ref,),
             )
 
+    def test_usage_fact_delete_is_rejected_and_row_persists(self) -> None:
+        fact = self.ledger.record_usage(usage_request())
+
+        with self.assertRaises(Exception):
+            self.store.connection.execute(
+                "DELETE FROM usage_facts WHERE usage_fact_ref = ?",
+                (fact.usage_fact_ref,),
+            )
+
+        rows = self.store.connection.execute(
+            "SELECT COUNT(*) AS n FROM usage_facts"
+        ).fetchone()
+        self.assertEqual(rows["n"], 1)
+        preserved = self.ledger.resolve(fact.usage_fact_ref)
+        self.assertEqual(preserved, fact)
+
+    def test_replay_after_rejected_usage_fact_delete_remains_idempotent(
+        self,
+    ) -> None:
+        request = usage_request()
+        original = self.ledger.record_usage(request)
+
+        with self.assertRaises(Exception):
+            self.store.connection.execute(
+                "DELETE FROM usage_facts WHERE usage_fact_ref = ?",
+                (original.usage_fact_ref,),
+            )
+
+        replayed = self.ledger.record_usage(request)
+
+        self.assertEqual(replayed.usage_fact_ref, original.usage_fact_ref)
+        self.assertEqual(replayed, original)
+        rows = self.store.connection.execute(
+            "SELECT COUNT(*) AS n FROM usage_facts"
+        ).fetchone()
+        self.assertEqual(rows["n"], 1)
+
     # -- Test 6: UsageAdjustmentFact appends and references original -----
 
     def test_adjustment_appends_and_references_original_fact(self) -> None:
@@ -228,6 +265,106 @@ class UsageLedgerFoundationTest(unittest.TestCase):
         second = self.ledger.record_adjustment(make_request())
 
         self.assertEqual(first, second)
+        rows = self.store.connection.execute(
+            "SELECT COUNT(*) AS n FROM usage_adjustment_facts"
+        ).fetchone()
+        self.assertEqual(rows["n"], 1)
+
+    # -- UsageAdjustmentFact immutability: UPDATE and DELETE rejected -----
+
+    def test_usage_adjustment_fact_is_immutable_after_commit(self) -> None:
+        original = self.ledger.record_usage(usage_request())
+        adjustment = self.ledger.record_adjustment(
+            UsageAdjustmentFactRequest(
+                adjusts_usage_fact_ref=original.usage_fact_ref,
+                source_authority_ref="provider:acme",
+                source_fact_id="correction:1",
+                fact_kind="PROVIDER_REFUND",
+                dimension_ref="tokens",
+                delta_quantity=-10,
+                unit="TOKEN",
+                reason="provider over-billed",
+                evidence_ref="evidence:correction-1",
+                caused_by_ref="event:correction-callback-1",
+            )
+        )
+
+        with self.assertRaises(Exception):
+            self.store.connection.execute(
+                "UPDATE usage_adjustment_facts SET delta_quantity = -1 "
+                "WHERE adjustment_fact_ref = ?",
+                (adjustment.adjustment_fact_ref,),
+            )
+
+    def test_usage_adjustment_fact_delete_is_rejected_and_row_persists(
+        self,
+    ) -> None:
+        original = self.ledger.record_usage(usage_request())
+        adjustment = self.ledger.record_adjustment(
+            UsageAdjustmentFactRequest(
+                adjusts_usage_fact_ref=original.usage_fact_ref,
+                source_authority_ref="provider:acme",
+                source_fact_id="correction:1",
+                fact_kind="PROVIDER_REFUND",
+                dimension_ref="tokens",
+                delta_quantity=-10,
+                unit="TOKEN",
+                reason="provider over-billed",
+                evidence_ref="evidence:correction-1",
+                caused_by_ref="event:correction-callback-1",
+            )
+        )
+
+        with self.assertRaises(Exception):
+            self.store.connection.execute(
+                "DELETE FROM usage_adjustment_facts "
+                "WHERE adjustment_fact_ref = ?",
+                (adjustment.adjustment_fact_ref,),
+            )
+
+        rows = self.store.connection.execute(
+            "SELECT COUNT(*) AS n FROM usage_adjustment_facts"
+        ).fetchone()
+        self.assertEqual(rows["n"], 1)
+        preserved = self.store.connection.execute(
+            "SELECT delta_quantity FROM usage_adjustment_facts "
+            "WHERE adjustment_fact_ref = ?",
+            (adjustment.adjustment_fact_ref,),
+        ).fetchone()
+        self.assertEqual(preserved["delta_quantity"], -10)
+
+    def test_replay_after_rejected_adjustment_delete_remains_idempotent(
+        self,
+    ) -> None:
+        original = self.ledger.record_usage(usage_request())
+
+        def make_request() -> UsageAdjustmentFactRequest:
+            return UsageAdjustmentFactRequest(
+                adjusts_usage_fact_ref=original.usage_fact_ref,
+                source_authority_ref="provider:acme",
+                source_fact_id="correction:1",
+                fact_kind="PROVIDER_REFUND",
+                dimension_ref="tokens",
+                delta_quantity=-10,
+                unit="TOKEN",
+                reason="provider over-billed",
+                evidence_ref="evidence:correction-1",
+                caused_by_ref="event:correction-callback-1",
+            )
+
+        first = self.ledger.record_adjustment(make_request())
+
+        with self.assertRaises(Exception):
+            self.store.connection.execute(
+                "DELETE FROM usage_adjustment_facts "
+                "WHERE adjustment_fact_ref = ?",
+                (first.adjustment_fact_ref,),
+            )
+
+        replayed = self.ledger.record_adjustment(make_request())
+
+        self.assertEqual(replayed.adjustment_fact_ref, first.adjustment_fact_ref)
+        self.assertEqual(replayed, first)
         rows = self.store.connection.execute(
             "SELECT COUNT(*) AS n FROM usage_adjustment_facts"
         ).fetchone()

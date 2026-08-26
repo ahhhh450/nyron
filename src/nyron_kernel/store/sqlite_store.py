@@ -787,6 +787,12 @@ class SQLiteStore:
                 SELECT RAISE(ABORT, 'usage fact is immutable');
             END;
 
+            CREATE TRIGGER IF NOT EXISTS usage_fact_no_delete
+            BEFORE DELETE ON usage_facts
+            BEGIN
+                SELECT RAISE(ABORT, 'usage fact is immutable');
+            END;
+
             CREATE TABLE IF NOT EXISTS usage_adjustment_facts (
                 adjustment_fact_ref TEXT PRIMARY KEY,
                 adjusts_usage_fact_ref TEXT NOT NULL,
@@ -809,6 +815,12 @@ class SQLiteStore:
 
             CREATE TRIGGER IF NOT EXISTS usage_adjustment_fact_immutable
             BEFORE UPDATE ON usage_adjustment_facts
+            BEGIN
+                SELECT RAISE(ABORT, 'usage adjustment fact is immutable');
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS usage_adjustment_fact_no_delete
+            BEFORE DELETE ON usage_adjustment_facts
             BEGIN
                 SELECT RAISE(ABORT, 'usage adjustment fact is immutable');
             END;
