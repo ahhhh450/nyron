@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import inspect
 import json
+import os
+import shutil
 import sqlite3
+import subprocess
 import tempfile
 import unittest
 from dataclasses import replace
@@ -201,6 +204,78 @@ class ResourceFoundationTest(unittest.TestCase):
         marker.write_text('{"manager_id":"foreign"}')
         self.assertEqual("UNKNOWN", self.manager.recover(RESOURCE).state)
 
+    def test_final_component_symlink_is_never_followed_or_adopted(self):
+        request = self._request(resource_ref="resource:symlink")
+        path = self.manager._path_for(request.resource_ref)
+        target = self.base / "foreign-target"
+        target.mkdir()
+        try:
+            path.symlink_to(target, target_is_directory=True)
+        except OSError as error:
+            self.skipTest(f"directory symlink unavailable on this platform: {error}")
+        resource = self.manager.provision(request)
+        self.assertEqual("UNKNOWN", resource.state)
+        self.assertFalse((target / ".nyron-resource.json").exists())
+
+    @unittest.skipUnless(os.name == "nt", "requires Windows junction semantics")
+    def test_final_component_junction_is_never_adopted(self):
+        def crash(stage, _resource):
+            if stage == "AFTER_PROVISIONING_COMMIT":
+                raise InjectedCrash
+
+        with self.assertRaises(InjectedCrash):
+            self._manager(crash).provision(self._request())
+        resource = self.manager.resolve_resource(RESOURCE)
+        assert resource is not None
+        target = self.base / "junction-target"
+        target.mkdir()
+        (target / ".nyron-resource.json").write_text(json.dumps(resource.provenance))
+        created = subprocess.run(
+            ["cmd", "/c", "mklink", "/J", resource.external_ref, str(target)],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if created.returncode != 0:
+            self.skipTest(f"junction creation unavailable: {created.stderr.strip()}")
+        self.assertEqual("UNKNOWN", self.manager.recover(RESOURCE).state)
+
+    def test_substitution_between_create_and_marker_never_marks_replacement(self):
+        displaced = self.base / "displaced-created-directory"
+        replacement_file = "unrelated.txt"
+
+        def substitute(stage, resource):
+            if stage == "AFTER_DIRECTORY_OPEN_BEFORE_MARKER":
+                path = Path(resource.external_ref)
+                path.rename(displaced)
+                path.mkdir()
+                (path / replacement_file).write_text("unrelated")
+
+        resource = self._manager(substitute).provision(self._request())
+        replacement = Path(resource.external_ref)
+        self.assertEqual("UNKNOWN", resource.state)
+        self.assertFalse((replacement / ".nyron-resource.json").exists())
+        self.assertEqual("unrelated", (replacement / replacement_file).read_text())
+
+    @unittest.skipUnless(
+        ResourceManager._descriptor_operations_supported(),
+        "requires O_DIRECTORY/O_NOFOLLOW and descriptor-relative operations",
+    )
+    def test_descriptor_marker_is_exclusive_and_bound_to_open_directory(self):
+        directory = self.base / "descriptor-marker"
+        directory.mkdir()
+        fd = os.open(
+            directory,
+            os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+        )
+        try:
+            ResourceManager._write_exclusive_json_at(fd, "marker.json", {"ok": True})
+            with self.assertRaises(FileExistsError):
+                ResourceManager._write_exclusive_json_at(fd, "marker.json", {"ok": False})
+        finally:
+            os.close(fd)
+        self.assertEqual({"ok": True}, json.loads((directory / "marker.json").read_text()))
+
     def test_available_resource_and_lease_survive_file_reopen_exactly(self):
         resource = self._provision()
         lease = self._lease(expires_at=200)
@@ -333,6 +408,27 @@ class ResourceFoundationTest(unittest.TestCase):
         (Path(resource.external_ref) / ".nyron-resource.json").write_text("{}")
         self.assertEqual("UNKNOWN", self.manager.recover(RESOURCE).state)
         self.assertTrue(Path(resource.external_ref).exists())
+
+    def test_destroy_detects_real_directory_substitution_and_deletes_neither(self):
+        resource = self._provision()
+        path = Path(resource.external_ref)
+        displaced = self.base / "displaced-proven-directory"
+
+        def substitute(stage, current):
+            if stage == "AFTER_DESTROY_IDENTITY_CHECK":
+                path.rename(displaced)
+                path.mkdir()
+                shutil.copy2(
+                    displaced / ".nyron-resource.json",
+                    path / ".nyron-resource.json",
+                )
+                (path / "unrelated.txt").write_text("keep")
+
+        self.manager._crash_hook = substitute
+        destroyed = self.manager.destroy(resource.resource_ref)
+        self.assertEqual("UNKNOWN", destroyed.state)
+        self.assertTrue(displaced.exists())
+        self.assertEqual("keep", (path / "unrelated.txt").read_text())
 
     def test_no_effect_command_retry_recovery_or_use_permit_surface(self):
         tables = {
