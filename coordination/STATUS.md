@@ -4,39 +4,38 @@
 >
 > Bootstrap provenance: migrated from `design/coordination/STATUS.md` at repository state `04d7c2222d2a4e27dae68259d70b6f0d95b139fb`.
 >
-> Status compacted at Revision 65. Historical detail remains canonical in prior STATUS revisions and `coordination/tasks/`, `coordination/results/`, `coordination/checkpoints/`.
+> Status compacted at Revision 66. Historical detail remains canonical in prior STATUS revisions and `coordination/tasks/`, `coordination/results/`, `coordination/checkpoints/`.
 
 ## Coordination
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `1`
-- Coordination Revision: `65`
+- Coordination Revision: `66`
 - Last Accepted Commit: `e410ca50a27fcb3273848000ef3846279ebda00d`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Project Phase: `SYSTEM FOUNDATION IMPLEMENTATION`
 - First Slice Closure: `PASS / CLOSED`
-- Current Frozen Implementation Gate: `ARE-GATE-5 — Module Host trust boundary / DESIGN CLARIFICATION IN PROGRESS`
+- Current Frozen Implementation Gate: `ARE-GATE-5 — Module Host trust boundary / LIVE-BROKER ABI DESIGN REVIEW`
 
 ## Active Tasks
 
 | Task | Type | Agent | State | Depends On |
 |---|---|---|---|---|
-| `NYRON-T-20260826-064` | Gate-5 live Module broker ABI clarification candidate | Claude Code | `READY` | 062-F-001 + Task 063 evidence inventory |
+| `NYRON-T-20260826-064` | Gate-5 live Module broker ABI clarification candidate | Claude Code | `IN_REVIEW` | 062-F-001 + Task 063 evidence inventory |
+| `NYRON-T-20260826-065` | independent HIGH-risk design review of Task 064 | Codex | `READY` | Task 064 candidate delivered |
 
-## Revision 65 Decision
+## Revision 66 Decision
 
-- `NYRON-T-20260826-063` — LOW-risk read-only frozen-contract live-broker ABI evidence inventory — `COMPLETE / ACCEPTED`.
-- Task 063 continued safely after Revision 63 -> 64 under `RECHECK_AND_CONTINUE_IF_UNAFFECTED`; no source contract used by the analysis changed.
-- Task 063 canonical Result is recorded at `coordination/results/NYRON-T-20260826-063.md`; record commit `f59d12bbad19dbc45df606b9ed929c5736ce6533`.
-- Task 063 found no conflicting normative text. It confirms the central Gate-5 gap is genuinely unspecified rather than contradictory.
-- Explicitly specified: RuntimeContext field categories, Kernel->Module execute ABI, trust-boundary prohibitions, broker/proxy mediation principle, fresh authority linearization at actual effect use, Resource-handle proxy semantics, and trusted-mode-only threat claim.
-- Missing/ambiguous: callable-vs-inert Module delivery model, concrete Python Module->broker invocation convention, handle->EffectRequest binding, concrete broker method signature, broker return/error mapping, and field-level handle shapes.
-- Existing accepted `nyron.kernel.managed-resource-bounded-write@1` is concrete on the Effect Authority side but does not by itself determine the missing Module-facing broker ABI.
-- `NYRON-T-20260826-062-F-001` remains `ARCHITECTURE / BLOCKING / OPEN`.
-- New HIGH-risk design Task `NYRON-T-20260826-064` is opened to produce one bounded Gate-5 live-broker ABI clarification candidate. Assigned Agent: `Claude Code`; planned independent design Reviewer: `Codex`.
-- Task 064 is DESIGN ONLY: production code, tests, STATUS and frozen-baseline mutation are forbidden. Its candidate has no authority until independent review and explicit Design Authority acceptance/freeze.
-- Task 061 remains `NOT ACCEPTED / NOT INTEGRATED`; its branch may be consulted only as non-normative implementation evidence.
-- `ARE-GATE-5` remains OPEN. No Gate-5 production implementation and no Gate-6 work are authorized until the clarification candidate is reviewed and accepted.
+- `NYRON-T-20260826-064` returned `SUCCESS` on exact Epoch 1 / Revision 65 basis.
+- Orchestrator independently verified candidate commit `1a8672dea011b7f787238437a0250a778c3ba13c` is a direct child of exact Revision-65 main `1e00e47cf352fda54a3f8f20c1a7920b3f9a3a22`; compare is `ahead 1 / behind 0`.
+- Exact Task-064 content delta is one file only: `design/clarifications/NYRON-D-004_Gate5_Live_Broker_ABI_Clarification_Candidate_v0.1.md` (371 insertions). No production, tests, STATUS or frozen-baseline mutation exists in Task-064 content.
+- Task-064 Result is canonically recorded at `coordination/results/NYRON-T-20260826-064.md`; record commit `d5866787a6a845c714462bc9662e3a3e5ee3a44b`. This record does not change candidate content identity.
+- Candidate remains explicitly `CANDIDATE — NOT FROZEN — NO ARCHITECTURE AUTHORITY` and cannot authorize implementation or close `NYRON-T-20260826-062-F-001` before independent Review and Design Authority acceptance.
+- Candidate supplies a concrete bounded design using inert Capability/Resource selectors plus a single synchronous `BoundedWriteEffectBroker` for accepted effect class `nyron.kernel.managed-resource-bounded-write@1`; actual mutation remains delegated to current `EffectAuthority.execute()` / dispatch-admission linearization.
+- Orchestrator pre-review identified two load-bearing questions requiring independent attack rather than acceptance by inspection: (1) whether an in-process Python broker that directly holds raw `EffectAuthority` / `AttemptAuthority` can truthfully satisfy the candidate invariant that Module code never receives/reaches raw Owner/Attempt objects; (2) whether mapping `EFFECT_OPERATION_NOT_DISPATCHABLE` to `BoundedWriteRejected` collapses a pre-existing durable `UNKNOWN` into a misleading rejection despite the candidate's UNKNOWN-preservation invariant.
+- Additional contract-consistency questions requiring review include shape-error exception-vs-result behavior, captured AttemptAuthority semantics, handle equality/membership, operation identity/replay, and the literal `caused_by_ref` derivation.
+- New independent HIGH-risk Design Review Task `NYRON-T-20260826-065` is opened on exact candidate content `1a8672dea011b7f787238437a0250a778c3ba13c`; assigned Agent: `Codex`; mode: READ_ONLY; Stale Policy: FAIL_CLOSED.
+- Task 064 moves to `IN_REVIEW`. No candidate freeze, no Task-061 integration, no Gate-5 implementation, and no Gate-6 work are authorized in Revision 66.
 
 ## Accepted Production Baseline
 
@@ -45,14 +44,15 @@
 - `ARE-GATE-2 — Resource foundation` — `PASS / CLOSED`.
 - `ARE-GATE-3 — EffectOperation foundation` — `PASS / CLOSED`.
 - `ARE-GATE-4 — Replacement Fencing` — `PASS / CLOSED`; accepted integration tip `e410ca50a27fcb3273848000ef3846279ebda00d`.
-- `ARE-GATE-5 — Module Host trust boundary` — `OPEN / BLOCKED PENDING DESIGN CLARIFICATION`.
+- `ARE-GATE-5 — Module Host trust boundary` — `OPEN / BLOCKED PENDING ABI DESIGN REVIEW`.
+- Task 061 remains `NOT ACCEPTED / NOT INTEGRATED`.
 - `ARE-GATE-6 — Accounting/Recovery integration` — future / not open.
 
 ## Open Findings
 
-- `NYRON-T-20260826-062-F-001` — `ARCHITECTURE / BLOCKING / OPEN` — current frozen contracts do not determine a concrete Module-callable live-broker invocation ABI. Required resolution: explicit bounded ABI clarification, independent review, Design Authority acceptance/freeze, then a correctly scoped Gate-5 implementation task.
-- `NYRON-T-20260825-038-F-001` — `SECURITY / NARROWED / OPEN` — Resource provenance residual pre-first-identity namespace race. Activation Condition: less-trusted/co-resident actor gains concurrent mutation capability over managed-root/path namespace. Module filesystem/Host trust-boundary exposure, shared/network-root assumptions or equivalent namespace attacker capability make this blocking.
-- `NYRON-T-20260826-043-F-001` — `ARCHITECTURE / NON_BLOCKING / OPEN` — authority-consumption linearization depends on canonical SQLite single-writer transaction discipline. Genuine concurrency/pools/raw writers/process-distributed authority or ordering-model changes activate mandatory revalidation.
+- `NYRON-T-20260826-062-F-001` — `ARCHITECTURE / BLOCKING / OPEN` — current frozen contracts do not determine a concrete Module-callable live-broker invocation ABI. Closure requires an explicit bounded ABI clarification, independent Review, Design Authority acceptance/freeze, then a correctly scoped Gate-5 implementation task.
+- `NYRON-T-20260825-038-F-001` — `SECURITY / NARROWED / OPEN` — Resource provenance residual pre-first-identity namespace race; Module filesystem/managed-root namespace exposure or less-trusted namespace writers activate it as blocking.
+- `NYRON-T-20260826-043-F-001` — `ARCHITECTURE / NON_BLOCKING / OPEN` — authority-consumption linearization depends on canonical SQLite single-writer transaction discipline; genuine concurrency/pools/raw writers/process-distributed authority activate mandatory revalidation.
 - `NYRON-T-20260826-048-F-001` — `IMPLEMENTATION / NON_BLOCKING / OPEN` — Effect recovery caller ergonomics debt only.
 - `NYRON-T-20260826-056-F-001` — `IMPLEMENTATION / NON_BLOCKING / OPEN` — cross-version schema migration/rebuild debt.
 
@@ -80,7 +80,7 @@ Frozen D-004 §26 route:
 - `ARE-GATE-2` — PASS / CLOSED;
 - `ARE-GATE-3` — PASS / CLOSED;
 - `ARE-GATE-4` — PASS / CLOSED;
-- `ARE-GATE-5` — `OPEN / DESIGN CLARIFICATION via Task 064`;
+- `ARE-GATE-5` — `OPEN / LIVE-BROKER ABI DESIGN REVIEW via Task 065`;
 - `ARE-GATE-6` — future / not open.
 
 Gate-5 load-bearing semantics remain:
@@ -90,8 +90,9 @@ Gate-5 load-bearing semantics remain:
 - handles are selectors/proxies, not cached authority truth;
 - actual external effect use must freshly cross accepted Effect Authority admission/linearization;
 - plain check-then-use is forbidden;
+- UNKNOWN must not be fabricated into success/failure certainty;
 - current Trusted Module Mode is not hostile-plugin isolation;
-- Task 064 must not activate 038-F-001 or 043-F-001.
+- 038-F-001 and 043-F-001 must remain NOT ACTIVATED.
 
 ## Final Result SHA Rule
 
