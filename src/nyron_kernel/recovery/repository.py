@@ -123,15 +123,18 @@ class RecoveryRepository:
             escalation_policy_ref,
             caused_by_ref,
         )
-        existing = self._case_by_open_request(open_request_ref)
-        if existing is not None:
-            self._require_open_replay(existing, identity)
-            return existing
-        active = self._active_case(subject_owner_ref, subject_ref, reason_code)
-        if active is not None:
-            return active
         try:
             with self._store.transaction() as connection:
+                existing = self._case_by_open_request(open_request_ref)
+                if existing is not None:
+                    self._require_open_replay(existing, identity)
+                    return existing
+                active = self._active_case(
+                    subject_owner_ref, subject_ref, reason_code
+                )
+                if active is not None:
+                    self._require_active_reuse(active, identity)
+                    return active
                 connection.execute(
                     """
                     INSERT INTO reconciliation_cases(
@@ -218,6 +221,8 @@ class RecoveryRepository:
         if now >= case.deadline:
             self._escalate(case_ref, now)
             raise RecoveryError("RECOVERY_DEADLINE_EXHAUSTED")
+        if case.next_retry_at is not None and now < case.next_retry_at:
+            raise RecoveryError("RECOVERY_RETRY_NOT_YET_ELIGIBLE")
         attempt_number = case.attempt_count + 1
         exhausted = attempt_number >= case.max_attempts
         next_retry_at = None if exhausted else min(
@@ -394,6 +399,26 @@ class RecoveryRepository:
         if actual != identity:
             raise RecoveryError("RECONCILIATION_CASE_IDENTITY_CONFLICT")
 
+    @staticmethod
+    def _require_active_reuse(
+        case: ReconciliationCase, identity: tuple[object, ...]
+    ) -> None:
+        requested_binding = identity[2:]
+        canonical_binding = (
+            case.subject_owner_ref,
+            case.subject_ref,
+            case.reason_code,
+            case.opened_by_ref,
+            case.max_attempts,
+            case.retry_policy_ref,
+            case.backoff_seconds,
+            case.deadline,
+            case.escalation_policy_ref,
+            case.caused_by_ref,
+        )
+        if canonical_binding != requested_binding:
+            raise RecoveryError("RECONCILIATION_CASE_IDENTITY_CONFLICT")
+
     def _case_has_evidence(self, case_ref: str, evidence_ref: str) -> bool:
         return self._store.connection.execute(
             "SELECT 1 FROM reconciliation_case_evidence WHERE reconciliation_case_ref = ? AND evidence_ref = ?",
@@ -475,6 +500,21 @@ CREATE TRIGGER IF NOT EXISTS recovery_attempt_immutable BEFORE UPDATE ON recover
 BEGIN SELECT RAISE(ABORT, 'recovery attempt is immutable'); END;
 CREATE TRIGGER IF NOT EXISTS recovery_resolution_immutable BEFORE UPDATE ON recovery_resolutions
 BEGIN SELECT RAISE(ABORT, 'recovery resolution is immutable'); END;
+CREATE TRIGGER IF NOT EXISTS reconciliation_case_delete_guard
+BEFORE DELETE ON reconciliation_cases
+BEGIN SELECT RAISE(ABORT, 'reconciliation case is durable'); END;
+CREATE TRIGGER IF NOT EXISTS recovery_evidence_delete_guard
+BEFORE DELETE ON recovery_evidence
+BEGIN SELECT RAISE(ABORT, 'recovery evidence is append-only'); END;
+CREATE TRIGGER IF NOT EXISTS reconciliation_case_evidence_delete_guard
+BEFORE DELETE ON reconciliation_case_evidence
+BEGIN SELECT RAISE(ABORT, 'accepted recovery evidence link is append-only'); END;
+CREATE TRIGGER IF NOT EXISTS recovery_attempt_delete_guard
+BEFORE DELETE ON recovery_attempts
+BEGIN SELECT RAISE(ABORT, 'recovery attempt is durable'); END;
+CREATE TRIGGER IF NOT EXISTS recovery_resolution_delete_guard
+BEFORE DELETE ON recovery_resolutions
+BEGIN SELECT RAISE(ABORT, 'recovery resolution is durable'); END;
 CREATE TRIGGER IF NOT EXISTS reconciliation_case_identity_immutable
 BEFORE UPDATE ON reconciliation_cases WHEN
  NEW.reconciliation_case_ref != OLD.reconciliation_case_ref OR

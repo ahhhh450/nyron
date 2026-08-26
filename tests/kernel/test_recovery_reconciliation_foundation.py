@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import sqlite3
 import tempfile
+import threading
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from nyron_kernel.recovery import (
@@ -143,6 +145,7 @@ class RecoveryReconciliationFoundationTests(unittest.TestCase):
         self.repository.record_retry(
             case_ref="case:1", attempt_ref="attempt:1", observation_kind="READ_ONLY_QUERY"
         )
+        self.clock.value = 110
         last = self.repository.record_retry(
             case_ref="case:1", attempt_ref="attempt:2", observation_kind="READ_ONLY_QUERY"
         )
@@ -152,6 +155,175 @@ class RecoveryReconciliationFoundationTests(unittest.TestCase):
             self.repository.record_retry(
                 case_ref="case:1", attempt_ref="attempt:3", observation_kind="READ_ONLY_QUERY"
             )
+
+    def test_fresh_retry_must_reach_committed_eligibility_time(self) -> None:
+        self.open_case()
+        first = self.repository.record_retry(
+            case_ref="case:1",
+            attempt_ref="attempt:1",
+            observation_kind="READ_ONLY_QUERY",
+        )
+        before = self.repository.resolve_case_by_ref("case:1")
+        with self.assertRaisesRegex(
+            RecoveryError, "RECOVERY_RETRY_NOT_YET_ELIGIBLE"
+        ):
+            self.repository.record_retry(
+                case_ref="case:1",
+                attempt_ref="attempt:early",
+                observation_kind="READ_ONLY_QUERY",
+            )
+        self.assertEqual(before, self.repository.resolve_case_by_ref("case:1"))
+        self.assertIsNone(self.repository.resolve_attempt("attempt:early"))
+        self.assertEqual(
+            first,
+            self.repository.record_retry(
+                case_ref="case:1",
+                attempt_ref="attempt:1",
+                observation_kind="READ_ONLY_QUERY",
+            ),
+        )
+        self.clock.value = first.next_retry_at
+        second = self.repository.record_retry(
+            case_ref="case:1",
+            attempt_ref="attempt:2",
+            observation_kind="READ_ONLY_QUERY",
+        )
+        self.assertEqual(2, second.attempt_number)
+
+    def test_early_retry_remains_blocked_after_restart(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "early-retry.db"
+            clock = MutableClock()
+            with SQLiteStore(path) as initial:
+                repository = RecoveryRepository(initial, clock)
+                self.repository = repository
+                self.store = initial
+                self.open_case()
+                repository.record_retry(
+                    case_ref="case:1",
+                    attempt_ref="attempt:1",
+                    observation_kind="READ_ONLY_QUERY",
+                )
+            with SQLiteStore(path) as reopened:
+                repository = RecoveryRepository(reopened, clock)
+                before = repository.resolve_case_by_ref("case:1")
+                with self.assertRaisesRegex(
+                    RecoveryError, "RECOVERY_RETRY_NOT_YET_ELIGIBLE"
+                ):
+                    repository.record_retry(
+                        case_ref="case:1",
+                        attempt_ref="attempt:early",
+                        observation_kind="READ_ONLY_QUERY",
+                    )
+                self.assertEqual(before, repository.resolve_case_by_ref("case:1"))
+
+    def test_active_condition_reuse_rejects_divergent_bounded_binding(self) -> None:
+        opened = self.open_case()
+        legitimate = self.open_case(
+            reconciliation_case_ref="case:duplicate",
+            open_request_ref="open:duplicate",
+        )
+        self.assertEqual(opened, legitimate)
+        with self.assertRaisesRegex(
+            RecoveryError, "RECONCILIATION_CASE_IDENTITY_CONFLICT"
+        ):
+            self.open_case(
+                reconciliation_case_ref="case:conflict",
+                open_request_ref="open:conflict",
+                max_attempts=99,
+                retry_policy_ref="retry:conflict",
+            )
+
+    def test_racing_identical_opens_converge_and_conflicts_fail_closed(self) -> None:
+        def race(database: Path, conflicting: bool) -> list[object]:
+            barrier = threading.Barrier(2)
+
+            def open_from_connection(index: int) -> object:
+                with SQLiteStore(database) as store:
+                    repository = RecoveryRepository(store, MutableClock())
+                    barrier.wait()
+                    try:
+                        return repository.open_case(
+                            reconciliation_case_ref="case:race",
+                            open_request_ref="open:race",
+                            subject_owner_ref="effect-authority",
+                            subject_ref="effect:race",
+                            reason_code="EFFECT_DISPATCH_HISTORY_UNKNOWN",
+                            opened_by_ref="accounting:request",
+                            max_attempts=3 + (index if conflicting else 0),
+                            retry_policy_ref="retry:fixed",
+                            backoff_seconds=10,
+                            deadline=1000,
+                            escalation_policy_ref="escalate:human",
+                            caused_by_ref="event:race",
+                        )
+                    except RecoveryError as error:
+                        return error
+
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                return list(executor.map(open_from_connection, (0, 1)))
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            identical = race(root / "identical.db", conflicting=False)
+            self.assertTrue(all(not isinstance(item, RecoveryError) for item in identical))
+            self.assertEqual(
+                {item.reconciliation_case_ref for item in identical}, {"case:race"}
+            )
+
+            conflicting = race(root / "conflicting.db", conflicting=True)
+            self.assertEqual(
+                1, sum(isinstance(item, RecoveryError) for item in conflicting)
+            )
+            error = next(item for item in conflicting if isinstance(item, RecoveryError))
+            self.assertEqual("RECONCILIATION_CASE_IDENTITY_CONFLICT", error.code)
+
+    def test_canonical_recovery_rows_and_links_reject_raw_delete(self) -> None:
+        self.open_case()
+        self.repository.record_retry(
+            case_ref="case:1",
+            attempt_ref="attempt:1",
+            observation_kind="READ_ONLY_QUERY",
+        )
+        evidence = self.evidence("evidence:durable", "hash:durable")
+        self.repository.append_evidence("case:1", evidence)
+        self.repository.resolve_case(
+            RecoveryResolution(
+                resolution_ref="resolution:durable",
+                reconciliation_case_ref="case:1",
+                resolution_kind="EVIDENCE_SUPPORTED",
+                evidence_refs=(evidence.evidence_ref,),
+                disposition="RECOVERY_CASE_ONLY",
+                disposition_scope="RECOVERY_CASE_ONLY",
+                permits_runtime_closure=False,
+                policy_ref="policy:resolution",
+                caused_by_ref="evidence:durable",
+                authorized_by_ref=None,
+                resolved_at=100,
+            )
+        )
+        deletes = (
+            ("reconciliation_cases", "reconciliation_case_ref = 'case:1'"),
+            ("recovery_evidence", "evidence_ref = 'evidence:durable'"),
+            (
+                "reconciliation_case_evidence",
+                "reconciliation_case_ref = 'case:1' AND evidence_ref = 'evidence:durable'",
+            ),
+            ("recovery_attempts", "attempt_ref = 'attempt:1'"),
+            ("recovery_resolutions", "resolution_ref = 'resolution:durable'"),
+        )
+        for table, predicate in deletes:
+            with self.subTest(table=table):
+                with self.assertRaises(sqlite3.IntegrityError):
+                    self.store.connection.execute(
+                        f"DELETE FROM {table} WHERE {predicate}"
+                    )
+                self.assertEqual(
+                    1,
+                    self.store.connection.execute(
+                        f"SELECT count(*) FROM {table} WHERE {predicate}"
+                    ).fetchone()[0],
+                )
 
     def test_deadline_escalates_without_recording_attempt(self) -> None:
         self.open_case(deadline=101)
