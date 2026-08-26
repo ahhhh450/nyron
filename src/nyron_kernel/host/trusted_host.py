@@ -7,10 +7,14 @@ a known, registry-resolved trusted module implementation.  Module code
 never receives the StateStore, SQLite connection, filesystem, network,
 or capability objects.
 
-This PURE-only slice does not define a RuntimeContext shape yet, so the
-host accepts only ``runtime_context=None`` and fails closed on any other
-value before module code runs — it never forwards an arbitrary Python
-object (a raw store, a DB connection, or any other handle) to a module.
+``runtime_context`` must be exactly ``None`` or an exact instance of the
+opaque, immutable ``RuntimeContext`` value type (see ``runtime_context``
+module) and fails closed on any other value before module code runs — it
+never forwards an arbitrary Python object (a raw store, a DB connection,
+a raw Owner object, or any other handle) to a module. This host never
+constructs a ``RuntimeContext`` itself and holds no knowledge of how one
+is built; it only accepts an already-opaque value handed to it by the
+caller and forwards it unchanged.
 
 Before invocation, the host also requires the registered immutable
 ``ModuleDefinition`` to compare equal to the canonical contract returned
@@ -25,6 +29,8 @@ from typing import Any
 
 from nyron_kernel.definitions import ModuleRegistry
 from nyron_kernel.modules import builtin_text_concat
+
+from .runtime_context import RuntimeContext
 
 
 class TrustedHostError(RuntimeError):
@@ -79,8 +85,8 @@ class TrustedModuleHost:
     name-based / latest-by-name resolution. The registered definition
     must additionally compare equal to the hosted implementation's own
     canonical contract, and ``runtime_context`` must be exactly ``None``
-    for this PURE-only slice — both checks fail closed before any module
-    code runs.
+    or an exact ``RuntimeContext`` instance — both checks fail closed
+    before any module code runs.
     """
 
     def __init__(self, registry: ModuleRegistry) -> None:
@@ -91,7 +97,7 @@ class TrustedModuleHost:
         module_ref_version: str,
         inputs: dict[str, Any],
         config: dict[str, Any],
-        runtime_context: None = None,
+        runtime_context: RuntimeContext | None = None,
     ) -> Completed | Failed:
         """Invoke the exact pinned module through the frozen execute ABI."""
         module_ref, version = self._parse_pinned_ref(module_ref_version)
@@ -116,7 +122,7 @@ class TrustedModuleHost:
                 module_ref=module_ref,
                 version=version,
             )
-        if runtime_context is not None:
+        if runtime_context is not None and type(runtime_context) is not RuntimeContext:
             raise TrustedHostError(
                 "INVALID_RUNTIME_CONTEXT",
                 runtime_context_type=type(runtime_context).__name__,
