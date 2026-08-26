@@ -6,7 +6,7 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `2`
-- Coordination Revision: `88`
+- Coordination Revision: `89`
 - Last Accepted Production Commit: `84156a5be8d77dc69fd21b02ffa2cf49f5154a8b`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Current Gate: `ARE-GATE-6 — Accounting / Recovery integration`
@@ -18,50 +18,41 @@
 
 | Task | Agent | State | Track / Purpose |
 |---|---|---|---|
-| `NYRON-T-20260826-090` | Claude Code | `READY / R88` | Track A — Usage / Ledger foundation: immutable UsageFact / UsageAdjustmentFact and stable dedupe |
-| `NYRON-T-20260826-091` | Codex | `READY / R88` | Track B — Recovery / ReconciliationCase foundation: Recovery-owned evidence/retry/escalation state |
+| `NYRON-T-20260826-101` | Claude Code | `READY / R88 TRACK-B RE-REVIEW` | Track B — targeted exact-SHA Recovery re-review of `365f8c3f...` |
+| `NYRON-T-20260826-102` | Claude Code | `READY / R89` | Settlement — known-actual commit/release/overrun foundation on exact Track-A candidate `e5acf1ab...` |
 
-## Waiting / Not Yet Routed
+## Stable Component Candidates
 
-- **Settlement (Part 3)** — `WAITING_FOR_ACTIVE_SLOT`; no Task created yet. Normally starts after Usage/Ledger exposes stable accepted facts/interfaces or when the operator explicitly increases parallel capacity.
-- **Integration (Part 5)** — waits on component exact-SHA results and accepted interfaces.
-- No third active development track is authorized until the operator requests increased capacity or one current slot becomes free.
+### Track A — Usage / Ledger
 
-## Revision 88 Decision
+- State: `COMPLETED / STABLE CANDIDATE READY FOR GLOBAL INTEGRATION`
+- Exact reviewed production candidate: `e5acf1abb9a03667315a364ba7e1a8b002ed31cd`
+- Stable checkpoint: `coordination/checkpoints/ARE-GATE-6_Track-A_Usage_Ledger_Stable_Candidate.md`
+- Review chain: Task 090 implementation -> 093 mechanical audit -> 094 semantic review -> 095 fix -> 099 exact-SHA re-review PASS.
+- Open blocking findings: `NONE`.
+- Final validation at exact candidate: focused Usage/Ledger `21 passed`; full kernel `284 passed, 2 skipped, 96 subtests passed`; `git diff --check` clean.
+- Global acceptance/integration: `PENDING`.
 
-- User-approved development model is recorded as: `Frozen Backbone -> bounded parallel components -> frequent integration checkpoints -> exact-SHA integration/review`.
-- The current frozen Accounting / Recovery bundle plus accepted Gate-6A production is sufficient Backbone for the initial parallel slice; no standalone Backbone redesign Task is opened.
-- Current operator capacity is capped at two active development parts.
-- Task 090 opens Usage / Ledger as Track A from exact accepted production `84156a5be8d77dc69fd21b02ffa2cf49f5154a8b`.
-- Task 091 opens Recovery / ReconciliationCase Foundation as Track B from the same exact accepted production basis.
-- Track A and Track B are intentionally write-isolated. Task 091 may not modify Accounting production or `src/nyron_kernel/store/sqlite_store.py`; if that isolation is impossible under frozen semantics it must escalate rather than silently create a shared-write dependency.
-- Settlement remains queued rather than becoming a third active implementation line.
-- A track completion does not automatically become accepted production. Each production result retains exact-SHA review/integration requirements.
+## Track B — Recovery / ReconciliationCase
+
+- Task 100 fix result: `SUCCESS`; exact correction candidate `365f8c3f270ee0d428b95d73ccbf34bc178b979f`.
+- Task 101 targeted independent re-review is the current Track-B acceptance action.
+- Track B is not yet a stable component candidate until Task 101 passes exact SHA.
+
+## Revision 89 Decision
+
+- Track A stable handoff was verified from Repository and its prior blocking DELETE-immutability defect is closed by Task 095 + Task 099.
+- Track A therefore releases one of the two authorized parallel development slots.
+- The released slot is assigned to the previously queued Settlement component; this does not increase the parallel-capacity ceiling.
+- Task 102 opens the bounded Accounting Settlement / Overrun foundation from exact reviewed Track-A candidate `e5acf1abb9a03667315a364ba7e1a8b002ed31cd`.
+- Task 102 may consume Track-A Usage/Ledger semantics but must not reinterpret them, modify Recovery production, or perform global Accounting <-> Recovery integration.
+- Track A stable-candidate status does not itself change `Last Accepted Production Commit`; global exact-SHA integration remains pending.
+- Track B and Settlement are now the two active development tracks.
 
 ## Gate-6A Closure
 
 - `ARE-GATE-6A — BudgetReservation foundation`: `PASS / CLOSED`.
-- Exact reviewed production candidate: `608a3be491f6b2cc9c69a16c7597fdadfa566d77`.
-- Final independent review: `NYRON-T-20260826-088 PASS / FINDINGS NONE`.
 - Exact accepted integration commit: `84156a5be8d77dc69fd21b02ffa2cf49f5154a8b`.
-
-## Completed / Reviewed Gate-6A Tasks
-
-- `NYRON-T-20260826-074` — executor SUCCESS but `NOT_ACCEPTED`; original candidate.
-- `NYRON-T-20260826-076` — `SUCCESS`; replay/static-binding correction.
-- `NYRON-T-20260826-077` — `FINDINGS`; three blocking findings identified.
-- `NYRON-T-20260826-078` — `FINDINGS`; three new NON_BLOCKING debt findings.
-- `NYRON-T-20260826-079` — `BLOCKED / DO_NOT_EXECUTE`; obsolete acceptance target.
-- `NYRON-T-20260826-080` — `SUCCESS`; F-003 correction.
-- `NYRON-T-20260826-081` — `IMPLEMENTATION_LOCAL_FIX_AVAILABLE / ACCEPTED TRIAGE` for F-001.
-- `NYRON-T-20260826-082` — `DESIGN_CLARIFICATION_REQUIRED / ACCEPTED TRIAGE` for F-002.
-- `NYRON-T-20260826-083` — `SUCCESS`; F-001 Runtime/Activation/Run/Attempt binding correction.
-- `NYRON-T-20260826-084` — `SUCCESS / FROZEN NORMATIVE CLARIFICATION`; F-002 contract clarification.
-- `NYRON-T-20260826-085` — `PASS`; F-003 independent review.
-- `NYRON-T-20260826-086` — `SUCCESS`; final combined correction content.
-- `NYRON-T-20260826-087` — `PASS`; Clarification 003 independent review.
-- `NYRON-T-20260826-088` — `PASS / FINDINGS NONE`; final exact-SHA Gate-6A review.
-- `NYRON-T-20260826-089` — `SUCCESS`; accepted mechanical integration.
 
 ## Open Non-Blocking Findings / Debt
 
