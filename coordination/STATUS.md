@@ -6,19 +6,22 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `2`
-- Coordination Revision: `107`
+- Coordination Revision: `108`
 - Last Accepted Production Commit: `e47511aef987cd9fa5c171e319971f90ab549bd2`
 - Canonical Repository Finalization Merge: `8962743bfbc6385bf58ebb31a63f5e5442c5f391`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
-- Current Gate: `ARE-GATE-6 — PASS / CLOSED`
-- Current Mode: `FOUNDATION WAVE 2 PLANNING / NO ACTIVE PRODUCTION TASK`
-- Previous Orchestration Plan: `coordination/plans/ARE-GATE-6_Parallel_Development_Plan_v0.1.md`
+- Current Gate: `FOUNDATION WAVE 2 — PWP BACKBONE`
+- Current Mode: `SINGLE FOUNDATIONAL PRODUCTION TRACK / PWP CORE`
+- Orchestration Plan: `coordination/plans/FOUNDATION_WAVE_2_Plan_v0.1.md`
+- Parallelism Limit: `MAX 2 ACTIVE PRODUCTION TRACKS; CURRENTLY 1`
 
 ## Active / Routed Tasks
 
-`NONE`.
+| Task | Agent | State | Track / Purpose |
+|---|---|---|---|
+| `NYRON-T-20260827-116` | `Claude — NEW implementation session preferred` | `READY / R108` | Foundation Wave 2 — PWP Core identity / immutable revision / historical resolution foundation |
 
-Task 115 repository convergence is complete. No new production task is authorized until the next Foundation Wave 2 plan/task is explicitly routed by the Development Orchestrator.
+No Distribution, Human Interaction, External Interfaces, or Product production task is authorized until the PWP Core candidate has completed its required independent exact-SHA review.
 
 ## ARE-GATE-6 Final Acceptance
 
@@ -26,100 +29,70 @@ Task 115 repository convergence is complete. No new production task is authorize
 - Acceptance checkpoint: `coordination/checkpoints/ARE-GATE-6_Final_Acceptance.md`.
 - Repository-finalization checkpoint: `coordination/checkpoints/ARE-GATE-6_Repository_Finalized.md`.
 - Exact accepted production SHA: `e47511aef987cd9fa5c171e319971f90ab549bd2`.
-- Frozen Runtime / Accounting Amendment authority: `5c227561fb762861cf85df8db6a4c1f9c4f8a143`.
-- Task 110 executor: `SUCCESS`.
-- Task 113 independent reviewer: `Claude`.
-- Task 113 independence: `REQUIRED / SATISFIED`.
-- Task 113 final classification: `PASS`.
-- Task 113 acceptance recommendation: `YES`.
+- Task 113 independent review: `Claude / PASS / REQUIRED INDEPENDENCE SATISFIED`.
 - Task 113 findings: `NONE`.
 - Accepted candidate validation: `319 passed, 2 skipped, 101 subtests passed`.
-- Separate Runtime / Accounting owner-local persistence: `VERIFIED`.
-- Runtime identity authority boundary: `VERIFIED`.
-- Replay / conflicting replay / crash rollback / restart exactly-once / response-loss replay: `VERIFIED`.
-- Recovery / Effect / Resource Owner boundaries: `VERIFIED PRESERVED`.
-- UNKNOWN conversion: `VERIFIED ABSENT`.
-- global transaction / 2PC / saga / shadow Runtime canonical tables / generic projection framework: `NOT INTRODUCED`.
-- Complexity / `OVER_ENGINEERING`: `NO FINDING`.
+- State: `HISTORICAL ACCEPTED BACKBONE FOR WAVE 2`.
 
-## Stable Component Lineage
+## Track C / Repository Finalization
 
-### Track A — Usage / Ledger
-- Exact reviewed candidate: `e5acf1abb9a03667315a364ba7e1a8b002ed31cd`.
-- State: `INCLUDED IN ACCEPTED GATE-6 PRODUCTION`.
+- Track C corrected reviewed SHA: `9947e352f829f06c5082f9849b8d47a1189091f8`.
+- Task 112 re-review: `PASS`.
+- Task 114 final test integration SHA: `bc39f21cca600232541032b322e0394f9bbc5a62`.
+- Task 115 convergence merge: `8962743bfbc6385bf58ebb31a63f5e5442c5f391`.
+- Complete kernel at final convergence: `416 passed, 2 skipped, 380 subtests passed`.
+- Production `src` at convergence: `BYTE-IDENTICAL` to accepted production `e47511ae...`.
+- Track C / repository history state: `COMPLETE`.
 
-### Track B — Recovery / ReconciliationCase
-- Exact reviewed candidate: `365f8c3f270ee0d428b95d73ccbf34bc178b979f`.
-- State: `INCLUDED IN ACCEPTED GATE-6 PRODUCTION`.
+## Foundation Wave 2
 
-### Settlement — BudgetReservation Settlement / Overrun
-- Exact reviewed candidate: `c324f837fca86e1b0a3b1cbba1196c68654aa30a`.
-- Review chain: Task 102 -> 104 FAIL -> 105 fix -> 106 PASS.
-- State: `INCLUDED IN ACCEPTED GATE-6 PRODUCTION`.
+Plan: `coordination/plans/FOUNDATION_WAVE_2_Plan_v0.1.md`.
+
+### Phase 1 — PWP Backbone
+
+Task 116 implements only the bounded PWP-owned core:
+
+- Project identity/lifecycle
+- Workspace identity/lifecycle and same-Project parent relation
+- immutable ProjectConfigRevision
+- immutable WorkspaceConfigRevision
+- immutable PolicyContextRevision
+- immutable EnvironmentBindingRevision
+- owner-local persistence
+- exact historical resolution
+- fail-closed validation/replay/restart behavior
+
+Runtime admission wiring and IngressRoute are intentionally deferred from the first slice unless frozen semantics make them unavoidable. Any unresolved semantic dependency must fail closed and escalate.
+
+Task 116 is HIGH risk. Executor SUCCESS is not acceptance; an independent exact-SHA review is mandatory before other Wave-2 production tracks depend on the PWP candidate.
+
+### Planned Later Phases
+
+After reviewed PWP Core stability:
+
+1. bounded parallel Distribution / Module Ecosystem implementation;
+2. bounded parallel Human Interaction / Approval Authority implementation;
+3. External Interfaces / Workspace implementation after context dependencies stabilize;
+4. Foundation cross-system exact-SHA integration and independent review;
+5. Product Node / Visual Workflow UX after Foundation readiness.
+
+This ordering is orchestration only and does not amend frozen architecture.
 
 ## Task 108 Architecture Finding Closure
 
 - Finding: `CROSS_OWNER_RUNTIME_ACCOUNTING_STORAGE_BOUNDARY_UNFROZEN`.
 - Lead disposition: `VALID BLOCKER / CLOSED BY ARCHITECTURE AMENDMENT`.
 - Amendment: `design/amendments/Runtime_Accounting_Amendment_001_Cross_Owner_Identity_Persistence_Boundary.md`.
-- Implementation: Task 110.
-- Independent acceptance: Task 113 PASS.
-- State: `CLOSED`.
+- State: `CLOSED / IMPLEMENTED / INDEPENDENTLY ACCEPTED`.
 
-## Track C — Integrity / Regression Hardening
+## Revision 108 Decision
 
-- Original reviewed SHA: `55a9d089d09f6e501c867e3c65f36c0561ab33a6`.
-- Task 109 Parent Review: `FAIL` with one blocking test-only finding.
-- Task 111 targeted fix: `SUCCESS` at `9947e352f829f06c5082f9849b8d47a1189091f8`.
-- Task 112 targeted independent re-review: `PASS`.
-- `NYRON-T-20260827-109-F-001`: `CLOSED`.
-- Task 114 final test-only integration: `SUCCESS` at `bc39f21cca600232541032b322e0394f9bbc5a62`.
-- Integrated changed files: exactly five reviewed `tests/kernel/test_track_c_*.py` files.
-- Integrated Track C blobs: `BYTE-IDENTICAL` to reviewed corrected SHA `9947e352...`.
-- `src` at Task-114 integration: `BYTE-IDENTICAL` to accepted production `e47511ae...`.
-- Complete kernel with Track C: `416 passed, 2 skipped, 380 subtests passed`.
-- Findings / Blockers: `NONE / NONE`.
-- State: `COMPLETE / INTEGRATED INTO CANONICAL REPOSITORY HISTORY`.
-
-## Repository Finalization — Task 115
-
-- Task-start main SHA: `25c3a56d89103274874588fabb58ced71f7f85f1`.
-- Final convergence merge SHA: `8962743bfbc6385bf58ebb31a63f5e5442c5f391`.
-- Merge parents:
-  - `25c3a56d89103274874588fabb58ced71f7f85f1` — canonical coordination/design main lineage.
-  - `bc39f21cca600232541032b322e0394f9bbc5a62` — accepted production lineage plus reviewed Track C tests.
-- Merge conflicts: `NONE`.
-- Manual semantic resolution: `NONE`.
-- `src` tree identity to accepted production: `IDENTICAL`.
-- Track C blob identity: `IDENTICAL`.
-- coordination/design preservation: `IDENTICAL` through merge.
-- Complete `tests/kernel`: `416 passed, 2 skipped, 380 subtests passed`.
-- Task 115 Findings / Blockers: `NONE / NONE`.
-- `READY_FOR_MAIN_FAST_FORWARD: YES`.
-- Orchestrator verified main remained at Task-start SHA and advanced it by non-force fast-forward to the convergence merge.
-- State: `COMPLETE`.
-
-## Revision 107 Decision
-
-- Task 115 Result was verified as clean and ready for main fast-forward.
-- Remote `main` was still exactly at the recorded Task-start SHA when checked by the Development Orchestrator.
-- `main` was advanced without force to repository convergence merge `8962743bfbc6385bf58ebb31a63f5e5442c5f391`.
-- ARE-GATE-6 remains `PASS / CLOSED` and production acceptance remains anchored to exact production SHA `e47511aef987cd9fa5c171e319971f90ab549bd2`.
-- Track C and repository history convergence are fully complete.
-- No active production task remains from the ARE-GATE-6 program.
-- Next orchestration state is `FOUNDATION WAVE 2 PLANNING`.
-
-## Next Foundation Wave Direction
-
-Planning order, subject to explicit Task routing:
-
-1. Project / Workspace / Policy Context (PWP) implementation backbone.
-2. After the PWP backbone is stable, bounded parallel implementation of Distribution / Module Ecosystem and Human Interaction / Approval Authority where write surfaces and Contract dependencies remain independent.
-3. External Interfaces / Workspace implementation after its required context dependencies are available.
-4. Final Foundation cross-system integration and independent exact-SHA review.
-5. Product Node / Visual Workflow UX after the System Foundation is sufficiently complete; Product consumes the frozen foundation and must not redefine Kernel semantics.
-
-This section is orchestration direction only and does not amend frozen architecture.
+- ARE-GATE-6, Track C, and repository-history convergence are fully complete.
+- Foundation Wave 2 plan v0.1 is now active.
+- PWP is selected as the Wave-2 backbone because Distribution, Human Interaction, External Interfaces and later admission/product layers consume stable Project/Workspace/config/policy/environment context.
+- Task 116 is deliberately bounded to PWP-owned identity and immutable historical revision truth; it does not pre-authorize Runtime admission wiring, IngressRoute, external adapters, policy evaluation or foreign-owner state.
+- Only one production track is active until PWP Core receives independent exact-SHA review.
+- `Last Accepted Production Commit` remains unchanged until a reviewed later candidate is explicitly accepted.
 
 ## Gate-6A Closure
 
