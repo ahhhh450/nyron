@@ -36,15 +36,22 @@ Rules:
 
 ## 3. Agent Session Identity Rule
 
-Every execution or review Agent session used by Track B MUST self-name before doing substantive work.
+Every execution or review Agent session used by Track B MUST declare its Session Name before doing substantive work.
 
-The Agent must choose a unique session name and record the exact same name in its repository Result. Recommended shape:
+Fixed Track B naming rule:
 
-`NYRON-B-<MODEL>-<TASK>-<ROLE>-<NN>`
+`TRACK_B_TASK_<TaskNumber>`
 
-Examples are illustrative only; the Agent must name itself.
+Examples:
 
-Multiple sessions of the same model are allowed when useful, but they must have distinct session names and isolated write surfaces. Context-contiguous correction/re-review work should preferentially reuse the same session when safe.
+- Task 092 primary session: `TRACK_B_TASK_092`
+- future Task 105 primary session: `TRACK_B_TASK_105`
+
+If the same Task intentionally uses multiple simultaneous Agent sessions, keep the same fixed prefix and append a numeric suffix:
+
+`TRACK_B_TASK_<TaskNumber>_2`, `TRACK_B_TASK_<TaskNumber>_3`, etc.
+
+The exact declared Session Name MUST be recorded in the repository Result. Agent model/role is recorded separately in the Result and is not part of the Session Name.
 
 ## 4. Execution Route
 
@@ -73,7 +80,7 @@ The concrete Task ID is allocated from the next globally free Task number at rou
 Conditional on blocking implementation/contract findings.
 
 - Preferred Agent: reuse the Stage B1 Codex session if context remains reliable.
-- Otherwise open a new Codex session, which must self-name independently.
+- Otherwise open a new Codex session using the fixed Track B Session Name rule.
 - Scope limited to accepted findings; no opportunistic redesign.
 - New exact production SHA required.
 
@@ -126,11 +133,11 @@ This checkpoint is not global production acceptance and does not authorize Track
 For every executable/review Task:
 
 1. Task file is canonical instruction.
-2. Agent self-names at session start.
+2. Agent declares the fixed Track B Session Name at session start.
 3. Production content is committed first when production changes exist.
 4. Exact production SHA is recorded.
 5. Result is written to `coordination/results/<TaskID>.md`.
-6. Result records Agent model and self-declared session name.
+6. Result records Agent model and declared Session Name.
 7. Result commit must not obscure production content identity.
 8. Chat is trigger/status only; the operator only needs to report which Agent/Task finished.
 
