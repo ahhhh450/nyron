@@ -6,11 +6,11 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `2`
-- Coordination Revision: `100`
+- Coordination Revision: `101`
 - Last Accepted Production Commit: `84156a5be8d77dc69fd21b02ffa2cf49f5154a8b`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Current Gate: `ARE-GATE-6 — Accounting / Recovery integration`
-- Current Mode: `CROSS-OWNER IMPLEMENTATION + PARALLEL TRACK-C TARGETED FIX`
+- Current Mode: `FINAL INDEPENDENT INTEGRATED REVIEW + PARALLEL TRACK-C TARGETED RE-REVIEW`
 - Orchestration Plan: `coordination/plans/ARE-GATE-6_Parallel_Development_Plan_v0.1.md`
 - Parallelism Policy: `DEFAULT_PARALLEL_UNLESS_WRITE_OR_UNSETTLED_CONTRACT_DEPENDENCY_CONFLICTS`
 
@@ -18,10 +18,10 @@
 
 | Task | Agent | State | Track / Purpose |
 |---|---|---|---|
-| `NYRON-T-20260827-110` | Codex — existing Task-108 implementation session preferred | `READY / R99; UNAFFECTED BY R100` | Global Integration — implement Runtime/Accounting Amendment 001 and resume bounded cross-owner crash/replay E2E |
-| `NYRON-T-20260827-111` | DeepSeek — existing Track C session preferred | `READY / R100` | Track C — targeted test-only fix for `NYRON-T-20260827-109-F-001` |
+| `NYRON-T-20260827-113` | Codex — NEW independent review session | `READY / R101` | Final ARE-GATE-6 exact-SHA integrated review of Task-110 candidate `e47511ae...` |
+| `NYRON-T-20260827-112` | Codex — existing Task-109 independent reviewer session preferred | `READY / R101` | Track C targeted re-review of Task-111 fix + compatibility validation against `e47511ae...` |
 
-Task 110 and Task 111 are write-disjoint and may proceed in parallel. Final Track C compatibility re-review waits for the post-Task-110 integrated candidate.
+Tasks 112 and 113 are read-only review tracks and may proceed in parallel. No new production implementation is authorized unless either review returns a blocking finding.
 
 ## Stable Component Candidates
 
@@ -50,60 +50,70 @@ Task 110 and Task 111 are write-disjoint and may proceed in parallel. Final Trac
 - `F-104-002`: `CLOSED`.
 - Open blocking findings: `NONE`.
 
-## Integrated Component Checkpoint
+## Integrated Candidate — Task 110
 
-- Task 107 result: `SUCCESS / INTEGRATED COMPONENT CHECKPOINT CANDIDATE`.
-- Exact integrated production/content SHA: `9f217faf56149862455aa1be74659c79c884c373`.
-- Stable checkpoint: `coordination/checkpoints/ARE-GATE-6_Integrated_Component_Checkpoint_107.md`.
-- Integration conflicts: `NONE`.
-- Reviewed component content dropped: `NONE`.
-- Complete `tests/kernel`: `313 passed, 2 skipped, 101 subtests passed`.
-- State: `ASSEMBLED / CROSS-OWNER IMPLEMENTATION RESUMED UNDER FROZEN AMENDMENT`.
+- Prior integrated component basis: `9f217faf56149862455aa1be74659c79c884c373`.
+- Task 110 result: `SUCCESS / READY FOR INDEPENDENT EXACT-SHA INTEGRATED REVIEW`.
+- Exact production/test content SHA: `e47511aef987cd9fa5c171e319971f90ab549bd2`.
+- Frozen Runtime/Accounting Amendment authority: `5c227561fb762861cf85df8db6a4c1f9c4f8a143`.
+- Changed production/test files:
+  - `src/nyron_kernel/store/sqlite_store.py`
+  - `src/nyron_kernel/accounting/budget_authority.py`
+  - `tests/kernel/test_budget_reservation_foundation.py`
+  - `tests/kernel/test_runtime_accounting_separate_store_e2e.py`
+- Runtime and Accounting separate physical SQLite stores: `VERIFIED WORKING`.
+- Accounting Budget schema creates Runtime canonical tables merely for former FK: `NO`.
+- `budget_reservations -> run_attempts` relational FK requirement: `REMOVED`.
+- Runtime identity validation remains via Runtime-owned repository/resolver boundary: `YES`.
+- Exact committed replay with Runtime unavailable: `VERIFIED CANONICAL / NO DOUBLE EXPOSURE`.
+- Conflicting same-`request_ref` replay: `FAIL CLOSED`.
+- Crash before reservation commit: `ACCOUNTING-LOCAL ROLLBACK VERIFIED`.
+- Restart/replay after crash: `COMMITS EXACTLY ONCE`.
+- Response loss after commit + restart/replay: `CANONICAL RESULT / NO DOUBLE EXPOSURE`.
+- Recovery foreign-owner mutation: `VERIFIED ABSENT`.
+- Accounting denial foreign-owner mutation: `VERIFIED ABSENT`.
+- Effect / Resource ownership: `PRESERVED`.
+- UNKNOWN conversion: `VERIFIED ABSENT`.
+- Complete `tests/kernel`: `319 passed, 2 skipped, 101 subtests passed`.
+- Fresh detached checkout complete `tests/kernel`: `319 passed, 2 skipped, 101 subtests passed`.
+- Blocking / non-blocking findings from executor: `NONE / NONE`.
+- State: `PENDING INDEPENDENT EXACT-SHA INTEGRATED REVIEW / TASK 113`.
 
 ## Task 108 Architecture Finding Closure
 
-- Task 108 result: `ESCALATION_REQUIRED` from exact basis `9f217faf56149862455aa1be74659c79c884c373`.
-- Production/test delivery created by Task 108: `NONE`.
 - Finding: `CROSS_OWNER_RUNTIME_ACCOUNTING_STORAGE_BOUNDARY_UNFROZEN`.
 - Lead decision: `VALID BLOCKER / CLOSED BY ARCHITECTURE AMENDMENT`.
 - Frozen Amendment: `design/amendments/Runtime_Accounting_Amendment_001_Cross_Owner_Identity_Persistence_Boundary.md`.
 - Amendment authority commit: `5c227561fb762861cf85df8db6a4c1f9c4f8a143`.
-- Required implementation direction: continue supporting physically separate owner-local SQLite stores; keep authoritative Runtime identity validation through Runtime repository/resolver; remove Accounting's required local FK from `budget_reservations` to Runtime-owned `run_attempts`; do not create/copy Runtime canonical tables in Accounting merely to satisfy that FK.
-- Architecture finding state: `CLOSED AT ARCHITECTURE LEVEL / IMPLEMENTATION PENDING TASK 110`.
+- Task 110 implements the required owner-local persistence direction at candidate SHA `e47511ae...`.
+- Architecture finding state: `CLOSED AT ARCHITECTURE LEVEL / IMPLEMENTATION DELIVERED / INDEPENDENT REVIEW PENDING`.
 
 ## Operator-local Track C — Integrity / Regression Hardening
 
 - Original remote branch: `track-c/integrity-regression-hardening`.
-- Exact reviewed remote HEAD: `55a9d089d09f6e501c867e3c65f36c0561ab33a6`.
-- Parent base: `84156a5be8d77dc69fd21b02ffa2cf49f5154a8b`.
-- Changed surface at reviewed SHA: exactly five new `tests/kernel/test_track_c_*.py` files; production `src/` changes `NONE`.
-- Task 109 independent Parent Review: `FAIL` with one blocking test/architecture finding.
-- Compatibility validation at exact integrated checkpoint `9f217faf...`: five Track C files `97 passed, 279 subtests`; directly affected existing tests `132 passed, 2 skipped, 44 subtests`; full `tests/kernel` `410 passed, 2 skipped, 380 subtests`; diff check clean.
-- Prior DeepSeek sandbox 142-error debt: `CLOSED AS ENVIRONMENT-ONLY`.
-- Remote-delivery/process uncertainty debt: `CLOSED` by Task 109 independent verification.
-- State: `TARGETED TEST FIX ROUTED / NOT YET READY FOR LATER INTEGRATION`.
+- Original reviewed SHA: `55a9d089d09f6e501c867e3c65f36c0561ab33a6`.
+- Task 109 independent Parent Review: `FAIL` with one blocking test-only finding `NYRON-T-20260827-109-F-001`; all other Track C areas PASS.
+- Prior DeepSeek sandbox 142-error debt: `CLOSED AS ENVIRONMENT-ONLY` by Task 109 full validation.
+- Task 111 targeted fix: `SUCCESS`.
+- Exact corrected Track C delivery SHA: `9947e352f829f06c5082f9849b8d47a1189091f8`.
+- Task-111 changed content: exactly `tests/kernel/test_track_c_002_store_schema_guards.py`.
+- Corrected Task 002: `40 passed, 150 subtests passed`.
+- All five corrected Track C tests: `97 passed, 279 subtests passed`.
+- Task-111 new findings / blockers: `NONE / NONE`.
+- `NYRON-T-20260827-109-F-001`: `FIX IMPLEMENTED / PENDING TARGETED RE-REVIEW`.
+- Final compatibility target: Task-110 exact candidate `e47511aef987cd9fa5c171e319971f90ab549bd2`.
+- State: `PENDING TASK 112 TARGETED RE-REVIEW / NOT YET INTEGRATED`.
 
-### `NYRON-T-20260827-109-F-001`
+## Revision 101 Decision
 
-- Type: `CONTRACT / ARCHITECTURE / TEST`
-- Severity: `BLOCKING`
-- State: `OPEN / FIX ROUTED TO TASK 111`.
-- Location: `tests/kernel/test_track_c_002_store_schema_guards.py`.
-- Summary: Track C Task 002 treats Accounting's direct SQLite FK to Runtime-owned `run_attempts` as a required frozen schema invariant.
-- Current architecture disposition: Runtime/Accounting Amendment 001 explicitly rejects that physical cross-owner FK as a required owner-local correctness condition. The test must stop locking the old storage assumption.
-- Required fix: targeted test-only correction; no production change, no new projection framework, no new cross-owner semantics.
-
-## Revision 100 Decision
-
-- Task 109 Repository Result was verified from independent Codex review at exact Track C SHA `55a9d089d09f6e501c867e3c65f36c0561ab33a6` with independence satisfied.
-- Four Track C areas PASS: Definitions/Graph, Resource, Capability, Execution.
-- Track C Task 002 has one blocking finding because it locks the now-superseded direct Runtime-to-Accounting SQLite FK as a regression invariant.
-- Task 109's compatibility run cleared the prior DeepSeek environment/process debt and proved the remaining Track C tests execute cleanly on the current integrated checkpoint.
-- Runtime/Accounting Amendment 001 has already resolved the semantic question, so no new design task is required. The remaining Track C work is a narrow test-only correction.
-- Task 111 is routed to remove/correct only that invalid physical-FK regression assumption while preserving valid owner-local schema guards.
-- Task 111 does not wait for Task 110 to begin because it only stops freezing the obsolete FK assumption. Final post-fix compatibility re-review will use the post-Task-110 integrated candidate.
-- Task 110 remains the production critical path. Task 110 remains HIGH risk and requires independent exact-SHA integrated review before ARE-GATE-6 acceptance.
-- `Last Accepted Production Commit` remains unchanged.
+- Task 110 Repository Result was verified as `SUCCESS / READY FOR INDEPENDENT EXACT-SHA INTEGRATED REVIEW` at exact production/test content SHA `e47511aef987cd9fa5c171e319971f90ab549bd2`.
+- Task 110 implements Runtime/Accounting Amendment 001 with the minimum required storage-boundary correction and completes the bounded separate-store cross-owner crash/replay E2E proof without introducing global transaction, projection framework, shadow Runtime canonical tables, saga/workflow engine, ownership transfer, or new UNKNOWN/retry/fencing semantics.
+- Task 110 is HIGH risk. Executor SUCCESS is not acceptance; Task 113 is routed to a brand-new independent Codex review session for final exact-SHA integrated review.
+- Task 111 Repository Result was verified as a clean test-only correction at exact SHA `9947e352f829f06c5082f9849b8d47a1189091f8`, with no new findings/blockers.
+- Task 112 is routed to the existing Task-109 independent reviewer for targeted closure of `NYRON-T-20260827-109-F-001` and full corrected Track C compatibility validation against exact Task-110 candidate `e47511ae...`.
+- Tasks 112 and 113 are read-only and may run in parallel within the maximum two active tracks.
+- If Task 113 PASSes with no blocking findings, the ARE-GATE-6 production candidate becomes eligible for Orchestrator acceptance. Track C integration remains separately conditioned on Task 112 PASS and later clean test-only integration into the accepted/final candidate.
+- `Last Accepted Production Commit` remains unchanged until independent Task-113 disposition.
 
 ## Gate-6A Closure
 
