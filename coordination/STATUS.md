@@ -6,11 +6,11 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `2`
-- Coordination Revision: `101`
+- Coordination Revision: `102`
 - Last Accepted Production Commit: `84156a5be8d77dc69fd21b02ffa2cf49f5154a8b`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Current Gate: `ARE-GATE-6 — Accounting / Recovery integration`
-- Current Mode: `FINAL INDEPENDENT INTEGRATED REVIEW + PARALLEL TRACK-C TARGETED RE-REVIEW`
+- Current Mode: `FINAL INDEPENDENT INTEGRATED REVIEW — QUOTA INTERRUPTED / TRACK C REVIEW COMPLETE`
 - Orchestration Plan: `coordination/plans/ARE-GATE-6_Parallel_Development_Plan_v0.1.md`
 - Parallelism Policy: `DEFAULT_PARALLEL_UNLESS_WRITE_OR_UNSETTLED_CONTRACT_DEPENDENCY_CONFLICTS`
 
@@ -18,36 +18,29 @@
 
 | Task | Agent | State | Track / Purpose |
 |---|---|---|---|
-| `NYRON-T-20260827-113` | Codex — NEW independent review session | `READY / R101` | Final ARE-GATE-6 exact-SHA integrated review of Task-110 candidate `e47511ae...` |
-| `NYRON-T-20260827-112` | Codex — existing Task-109 independent reviewer session preferred | `READY / R101` | Track C targeted re-review of Task-111 fix + compatibility validation against `e47511ae...` |
+| `NYRON-T-20260827-113` | Codex — independent review session | `INTERRUPTED_BY_QUOTA / RESUME SAME SESSION` | Final ARE-GATE-6 exact-SHA integrated review of `e47511ae...` |
 
-Tasks 112 and 113 are read-only review tracks and may proceed in parallel. No new production implementation is authorized unless either review returns a blocking finding.
+Task 112 is complete. No new production implementation is authorized while Task 113 remains unclassified.
 
 ## Stable Component Candidates
 
 ### Track A — Usage / Ledger
-
 - State: `COMPLETED / STABLE CANDIDATE READY FOR INTEGRATION`
 - Exact reviewed production candidate: `e5acf1abb9a03667315a364ba7e1a8b002ed31cd`
 - Stable checkpoint: `coordination/checkpoints/ARE-GATE-6_Track-A_Usage_Ledger_Stable_Candidate.md`
 - Open blocking findings: `NONE`.
 
 ### Track B — Recovery / ReconciliationCase
-
 - State: `COMPLETED / STABLE CANDIDATE READY FOR INTEGRATION`
 - Exact reviewed production candidate: `365f8c3f270ee0d428b95d73ccbf34bc178b979f`
 - Stable checkpoint: `coordination/checkpoints/ARE-GATE-6_Track-B_Recovery_Stable_Candidate.md`
 - Open blocking findings: `NONE`.
-- Backup Task 103: `VOID / BACKUP NOT NEEDED / DO NOT EXECUTE`.
 
 ### Settlement — BudgetReservation Settlement / Overrun
-
 - State: `COMPLETED / STABLE CANDIDATE READY FOR INTEGRATION`
 - Exact reviewed production candidate: `c324f837fca86e1b0a3b1cbba1196c68654aa30a`
 - Stable checkpoint: `coordination/checkpoints/ARE-GATE-6_Settlement_Stable_Candidate.md`
 - Review chain: Task 102 -> 104 FAIL -> 105 fix -> 106 PASS.
-- `F-104-001`: `CLOSED`.
-- `F-104-002`: `CLOSED`.
 - Open blocking findings: `NONE`.
 
 ## Integrated Candidate — Task 110
@@ -56,28 +49,30 @@ Tasks 112 and 113 are read-only review tracks and may proceed in parallel. No ne
 - Task 110 result: `SUCCESS / READY FOR INDEPENDENT EXACT-SHA INTEGRATED REVIEW`.
 - Exact production/test content SHA: `e47511aef987cd9fa5c171e319971f90ab549bd2`.
 - Frozen Runtime/Accounting Amendment authority: `5c227561fb762861cf85df8db6a4c1f9c4f8a143`.
-- Changed production/test files:
-  - `src/nyron_kernel/store/sqlite_store.py`
-  - `src/nyron_kernel/accounting/budget_authority.py`
-  - `tests/kernel/test_budget_reservation_foundation.py`
-  - `tests/kernel/test_runtime_accounting_separate_store_e2e.py`
-- Runtime and Accounting separate physical SQLite stores: `VERIFIED WORKING`.
-- Accounting Budget schema creates Runtime canonical tables merely for former FK: `NO`.
-- `budget_reservations -> run_attempts` relational FK requirement: `REMOVED`.
-- Runtime identity validation remains via Runtime-owned repository/resolver boundary: `YES`.
-- Exact committed replay with Runtime unavailable: `VERIFIED CANONICAL / NO DOUBLE EXPOSURE`.
-- Conflicting same-`request_ref` replay: `FAIL CLOSED`.
-- Crash before reservation commit: `ACCOUNTING-LOCAL ROLLBACK VERIFIED`.
-- Restart/replay after crash: `COMMITS EXACTLY ONCE`.
-- Response loss after commit + restart/replay: `CANONICAL RESULT / NO DOUBLE EXPOSURE`.
-- Recovery foreign-owner mutation: `VERIFIED ABSENT`.
-- Accounting denial foreign-owner mutation: `VERIFIED ABSENT`.
-- Effect / Resource ownership: `PRESERVED`.
-- UNKNOWN conversion: `VERIFIED ABSENT`.
-- Complete `tests/kernel`: `319 passed, 2 skipped, 101 subtests passed`.
-- Fresh detached checkout complete `tests/kernel`: `319 passed, 2 skipped, 101 subtests passed`.
-- Blocking / non-blocking findings from executor: `NONE / NONE`.
-- State: `PENDING INDEPENDENT EXACT-SHA INTEGRATED REVIEW / TASK 113`.
+- Separate Runtime / Accounting owner-local SQLite stores: `VERIFIED WORKING`.
+- Former required Accounting -> Runtime `run_attempts` relational FK: `REMOVED`.
+- Runtime identity validation remains authoritative through Runtime repository/resolver: `YES`.
+- Replay / conflicting replay / crash rollback / restart exactly-once / response-loss replay: `VERIFIED BY TASK 110`.
+- Recovery / Effect / Resource ownership boundaries: `PRESERVED BY TASK 110`.
+- Complete `tests/kernel` from executor: `319 passed, 2 skipped, 101 subtests passed`.
+- State: `PENDING COMPLETION OF INDEPENDENT TASK-113 REVIEW`.
+
+## Task 113 — Final Independent Integrated Review
+
+- Exact review target: `e47511aef987cd9fa5c171e319971f90ab549bd2`.
+- Independence: `REQUIRED / FRESH CODEX REVIEW SESSION`.
+- Current state: `INTERRUPTED_BY_REVIEWER_QUOTA / NO FINAL CLASSIFICATION`.
+- Remote Result: `NONE YET`.
+- Remote review branch observed: `NONE`.
+- Checkpoint: `coordination/checkpoints/NYRON-T-20260827-113_Quota_Interruption.md`.
+- Operator-reported completed focused validation before interruption:
+  - separate-store E2E `6/6`
+  - BudgetReservation `50/50`
+  - Usage/Ledger + Settlement + Recovery `50/50`
+  - Runtime + Effect + Resource `69 passed, 2 skipped`
+- These partial review facts are checkpoint evidence only and do not constitute PASS.
+- Preferred route: resume the same independent reviewer session after quota reset and continue only unfinished mandatory items.
+- `ARE-GATE-6_ACCEPTANCE_RECOMMENDATION`: `UNSET`.
 
 ## Task 108 Architecture Finding Closure
 
@@ -86,34 +81,29 @@ Tasks 112 and 113 are read-only review tracks and may proceed in parallel. No ne
 - Frozen Amendment: `design/amendments/Runtime_Accounting_Amendment_001_Cross_Owner_Identity_Persistence_Boundary.md`.
 - Amendment authority commit: `5c227561fb762861cf85df8db6a4c1f9c4f8a143`.
 - Task 110 implements the required owner-local persistence direction at candidate SHA `e47511ae...`.
-- Architecture finding state: `CLOSED AT ARCHITECTURE LEVEL / IMPLEMENTATION DELIVERED / INDEPENDENT REVIEW PENDING`.
 
 ## Operator-local Track C — Integrity / Regression Hardening
 
-- Original remote branch: `track-c/integrity-regression-hardening`.
 - Original reviewed SHA: `55a9d089d09f6e501c867e3c65f36c0561ab33a6`.
-- Task 109 independent Parent Review: `FAIL` with one blocking test-only finding `NYRON-T-20260827-109-F-001`; all other Track C areas PASS.
-- Prior DeepSeek sandbox 142-error debt: `CLOSED AS ENVIRONMENT-ONLY` by Task 109 full validation.
-- Task 111 targeted fix: `SUCCESS`.
-- Exact corrected Track C delivery SHA: `9947e352f829f06c5082f9849b8d47a1189091f8`.
-- Task-111 changed content: exactly `tests/kernel/test_track_c_002_store_schema_guards.py`.
+- Task 109 Parent Review: `FAIL` with one blocking test-only finding `NYRON-T-20260827-109-F-001`.
+- Task 111 targeted fix: `SUCCESS` at exact corrected SHA `9947e352f829f06c5082f9849b8d47a1189091f8`.
+- Task 112 targeted independent re-review: `PASS`.
+- Exact final compatibility basis: `e47511aef987cd9fa5c171e319971f90ab549bd2`.
 - Corrected Task 002: `40 passed, 150 subtests passed`.
 - All five corrected Track C tests: `97 passed, 279 subtests passed`.
-- Task-111 new findings / blockers: `NONE / NONE`.
-- `NYRON-T-20260827-109-F-001`: `FIX IMPLEMENTED / PENDING TARGETED RE-REVIEW`.
-- Final compatibility target: Task-110 exact candidate `e47511aef987cd9fa5c171e319971f90ab549bd2`.
-- State: `PENDING TASK 112 TARGETED RE-REVIEW / NOT YET INTEGRATED`.
+- Task-110 E2E + BudgetReservation with overlay: `56 passed, 12 subtests passed`.
+- Complete `tests/kernel` with corrected Track C overlay: `416 passed, 2 skipped, 380 subtests passed`.
+- `NYRON-T-20260827-109-F-001`: `CLOSED`.
+- New findings: `NONE`.
+- State: `REVIEW COMPLETE / READY_FOR_LATER_INTEGRATION: YES / NOT YET MERGED`.
 
-## Revision 101 Decision
+## Revision 102 Decision
 
-- Task 110 Repository Result was verified as `SUCCESS / READY FOR INDEPENDENT EXACT-SHA INTEGRATED REVIEW` at exact production/test content SHA `e47511aef987cd9fa5c171e319971f90ab549bd2`.
-- Task 110 implements Runtime/Accounting Amendment 001 with the minimum required storage-boundary correction and completes the bounded separate-store cross-owner crash/replay E2E proof without introducing global transaction, projection framework, shadow Runtime canonical tables, saga/workflow engine, ownership transfer, or new UNKNOWN/retry/fencing semantics.
-- Task 110 is HIGH risk. Executor SUCCESS is not acceptance; Task 113 is routed to a brand-new independent Codex review session for final exact-SHA integrated review.
-- Task 111 Repository Result was verified as a clean test-only correction at exact SHA `9947e352f829f06c5082f9849b8d47a1189091f8`, with no new findings/blockers.
-- Task 112 is routed to the existing Task-109 independent reviewer for targeted closure of `NYRON-T-20260827-109-F-001` and full corrected Track C compatibility validation against exact Task-110 candidate `e47511ae...`.
-- Tasks 112 and 113 are read-only and may run in parallel within the maximum two active tracks.
-- If Task 113 PASSes with no blocking findings, the ARE-GATE-6 production candidate becomes eligible for Orchestrator acceptance. Track C integration remains separately conditioned on Task 112 PASS and later clean test-only integration into the accepted/final candidate.
-- `Last Accepted Production Commit` remains unchanged until independent Task-113 disposition.
+- Task 112 Repository Result was verified as `PASS` with review independence satisfied at corrected Track C SHA `9947e352f829f06c5082f9849b8d47a1189091f8` against final compatibility basis `e47511aef987cd9fa5c171e319971f90ab549bd2`.
+- Track C is fully cleared for later test-only integration; it does not block ARE-GATE-6 production acceptance and remains unmerged until the final production review closes.
+- Task 113 did not fail; it was interrupted by reviewer quota before a Result was submitted. The Task remains unclassified and acceptance remains fail-closed.
+- A durable quota-interruption checkpoint was written so the same independent reviewer can resume without repeating completed evidence unnecessarily.
+- `Last Accepted Production Commit` remains unchanged until Task 113 produces a remotely readable PASS/PASS_WITH_FINDINGS result with an affirmative acceptance recommendation and Orchestrator disposition.
 
 ## Gate-6A Closure
 
