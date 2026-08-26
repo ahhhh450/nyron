@@ -359,6 +359,22 @@ class AttemptExecutionCommitTest(unittest.TestCase):
         self.assertEqual(3, self._count("packets"))
         self.assertEqual("OPEN", self._state()["run_state"])
 
+    def test_replaced_r1_cannot_commit_prepared_terminal_outputs(self):
+        authority = self._authority()
+        executor = self._executor()
+        with self.assertRaises(AttemptExecutionError):
+            executor.execute(RUN, inject_failure="before_canonical_transaction")
+        RunRepository(self.store).replace_attempt(
+            run_ref=RUN,
+            expected_attempt_seq=authority.attempt_seq,
+            expected_fencing_generation=authority.fencing_generation,
+        )
+        with self.assertRaises(AttemptExecutionError) as raised:
+            executor.commit_prepared_success(authority)
+        self.assertEqual("STALE_ATTEMPT_REJECTED", raised.exception.code)
+        self.assertEqual(3, self._count("packets"))
+        self.assertEqual(0, self._count("run_terminal_events"))
+
     def test_failed_result_creates_no_output_or_new_attempt(self):
         result = self._executor(ResultHost(Failed("bad"))).execute(RUN)
         self.assertIsInstance(result, Failed)

@@ -12,13 +12,14 @@ from pathlib import Path
 from nyron_kernel.capability import (
     CapabilityAuthority,
     CapabilityDecision,
+    CapabilityError,
     CapabilityRequest,
     CapabilityTypeDefinition,
     CapabilityTypeRegistry,
 )
 from nyron_kernel.effect import EffectAuthority, EffectError, EffectRequest
 from nyron_kernel.execution import RunRepository, RuntimeAuthorityResolver
-from nyron_kernel.resource import ResourceManager, ResourceRequest
+from nyron_kernel.resource import ResourceError, ResourceManager, ResourceRequest
 from nyron_kernel.store import SQLiteStore
 
 
@@ -282,12 +283,40 @@ class EffectOperationFoundationTest(unittest.TestCase):
                 self.assertIsNone(operation.completion_evidence)
                 self.assertFalse(Path(operation.target_ref).exists())
 
+    def test_replacement_cutover_rejects_r1_at_all_existing_admission_boundaries(self):
+        prepared = self.effect.prepare(self._request())
+        RunRepository(self.store).replace_attempt(
+            run_ref=RUN,
+            expected_attempt_seq=self.attempt.attempt_seq,
+            expected_fencing_generation=self.attempt.fencing_generation,
+        )
+
+        with self.assertRaises(CapabilityError) as capability_error:
+            self._issue_grant("grant:effect/stale-r1")
+        self.assertEqual("STALE_ATTEMPT_AUTHORITY", capability_error.exception.code)
+        with self.assertRaises(ResourceError) as lease_error:
+            self.resource.issue_lease(
+                "lease:effect/stale-r1",
+                RESOURCE,
+                "holder:trusted-effect",
+                self.attempt,
+            )
+        self.assertEqual("STALE_ATTEMPT_AUTHORITY", lease_error.exception.code)
+        with self.assertRaises(EffectError) as effect_error:
+            self.effect.execute(self._request())
+        self.assertEqual("EFFECT_DISPATCH_AUTHORITY_REJECTED", effect_error.exception.code)
+        fenced = self.effect.resolve(OPERATION)
+        assert fenced is not None
+        self.assertEqual("FENCED", fenced.state)
+        self.assertFalse(Path(prepared.target_ref).exists())
+
     def test_attempt_becoming_stale_after_prepared_prevents_dispatch(self):
         prepared = self.effect.prepare(self._request())
         self.assertEqual("PREPARED", prepared.state)
-        self.store.connection.execute(
-            "UPDATE runs SET fencing_generation = 2 WHERE run_ref = ?",
-            (RUN,),
+        RunRepository(self.store).replace_attempt(
+            run_ref=RUN,
+            expected_attempt_seq=1,
+            expected_fencing_generation=1,
         )
         with self.assertRaises(EffectError) as raised:
             self.effect.execute(self._request())

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import uuid
 from dataclasses import dataclass
 from hashlib import sha256
 
@@ -148,7 +149,74 @@ class RunRepository:
         run = self._resolve_run_with(self._store.connection, run_ref)
         if run is None:
             return None
-        return self._require_initial_authority(self._store.connection, run)
+        return self._require_current_authority(self._store.connection, run)
+
+    def replace_attempt(
+        self,
+        *,
+        run_ref: str,
+        expected_attempt_seq: int,
+        expected_fencing_generation: int,
+        inject_failure: str | None = None,
+    ) -> tuple[Run, RunAttempt]:
+        """Atomically replace the exact current Attempt under a Run-owned CAS."""
+
+        if (
+            not isinstance(run_ref, str)
+            or not run_ref
+            or not isinstance(expected_attempt_seq, int)
+            or isinstance(expected_attempt_seq, bool)
+            or expected_attempt_seq <= 0
+            or not isinstance(expected_fencing_generation, int)
+            or isinstance(expected_fencing_generation, bool)
+            or expected_fencing_generation <= 0
+        ):
+            raise RunError("RUN_REPLACEMENT_INVALID")
+
+        try:
+            with self._store.transaction() as connection:
+                run = self._resolve_run_with(connection, run_ref)
+                if run is None:
+                    raise RunError("UNRESOLVED_RUN", run_ref=run_ref)
+                if (
+                    run.current_attempt_seq != expected_attempt_seq
+                    or run.fencing_generation != expected_fencing_generation
+                ):
+                    raise RunError("RUN_REPLACEMENT_CAS_MISMATCH", run_ref=run_ref)
+                current = self._resolve_attempt_with(
+                    connection, run_ref, expected_attempt_seq
+                )
+                if (
+                    run.state != "OPEN"
+                    or current is None
+                    or current.state not in {"CREATED", "ACTIVE"}
+                ):
+                    raise RunError("RUN_ATTEMPT_NOT_REPLACEABLE", run_ref=run_ref)
+
+                next_attempt_seq = expected_attempt_seq + 1
+                next_generation = expected_fencing_generation + 1
+                next_token = f"fencing:uuid:{uuid.uuid4()}"
+                connection.execute(
+                    "UPDATE run_attempts SET state = 'REPLACED' WHERE run_ref = ? AND attempt_seq = ?",
+                    (run_ref, expected_attempt_seq),
+                )
+                if inject_failure == "after_replaced":
+                    raise RunError("INJECTED_RUN_REPLACEMENT_FAILURE")
+                connection.execute(
+                    "INSERT INTO run_attempts(run_ref, attempt_seq, fencing_token, state) VALUES (?, ?, ?, 'CREATED')",
+                    (run_ref, next_attempt_seq, next_token),
+                )
+                connection.execute(
+                    "UPDATE runs SET current_attempt_seq = ?, fencing_generation = ? WHERE run_ref = ?",
+                    (next_attempt_seq, next_generation, run_ref),
+                )
+        except sqlite3.IntegrityError as error:
+            raise RunError("RUN_REPLACEMENT_CONFLICT", run_ref=run_ref) from error
+
+        replaced = self.resolve(run_ref)
+        if replaced is None:  # pragma: no cover - guards store corruption
+            raise RunError("RUN_REPLACEMENT_FAILED", run_ref=run_ref)
+        return replaced
 
     def _require_initial_authority(
         self, connection: sqlite3.Connection, run: Run
@@ -166,6 +234,23 @@ class RunRepository:
             or attempt is None
             or attempt.state != self._INITIAL_ATTEMPT_STATE
             or attempt.fencing_token != expected_token
+        ):
+            raise RunError(
+                "RUN_CURRENT_AUTHORITY_INCONSISTENT", run_ref=run.run_ref
+            )
+        return run, attempt
+
+    def _require_current_authority(
+        self, connection: sqlite3.Connection, run: Run
+    ) -> tuple[Run, RunAttempt]:
+        attempt = self._resolve_attempt_with(
+            connection, run.run_ref, run.current_attempt_seq
+        )
+        if (
+            run.state != "OPEN"
+            or attempt is None
+            or attempt.state not in {"CREATED", "ACTIVE"}
+            or not attempt.fencing_token
         ):
             raise RunError(
                 "RUN_CURRENT_AUTHORITY_INCONSISTENT", run_ref=run.run_ref

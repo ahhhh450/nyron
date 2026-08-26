@@ -461,9 +461,10 @@ class CapabilityFoundationTest(unittest.TestCase):
             {"workspace_ref": "workspace:1", "access": "READ"},
         )
         self.assertTrue(cached.valid)
-        self.store.connection.execute(
-            "UPDATE runs SET fencing_generation = 2 WHERE run_ref = ?",
-            (RUN,),
+        RunRepository(self.store).replace_attempt(
+            run_ref=RUN,
+            expected_attempt_seq=1,
+            expected_fencing_generation=1,
         )
         current = self.authority.validate_advisory(
             "grant:capability/1",
