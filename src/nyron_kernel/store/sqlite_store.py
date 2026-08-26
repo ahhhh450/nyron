@@ -827,6 +827,46 @@ class SQLiteStore:
             """
         )
 
+    def create_budget_settlement_schema(self) -> None:
+        """Install canonical known-actual settlement / overrun facts."""
+
+        self.create_budget_schema()
+        self.create_usage_ledger_schema()
+        self.connection.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS budget_settlements (
+                settlement_ref TEXT PRIMARY KEY,
+                request_ref TEXT NOT NULL UNIQUE,
+                reservation_ref TEXT NOT NULL UNIQUE,
+                fact_set_hash TEXT NOT NULL,
+                usage_fact_refs_json TEXT NOT NULL,
+                adjustment_fact_refs_json TEXT NOT NULL,
+                actual_dimensions_json TEXT NOT NULL,
+                released_dimensions_json TEXT NOT NULL,
+                overrun_dimensions_json TEXT NOT NULL,
+                resulting_state TEXT NOT NULL CHECK (
+                    resulting_state IN ('COMMITTED', 'RELEASED')
+                ),
+                settled_at INTEGER NOT NULL,
+                caused_by_ref TEXT NOT NULL,
+                FOREIGN KEY (reservation_ref)
+                    REFERENCES budget_reservations(reservation_ref)
+            );
+
+            CREATE TRIGGER IF NOT EXISTS budget_settlement_immutable
+            BEFORE UPDATE ON budget_settlements
+            BEGIN
+                SELECT RAISE(ABORT, 'budget settlement is immutable');
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS budget_settlement_no_delete
+            BEFORE DELETE ON budget_settlements
+            BEGIN
+                SELECT RAISE(ABORT, 'budget settlement is immutable');
+            END;
+            """
+        )
+
     @contextmanager
     def transaction(self) -> Iterator[sqlite3.Connection]:
         """Commit all writes together, or roll the entire transaction back."""

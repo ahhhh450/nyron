@@ -18,6 +18,12 @@ from .scope_resolver import (
     AccountingScopeResolver,
     compute_ancestry_hash,
 )
+from .settlement_authority import (
+    BudgetSettlement,
+    SettlementAuthority,
+    SettlementAuthorityError,
+    SettlementRequest,
+)
 from .usage_ledger import (
     UsageAdjustmentFact,
     UsageAdjustmentFactRequest,
@@ -39,6 +45,10 @@ __all__ = [
     "BudgetReservation",
     "BudgetReservationRequest",
     "BudgetRule",
+    "BudgetSettlement",
+    "SettlementAuthority",
+    "SettlementAuthorityError",
+    "SettlementRequest",
     "UsageAdjustmentFact",
     "UsageAdjustmentFactRequest",
     "UsageFact",
