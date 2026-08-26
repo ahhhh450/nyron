@@ -46,7 +46,7 @@ Authoritative implementation baseline:
 - `design/Nyron_Overall_System_Architecture_Frozen_Baseline_v0.1.md`
 - freeze commit: `28f7f62ac9f269a7a510a037131e938c3b7f44a2`
 
-The frozen manifest pins the exact Overall candidate content, D-001 clarifications, all frozen subsystem baselines and all accepted amendments.
+The frozen manifest pins the exact Overall candidate content, D-001 clarifications, all frozen subsystem baselines and all accepted amendments existing at freeze time. Later Lead-approved frozen Amendments listed in `design/coordination/STATUS.md` extend the implementation authority under the same change-control rule.
 
 **System Foundation implementation gate: OPEN.**
 
@@ -57,6 +57,7 @@ The frozen manifest pins the exact Overall candidate content, D-001 clarificatio
 - Graph / Composite — `design/Nyron_Graph_Composite_Frozen_Baseline_v0.1.md`
 - Graph / Accounting Amendment 001 — `design/amendments/Graph_Accounting_Amendment_001_Static_Accounting_Scope_Resolution.md`
 - Runtime Orchestration — `design/Nyron_Runtime_Orchestration_Frozen_Baseline_v0.1.md`
+- Runtime / Accounting Amendment 001 / Cross-Owner Identity & Persistence Boundary — `design/amendments/Runtime_Accounting_Amendment_001_Cross_Owner_Identity_Persistence_Boundary.md`
 - Capability / Resource / Effect Authority — `design/Nyron_Capability_Resource_Effect_Authority_Frozen_Baseline_v0.1.md`
 - Accounting / Recovery — `design/Nyron_Accounting_Recovery_Frozen_Baseline_v0.1.md`
 - Distribution / Module Ecosystem — `design/Nyron_Distribution_Module_Ecosystem_Frozen_Baseline_v0.1.md`
@@ -87,6 +88,11 @@ Freeze recommendation: YES
 
 Non-blocking documentation hygiene record:
 - `design/reviews/NYRON-D-008_Documentation_Hygiene_Observation_2026-08-25.md`
+
+Post-freeze implementation finding closure:
+- Task 108 `CROSS_OWNER_RUNTIME_ACCOUNTING_STORAGE_BOUNDARY_UNFROZEN`
+- disposition: `VALID BLOCKER / CLOSED BY ARCHITECTURE AMENDMENT`
+- authority: `design/amendments/Runtime_Accounting_Amendment_001_Cross_Owner_Identity_Persistence_Boundary.md`
 
 ## 7. Core Frozen Cross-System Rules
 
@@ -119,6 +125,16 @@ unresolved static_accounting_scope_ref -> execution admission denied
 
 ```text
 retained canonical history pins PWP revision -> exact revision remains resolvable
+```
+
+```text
+logical Owner != physical database placement
+cross-owner SQL FK != foreign Owner authority proof
+```
+
+```text
+Accounting may persist Runtime identity references
+!= Accounting owns or must locally duplicate Runtime canonical rows
 ```
 
 ## 8. Product Node / Visual UX — D-006
