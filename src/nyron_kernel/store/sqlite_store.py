@@ -480,6 +480,7 @@ class SQLiteStore:
                 dispatch_admission_ref TEXT UNIQUE,
                 dispatch_admitted_at INTEGER,
                 completion_evidence_json TEXT,
+                fence_evidence_json TEXT,
                 FOREIGN KEY (capability_grant_ref)
                     REFERENCES capability_grants(grant_ref),
                 FOREIGN KEY (resource_ref) REFERENCES resources(resource_ref),
@@ -505,6 +506,11 @@ class SQLiteStore:
                     OR
                     (state != 'COMPLETED'
                      AND completion_evidence_json IS NULL)
+                ),
+                CHECK (
+                    (state = 'FENCED' AND fence_evidence_json IS NOT NULL)
+                    OR
+                    (state != 'FENCED' AND fence_evidence_json IS NULL)
                 )
             );
 
@@ -557,6 +563,14 @@ class SQLiteStore:
              AND NEW.completion_evidence_json IS NOT OLD.completion_evidence_json
             BEGIN
                 SELECT RAISE(ABORT, 'effect completion evidence immutable');
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS effect_fence_evidence_immutable
+            BEFORE UPDATE ON effect_operations
+            WHEN OLD.fence_evidence_json IS NOT NULL
+             AND NEW.fence_evidence_json IS NOT OLD.fence_evidence_json
+            BEGIN
+                SELECT RAISE(ABORT, 'effect fence evidence immutable');
             END;
 
             CREATE TRIGGER IF NOT EXISTS effect_operation_state_transition
