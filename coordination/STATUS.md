@@ -2,48 +2,55 @@
 
 > 本文件是 Nyron 项目级协调状态的唯一事实源，由 Active Orchestrator 裁决。Execution Agent 默认只读。
 >
-> Status compacted at Revision 73. Historical detail remains canonical in prior STATUS revisions and `coordination/tasks/`, `coordination/results/`, `coordination/checkpoints/`.
+> Status compacted at Revision 74. Historical detail remains canonical in prior STATUS revisions and `coordination/tasks/`, `coordination/results/`, `coordination/checkpoints/`.
 
 ## Coordination
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `1`
-- Coordination Revision: `73`
+- Coordination Revision: `74`
 - Last Accepted Commit: `e410ca50a27fcb3273848000ef3846279ebda00d`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Project Phase: `SYSTEM FOUNDATION IMPLEMENTATION`
 - First Slice Closure: `PASS / CLOSED`
-- Current Frozen Implementation Gate: `ARE-GATE-5 — Module Host trust boundary / RUNTIMECONTEXT STRUCTURAL VALIDATION CORRECTION`
+- Current Frozen Implementation Gate: `ARE-GATE-5 — Module Host trust boundary / STRUCTURAL VALIDATION TARGETED RE-REVIEW`
 
 ## Active Tasks
 
 | Task | Type | Agent | State | Depends On |
 |---|---|---|---|---|
-| `NYRON-T-20260826-072` | targeted RuntimeContext/Handle structural-validation correction | Codex | `READY` | Task 071 FAIL + frozen Clarification 005 |
+| `NYRON-T-20260826-072` | RuntimeContext/Handle structural-validation correction | Codex | `IN_REVIEW` | Task 071 FAIL + Clarification 005 |
+| `NYRON-T-20260826-073` | targeted independent re-review of Task 072 | Claude Code | `READY` | Task 072 delivery |
 
-## Revision 73 Decision
+## Revision 74 Decision
 
-- `NYRON-T-20260826-071` — independent HIGH-risk implementation review of Task 070 — `FAIL / REVIEW RESULT ACCEPTED`.
-- Reviewed Task-070 content: `56721d760727e11ddb95d752f1df1fe424e66320`.
-- Task-071 canonical Result is recorded at `coordination/results/NYRON-T-20260826-071.md`; record commit `899bc3df8f39ebc396731227a85c3662cb217bc1`.
-- Reviewer confirmed Task-070 mechanics PASS for original Attempt preservation, real EffectAuthority admission, canonical `Activation.trigger_delivery_ref` causal binding, source-agnostic identity conflict, six-state old-row preservation, same-identity UNKNOWN, and PURE regression.
-- New blocking Finding `NYRON-T-20260826-071-F-001` is OPEN: exact outer `RuntimeContext` type checking is insufficient because dataclass field annotations are not enforced. An exact RuntimeContext carrying live Store/Owner-like objects in public fields can pass `TrustedModuleHost.execute()` and be forwarded unchanged to Module code.
-- This is an implementation-level supported-ABI structural-validation defect, not a hostile-plugin isolation/design defect. Frozen Clarification 005 remains authoritative and unchanged.
-- Task-070 content `56721d760727e11ddb95d752f1df1fe424e66320` is `NOT ACCEPTED / NOT INTEGRATABLE AS-IS`.
-- New HIGH-risk Task `NYRON-T-20260826-072` is opened and assigned to Codex for targeted correction only. Planned independent re-review remains Claude Code. Stale Policy: FAIL_CLOSED.
-- Task 072 must defensively validate the complete exact RuntimeContext structure before Module execution, including nested handles, metadata, primitive identity fields, attempt_seq, and exact `BoundedWriteEffectBroker | None` field shape. Exact outer type alone may not authorize forwarding.
-- Task 072 must preserve every already-passing Gate-5 semantic from Task 071 and must not alter Frozen Clarification 005, Owner semantics, schema, operation identity, causal binding, concurrency model, or Gate-6 scope.
+- `NYRON-T-20260826-072` returned `SUCCESS` on exact Epoch 1 / Revision 73 basis.
+- Final content commit: `1529bc9e24a88c147f5bfddfb8f830ec24c0603f`.
+- Orchestrator verified direct-child lineage from Revision-73 main `079b8077126d68a4fd288d097fe88c164620f5fa`; compare `ahead 1 / behind 0`.
+- Exact delta contains only:
+  - `src/nyron_kernel/host/__init__.py`
+  - `src/nyron_kernel/host/runtime_context.py`
+  - `src/nyron_kernel/host/trusted_host.py`
+  - `tests/kernel/test_gate5_live_broker.py`
+- No coordination/schema/Owner/frozen-design/unrelated production change exists in Task-072 delivery.
+- Task-072 canonical Result recorded at `coordination/results/NYRON-T-20260826-072.md`; record commit `c5f4c29f64463d32cb8af25a7c353d2fb825a424`.
+- Executor validation: focused Gate-5/Host `31 passed, 18 subtests`; relevant Effect/Gate-4/foundation `84 passed, 2 skipped, 49 subtests`; complete `tests/kernel` `213 passed, 2 skipped, 84 subtests`; `git diff --check` PASS.
+- Source inspection confirms `TrustedModuleHost.execute()` now defensively invokes recursive RuntimeContext structural validation before Module invocation. Validation covers exact RuntimeContext type, primitive identity refs, exact integer attempt_seq, exact tuple containers, exact nested handle types/string fields, string-pair metadata, and exact `BoundedWriteEffectBroker | None`.
+- `NYRON-T-20260826-071-F-001` remains `IMPLEMENTATION / BLOCKING / OPEN PENDING RE-REVIEW`; executor success does not close it.
+- New `NYRON-T-20260826-073` is opened as HIGH-risk READ_ONLY Claude Code targeted re-review of exact content `1529bc9e24a88c147f5bfddfb8f830ec24c0603f`.
+- Task 073 must independently reproduce exact-type RuntimeContext field-smuggling probes and confirm no invalid context reaches Module implementation, while checking prior Gate-5 PASS mechanics for regression.
+- Frozen Clarification 005 remains unchanged and authoritative.
 - ARE-GATE-5 remains OPEN. No Gate-6 work is authorized.
 
 ## Accepted Production Baseline
 
 - First Slice Closure — `PASS / CLOSED`.
-- `ARE-GATE-1 — Capability foundation` — `PASS / CLOSED`.
-- `ARE-GATE-2 — Resource foundation` — `PASS / CLOSED`.
-- `ARE-GATE-3 — EffectOperation foundation` — `PASS / CLOSED`.
-- `ARE-GATE-4 — Replacement Fencing` — `PASS / CLOSED`; accepted production integration tip `e410ca50a27fcb3273848000ef3846279ebda00d`.
-- `ARE-GATE-5 — Module Host trust boundary` — `OPEN / BLOCKED PENDING STRUCTURAL VALIDATION CORRECTION`.
-- `ARE-GATE-6 — Accounting/Recovery integration` — future / not open.
+- `ARE-GATE-1` — PASS / CLOSED.
+- `ARE-GATE-2` — PASS / CLOSED.
+- `ARE-GATE-3` — PASS / CLOSED.
+- `ARE-GATE-4` — PASS / CLOSED; accepted production integration tip `e410ca50a27fcb3273848000ef3846279ebda00d`.
+- `ARE-GATE-5` — `OPEN / TARGETED RE-REVIEW via Task 073`.
+- `ARE-GATE-6` — future / not open.
 
 ## Frozen Gate-5 ABI
 
@@ -51,10 +58,10 @@
 - Status: `FROZEN NORMATIVE CLARIFICATION`
 - Freeze Commit: `7c4482f9ff0a77b107064e1d99826f6eac12420c`
 
-Load-bearing semantics remain unchanged:
+Load-bearing semantics remain:
 
 - TRUSTED MODULE MODE only; same-process Python privacy is not hostile-code isolation.
-- Supported RuntimeContext/Handle public values contain only the frozen primitive/opaque identities and optional bounded broker.
+- Supported RuntimeContext/Handle public values contain only frozen primitive/opaque identities and optional bounded broker.
 - Public attempt/fencing fields are descriptive only.
 - Module does not choose raw AttemptAuthority/currentness, operation_ref, effect_class, caused_by_ref, or raw target path.
 - `caused_by_ref = Activation.trigger_delivery_ref`.
@@ -65,16 +72,16 @@ Load-bearing semantics remain unchanged:
 
 ## Open Findings
 
-- `NYRON-T-20260826-071-F-001` — `IMPLEMENTATION / BLOCKING / OPEN` — exact RuntimeContext outer-type check lacks recursive field validation, permitting unsupported raw/untyped objects to cross the supported Module ABI.
+- `NYRON-T-20260826-071-F-001` — `IMPLEMENTATION / BLOCKING / OPEN PENDING RE-REVIEW` — exact RuntimeContext outer-type check previously lacked recursive field validation; Task 072 is the candidate correction.
 - `NYRON-T-20260825-038-F-001` — `SECURITY / NARROWED / OPEN` — Resource provenance residual namespace race; Module filesystem/managed-root namespace exposure or less-trusted namespace writers activate it as blocking.
-- `NYRON-T-20260826-043-F-001` — `ARCHITECTURE / NON_BLOCKING / OPEN` — authority-consumption linearization depends on canonical SQLite single-writer transaction discipline; genuine concurrency/pools/raw writers/process-distributed authority activate mandatory revalidation.
+- `NYRON-T-20260826-043-F-001` — `ARCHITECTURE / NON_BLOCKING / OPEN` — authority-consumption linearization depends on canonical SQLite single-writer discipline; genuine concurrency/pools/raw writers/process-distributed authority activate mandatory revalidation.
 - `NYRON-T-20260826-048-F-001` — `IMPLEMENTATION / NON_BLOCKING / OPEN` — Effect recovery caller ergonomics debt only.
 - `NYRON-T-20260826-056-F-001` — `IMPLEMENTATION / NON_BLOCKING / OPEN` — cross-version schema migration/rebuild debt.
 
 ## Closed Gate-5 Design Findings
 
 - `NYRON-T-20260826-062-F-001` — CLOSED by Clarification 005 freeze.
-- `NYRON-T-20260826-067-F-001` — CLOSED after Task 069 PASS_WITH_FINDINGS and Clarification 005 freeze.
+- `NYRON-T-20260826-067-F-001` — CLOSED after Task 069 + Clarification 005 freeze.
 - `NYRON-T-20260826-069-F-001` — CLOSED by Design Authority wording correction in Clarification 005.
 - `NYRON-T-20260826-065-F-001` through `065-F-004` — CLOSED by Task 067.
 
@@ -95,13 +102,11 @@ Load-bearing semantics remain unchanged:
 
 ## Current Next-Phase Decision
 
-Frozen D-004 §26 route:
-
 - `ARE-GATE-1` — PASS / CLOSED;
 - `ARE-GATE-2` — PASS / CLOSED;
 - `ARE-GATE-3` — PASS / CLOSED;
 - `ARE-GATE-4` — PASS / CLOSED;
-- `ARE-GATE-5` — `OPEN / STRUCTURAL VALIDATION CORRECTION via Task 072`;
+- `ARE-GATE-5` — `OPEN / STRUCTURAL VALIDATION TARGETED RE-REVIEW via Task 073`;
 - `ARE-GATE-6` — future / not open.
 
 ## Final Result SHA Rule
