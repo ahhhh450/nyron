@@ -8,34 +8,37 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `1`
-- Coordination Revision: `52`
+- Coordination Revision: `53`
 - Last Accepted Commit: `5ae6cef47fe198448979a4ce74a0de6f40ecb9db`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Project Phase: `SYSTEM FOUNDATION IMPLEMENTATION`
 - First Slice Closure: `PASS / CLOSED`
-- Current Frozen Implementation Gate: `ARE-GATE-3C — Effect Revoke / Fence Foundation / BLOCKED Correction`
+- Current Frozen Implementation Gate: `ARE-GATE-3C — Effect Revoke / Fence Foundation / Targeted Correction Re-Review`
 
 ## Active Tasks
 
 | Task | Type | Agent | State | Depends On |
 |---|---|---|---|---|
 | `NYRON-T-20260826-049` | Effect revoke / fence foundation | Codex | `CHANGES_REQUIRED` | Blocking Finding `NYRON-T-20260826-050-F-001` |
-| `NYRON-T-20260826-051` | targeted revoke/fence false-canonical-truth race correction | Codex | `READY` | Task 050 `FAIL / ACCEPTED`; corrects Task 049 |
+| `NYRON-T-20260826-051` | targeted revoke/fence false-canonical-truth race correction | Codex | `IN_REVIEW` | Task 050 `FAIL / ACCEPTED`; corrects Task 049 |
+| `NYRON-T-20260826-052` | targeted independent revoke/fence correction re-review | Claude Code | `READY` | Task 051 remote Result submitted |
 
 ## Accepted This Revision
 
-- `NYRON-T-20260826-050` — independent HIGH-risk Effect revoke/fence review — `FAIL / ACCEPTED AS REVIEW RESULT`; Task 049 production delivery is **not accepted**.
-- Task 050 independently reran the complete required validation and added a Reviewer-originated reverse completion-vs-revoke race probe beyond the Executor suite.
-- `NYRON-T-20260826-050-F-001` — `SECURITY / BLOCKING / OPEN` — an already-running `execute()` continuation can resume after synchronous `request_revoke()` + `resolve_revoke()` committed terminal `FENCED` from target-ABSENT evidence, then still perform the external mutation. Final canonical state can therefore remain permanently `FENCED` with `continuation=STOPPED` / `target=ABSENT` evidence while the external target actually exists. This is fabricated cessation evidence / false canonical truth and blocks acceptance.
-- The exact reproduced sequence is: durable ACTIVE -> injected revoke request -> injected revoke resolution -> FENCED committed while target absent -> original execute continuation resumes -> external write occurs -> COMPLETED commit is rejected because state is already terminal FENCED.
-- Task 050 result is recorded at `coordination/results/NYRON-T-20260826-050.md`.
-- `NYRON-T-20260826-050-F-002` independently verifies Task 049's new direct regression is sufficient to cover terminal/UNKNOWN non-reactivation through both application code and raw SQL. This is closure evidence for `NYRON-T-20260826-048-F-002`, but final CLOSED disposition is deferred until the corrected delivery carrying that test is accepted/integrated.
-- `NYRON-T-20260826-049` remains `CHANGES_REQUIRED / NOT_ACCEPTED / NOT_INTEGRATED`; its reviewed content commit remains `4e4aa98c464a1a5f588080bd3c2873c862b8f441` and Result-record tip remains `40db0790381d52a742111b2614c6a115cf031ba6`.
-- Task 049 HIGH-risk Review Debt remains OPEN because Task 050 returned a BLOCKING finding.
-- `ARE-GATE-3C` remains `OPEN / BLOCKED`; overall `ARE-GATE-3 — EffectOperation Foundation` remains OPEN; `ARE-GATE-4 — Replacement Fencing` remains NOT OPEN.
-- Targeted correction Task `NYRON-T-20260826-051` is opened on Epoch 1 / Revision 52 with stale policy `FAIL_CLOSED`.
-- Task 051 must preserve the valid Task 049 revoke/fence work while eliminating the exact Task 050 race. For an already ACTIVE/REVOKE_REQUESTED operation, resolver-side target absence alone cannot prove the in-flight executor has stopped; the continuation that actually stops before mutation must be the source of exact cessation evidence, otherwise the operation fails closed to UNKNOWN.
-- Task 051 must not solve the defect by holding a SQLite write transaction across external I/O, introducing a process-local authority/lock registry, adding real concurrency, or crossing into ARE-GATE-4.
+- No Task 049/051 production implementation is accepted in Revision 53.
+- Task `NYRON-T-20260826-051` returned Executor `SUCCESS` on the exact Epoch 1 / Revision 52 basis.
+- Orchestrator independently verified correction content commit `8c5823aaa01a86c926daa887fe74744ac9264a5f` is a direct child of Task 049 reviewed content commit `4e4aa98c464a1a5f588080bd3c2873c862b8f441`.
+- Correction delta relative to Task 049 is exactly: `src/nyron_kernel/effect/authority.py`, `tests/kernel/test_effect_operation_foundation.py`, and `coordination/checkpoints/NYRON-T-20260826-051-CP-001.md`.
+- Task 051 canonical Result is recorded at `coordination/results/NYRON-T-20260826-051.md`; Result-record tip `02451483a524d94f62858f6b9f194256c705837e` is record-only and directly follows the correction content commit.
+- Executor claims exact Task 050 exploit regression PASS; combined EffectOperation/Resource/Capability/First Slice E2E `65 passed`, `2 capability skips`, `49 subtests`; complete `tests/kernel` `175 passed`, `2 capability skips`, `63 subtests`; `git diff --check` and authorized scope PASS.
+- Task 051 removes resolver-side ACTIVE/REVOKE_REQUESTED target-ABSENT -> FENCED inference, failing such unresolved absence closed to `UNKNOWN`.
+- Task 051 adds a fresh canonical state read immediately before the bounded mutation; when the executing continuation observes `REVOKE_REQUESTED`, it stops before first mutation and records executor-originated `EXECUTOR_STOPPED_BEFORE_FIRST_MUTATION` fence evidence.
+- Executor correctly does not claim formal Review clearance; `NYRON-T-20260826-050-F-001` remains `SECURITY / BLOCKING / OPEN` pending independent targeted re-review.
+- Task 051 moves to `IN_REVIEW`.
+- Independent targeted Claude Task `NYRON-T-20260826-052` is opened against correction content `8c5823aaa01a86c926daa887fe74744ac9264a5f` and Result-record tip `02451483a524d94f62858f6b9f194256c705837e`.
+- Task 052 must reproduce the original Task 050 exploit and at least one Reviewer-originated variant, prove no external mutation after terminal/ambiguous revoke resolution, verify truthful executor-originated cessation evidence, preserve `FENCED != semantic retry clearance`, and confirm both existing interlocks remain un-crossed.
+- `NYRON-T-20260826-048-F-002` remains `CLOSURE_EVIDENCE_VERIFIED / OPEN_PENDING_INTEGRATION`; Task 052 must confirm the direct terminal-reactivation regression remains present in the corrected lineage.
+- `ARE-GATE-3C` remains `OPEN / BLOCKED`; overall `ARE-GATE-3 — EffectOperation Foundation` remains OPEN; `ARE-GATE-4 — Replacement Fencing` remains `NOT OPEN`.
 
 ## First Slice Closure
 
@@ -106,15 +109,15 @@ Final Results must include exact full 40-character `SHA Verification Evidence` w
 
 | Delivery / Task | Review Type | Reason | Risk | Clearance Condition |
 |---|---|---|---|---|
-| `NYRON-T-20260826-049 / 051` | targeted independent Effect revoke/fence re-review | Task 050 proved a false-canonical-truth race where FENCED cessation evidence can be invalidated by the still-running executor | HIGH | Task 051 remote correction plus an Orchestrator-created independent Claude re-review must reproduce the original exploit and at least one variant, observe no external mutation after terminal/ambiguous revoke resolution, preserve `FENCED != retry clearance`, and find no blocking regression |
+| `NYRON-T-20260826-049 / 051` | targeted independent Effect revoke/fence re-review | Task 050 proved a false-canonical-truth race where FENCED cessation evidence can be invalidated by the still-running executor | HIGH | Task 052 current-basis independent Claude re-review reproduces the original exploit and at least one variant, observes no external mutation after terminal/ambiguous revoke resolution, verifies truthful executor-originated cessation evidence, preserves `FENCED != retry clearance`, and finds no blocking regression |
 
 ## Open Findings
 
 - `NYRON-T-20260825-038-F-001` — `SECURITY / NARROWED / OPEN` — Task 045 eliminates symlink/junction/reparse adoption and materially hardens substitution after the first stable identity/descriptor acquisition. Exact residual: substitution before the first identity/descriptor read remains possible on all applicable platforms for both provisioning-create and destroy-evidence paths; ordinary `mkdir`/first-identity-read primitives do not atomically create-and-bind a stable directory identity. Activation Condition: any less-trusted/co-resident actor gains concurrent mutation capability over the managed root or relevant path namespace. Module filesystem access, Host trust-boundary exposure, shared/network-root assumptions or equivalent namespace attacker capability make this a blocking prerequisite. Current Gate 3C scope explicitly does not cross this condition.
 - `NYRON-T-20260826-043-F-001` — `ARCHITECTURE / NON_BLOCKING / OPEN` — Effect authority-consumption linearization depends on every authority-mutating write preserving canonical `SQLiteStore.transaction()` / `BEGIN IMMEDIATE` discipline and admission revalidation+durable admission remaining in the same transaction. Activation Condition: genuine multi-threaded/worker-pool Runtime, connection pooling, independent/raw writer path, materially changed SQLite locking/transaction discipline, distributed/process-separated authority, or long/async execution that changes the current ordering proof. Such a change requires real-concurrency revalidation before acceptance. Current Gate 3C remains logically single-writer and explicitly does not cross this condition.
 - `NYRON-T-20260826-048-F-001` — `IMPLEMENTATION / NON_BLOCKING / OPEN` — replaying `execute()` after mutation-before-completion crash safely heals durable state to COMPLETED without duplicate mutation but returns `EFFECT_OPERATION_NOT_DISPATCHABLE` rather than the recovered operation. No safety/correctness corruption; explicit caller-ergonomics debt.
-- `NYRON-T-20260826-048-F-002` — `TEST / NON_BLOCKING / CLOSURE_EVIDENCE_VERIFIED / OPEN_PENDING_INTEGRATION` — Task 050 independently verified Task 049's direct application+raw-SQL regression covers `COMPLETED/FENCED/UNKNOWN` non-reactivation. Final CLOSED disposition waits for corrected Task 051 lineage to preserve and integrate that test.
-- `NYRON-T-20260826-050-F-001` — `SECURITY / BLOCKING / OPEN` — Task 049 may commit FENCED from target-ABSENT / presumed synchronous cessation while the original execute continuation is still live and can subsequently mutate, leaving durable false FENCED evidence. Blocks Task 049 acceptance, ARE-GATE-3C closure, ARE-GATE-3 closure and ARE-GATE-4 opening until corrected and independently re-reviewed.
+- `NYRON-T-20260826-048-F-002` — `TEST / NON_BLOCKING / CLOSURE_EVIDENCE_VERIFIED / OPEN_PENDING_INTEGRATION` — Task 050 independently verified Task 049's direct application+raw-SQL regression covers `COMPLETED/FENCED/UNKNOWN` non-reactivation. Task 051 preserves that regression; final CLOSED disposition waits for Task 052 confirmation and corrected-lineage integration.
+- `NYRON-T-20260826-050-F-001` — `SECURITY / BLOCKING / OPEN` — Task 049 may commit FENCED from target-ABSENT / presumed synchronous cessation while the original execute continuation is still live and can subsequently mutate, leaving durable false FENCED evidence. Task 051 supplies a targeted correction, but this finding continues to block Task 049/051 acceptance, ARE-GATE-3C closure, ARE-GATE-3 closure and ARE-GATE-4 opening until Task 052 independently closes it.
 
 ## Stable Baseline
 
@@ -143,7 +146,7 @@ Final Results must include exact full 40-character `SHA Verification Evidence` w
 - Capability revoke-after-expiry branch is directly covered by accepted regression test.
 - Bounded EffectOperation foundation is integrated and accepted: Effect Authority-owned durable PREPARED identity; exact current Runtime/Capability/Resource+Lease admission linearized under the current SQLite writer discipline; one deterministic trusted bounded filesystem mutation; exact external evidence; crash recovery to COMPLETED only on exact evidence and UNKNOWN on ambiguity; replay/non-transferability and storage invariants.
 - Durable ACTIVE / crash-ambiguity Effect semantics are integrated and accepted: dispatch admission precedes durable ACTIVE, ACTIVE precedes external mutation, ACTIVE may survive a crash/separate synchronous call, and exact recovery resolves only to COMPLETED on exact evidence or UNKNOWN on ambiguity without automatic retry.
-- Task 049 revoke/fencing delivery is rejected pending Task 051 correction; no Task 049 production code is part of the accepted baseline.
+- Task 049 revoke/fencing delivery remains rejected; Task 051 correction is under independent targeted re-review and is not yet part of the accepted production baseline.
 - R1->R2 Attempt replacement fencing, real async/background execution, Canonical Command, generalized conflict/recovery and Module filesystem trust-boundary work remain unimplemented.
 
 ## Current Next-Phase Decision
@@ -154,19 +157,19 @@ Frozen D-004 §26 route remains:
 - `ARE-GATE-2` — Resource foundation — PASS / CLOSED;
 - `ARE-GATE-3A` — bounded EffectOperation / first real authority-consumption — PASS / CLOSED;
 - `ARE-GATE-3B` — durable ACTIVE / crash-ambiguity lifecycle — PASS / CLOSED;
-- `ARE-GATE-3C` — Effect revoke / fence foundation — OPEN / BLOCKED via Task 050 Finding F-001; correction Task 051 READY;
-- `ARE-GATE-3` remains OPEN until 3C correction is independently accepted;
+- `ARE-GATE-3C` — Effect revoke / fence foundation — OPEN / BLOCKED; Task 051 correction is `IN_REVIEW`, Task 052 is `READY`;
+- `ARE-GATE-3` remains OPEN until the correction is independently accepted;
 - `ARE-GATE-4` — Replacement Fencing — remains NOT OPEN;
 - `ARE-GATE-5` — Module Host trust boundary — future;
 - `ARE-GATE-6` — Accounting/Recovery integration — future.
 
-Revision 52 accepts Task 050's review result, **not** Task 049's production implementation.
+Revision 53 accepts no new production implementation. It records the exact Task 051 correction delivery and opens the mandatory targeted independent Task 052.
 
-Task 050 demonstrates that resolver-side target absence after ACTIVE is not enough to prove continuation has stopped: a still-running executor can mutate after FENCED has already been committed. Therefore any corrected 3C implementation must bind cessation evidence to the continuation that actually stops before mutation, or fail closed to UNKNOWN when cessation cannot be proven.
+Task 052 is the only eligible next task. It must independently reproduce the original Task 050 exploit plus at least one meaningful variant, establish that resolver-side absence can no longer fabricate cessation while a continuation is live, and prove the actual executor cannot mutate after observing any terminal/ambiguous non-mutable state.
 
-Task 051 is the only eligible production task. It must preserve Task 049's valid revoke/idempotency/evidence-separation/non-reactivation work while eliminating the exact false-FENCED race. It must not hold a DB transaction across external I/O, add process-local semantic authority, introduce real concurrency, or cross into Attempt replacement.
+Task 052 must also prove that `EXECUTOR_STOPPED_BEFORE_FIRST_MUTATION` evidence is emitted only by the continuation that actually observes `REVOKE_REQUESTED` and stops before first mutation; it must not generalize this single-threaded proof into future multi-threaded safety.
 
-`NYRON-T-20260826-048-F-002` may be closed only after the corrected Task 051 delivery that preserves its direct regression is accepted/integrated. `NYRON-T-20260826-048-F-001` remains separate non-blocking caller-ergonomics debt.
+`NYRON-T-20260826-050-F-001` remains blocking until Task 052 is accepted. `NYRON-T-20260826-048-F-002` may be closed only after Task 052 confirms its direct regression is preserved and the corrected lineage is accepted/integrated. `NYRON-T-20260826-048-F-001` remains separate non-blocking caller-ergonomics debt.
 
 No ARE-GATE-4 replacement work, real concurrency/background Effect work, conflict-clearance framework, semantic retry policy, Canonical Command, generalized Recovery/Reconciliation, Host trust-boundary or Module filesystem work may open before the blocking race is closed and ARE-GATE-3 is explicitly closed.
 
@@ -194,12 +197,11 @@ The Active Orchestrator does not perform complex production implementation. Comp
 
 ## Next Eligible Tasks
 
-1. Execute Codex correction Task `NYRON-T-20260826-051` against Epoch 1 / Revision 52 and the exact Task 049 content lineage.
-2. After Task 051 remote Result, create an independent Claude targeted re-review that reproduces `NYRON-T-20260826-050-F-001` plus at least one race variant. Do not reuse Task 050 as clearance.
-3. Do not integrate Task 049/051, close ARE-GATE-3C/ARE-GATE-3, or open ARE-GATE-4 until the blocking finding is independently CLOSED.
-4. Do not open real concurrency/background Effect work while `NYRON-T-20260826-043-F-001` remains un-revalidated, and do not expose managed Resource namespaces to less-trusted concurrent mutation while `NYRON-T-20260825-038-F-001` remains `NARROWED / OPEN`.
-5. Preserve `NYRON-T-20260826-048-F-001` as explicit non-blocking caller-ergonomics debt unless separately resolved.
-6. `NYRON-D-006` remains deferred behind P0 System Foundation unless explicitly reprioritized.
+1. Execute independent Claude targeted re-review `NYRON-T-20260826-052` against Task 051 correction content `8c5823aaa01a86c926daa887fe74744ac9264a5f` and Result-record tip `02451483a524d94f62858f6b9f194256c705837e`.
+2. Do not integrate Task 049/051, close `NYRON-T-20260826-050-F-001`, close ARE-GATE-3C/ARE-GATE-3, or open ARE-GATE-4 until Task 052 returns no blocking finding and the Orchestrator accepts the re-review.
+3. Do not open real concurrency/background Effect work while `NYRON-T-20260826-043-F-001` remains un-revalidated, and do not expose managed Resource namespaces to less-trusted concurrent mutation while `NYRON-T-20260825-038-F-001` remains `NARROWED / OPEN`.
+4. Preserve `NYRON-T-20260826-048-F-001` as explicit non-blocking caller-ergonomics debt unless separately resolved.
+5. `NYRON-D-006` remains deferred behind P0 System Foundation unless explicitly reprioritized.
 
 ## State Update Rule
 
