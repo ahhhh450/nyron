@@ -6,11 +6,11 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `2`
-- Coordination Revision: `102`
+- Coordination Revision: `103`
 - Last Accepted Production Commit: `84156a5be8d77dc69fd21b02ffa2cf49f5154a8b`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Current Gate: `ARE-GATE-6 — Accounting / Recovery integration`
-- Current Mode: `FINAL INDEPENDENT INTEGRATED REVIEW — QUOTA INTERRUPTED / TRACK C REVIEW COMPLETE`
+- Current Mode: `FINAL INDEPENDENT INTEGRATED REVIEW — CLAUDE REASSIGNED / TRACK C REVIEW COMPLETE`
 - Orchestration Plan: `coordination/plans/ARE-GATE-6_Parallel_Development_Plan_v0.1.md`
 - Parallelism Policy: `DEFAULT_PARALLEL_UNLESS_WRITE_OR_UNSETTLED_CONTRACT_DEPENDENCY_CONFLICTS`
 
@@ -18,7 +18,7 @@
 
 | Task | Agent | State | Track / Purpose |
 |---|---|---|---|
-| `NYRON-T-20260827-113` | Codex — independent review session | `INTERRUPTED_BY_QUOTA / RESUME SAME SESSION` | Final ARE-GATE-6 exact-SHA integrated review of `e47511ae...` |
+| `NYRON-T-20260827-113` | Claude — fresh independent high-risk reviewer | `IN PROGRESS / R103 REASSIGNMENT` | Final ARE-GATE-6 exact-SHA integrated review of `e47511ae...` |
 
 Task 112 is complete. No new production implementation is authorized while Task 113 remains unclassified.
 
@@ -60,18 +60,16 @@ Task 112 is complete. No new production implementation is authorized while Task 
 ## Task 113 — Final Independent Integrated Review
 
 - Exact review target: `e47511aef987cd9fa5c171e319971f90ab549bd2`.
-- Independence: `REQUIRED / FRESH CODEX REVIEW SESSION`.
-- Current state: `INTERRUPTED_BY_REVIEWER_QUOTA / NO FINAL CLASSIFICATION`.
+- Original route: fresh independent Codex review session.
+- Codex disposition: `INTERRUPTED_BY_REVIEWER_QUOTA / NO FINAL CLASSIFICATION`; subsequent fresh Codex launch also blocked by account quota before producing evidence.
+- Quota checkpoint: `coordination/checkpoints/NYRON-T-20260827-113_Quota_Interruption.md`.
+- Reviewer reassignment checkpoint: `coordination/checkpoints/NYRON-T-20260827-113_Reviewer_Reassignment.md`.
+- Current assigned reviewer: `Claude — fresh independent high-risk reviewer`.
+- Current review independence: `REQUIRED`; separate from Codex Task-108/110 implementation context/worktree.
+- Exact target remains unchanged.
+- Claude must truthfully identify itself as reviewer and independently verify any prior checkpoint evidence it relies on.
 - Remote Result: `NONE YET`.
-- Remote review branch observed: `NONE`.
-- Checkpoint: `coordination/checkpoints/NYRON-T-20260827-113_Quota_Interruption.md`.
-- Operator-reported completed focused validation before interruption:
-  - separate-store E2E `6/6`
-  - BudgetReservation `50/50`
-  - Usage/Ledger + Settlement + Recovery `50/50`
-  - Runtime + Effect + Resource `69 passed, 2 skipped`
-- These partial review facts are checkpoint evidence only and do not constitute PASS.
-- Preferred route: resume the same independent reviewer session after quota reset and continue only unfinished mandatory items.
+- Final classification: `UNSET`.
 - `ARE-GATE-6_ACCEPTANCE_RECOMMENDATION`: `UNSET`.
 
 ## Task 108 Architecture Finding Closure
@@ -97,13 +95,14 @@ Task 112 is complete. No new production implementation is authorized while Task 
 - New findings: `NONE`.
 - State: `REVIEW COMPLETE / READY_FOR_LATER_INTEGRATION: YES / NOT YET MERGED`.
 
-## Revision 102 Decision
+## Revision 103 Decision
 
-- Task 112 Repository Result was verified as `PASS` with review independence satisfied at corrected Track C SHA `9947e352f829f06c5082f9849b8d47a1189091f8` against final compatibility basis `e47511aef987cd9fa5c171e319971f90ab549bd2`.
-- Track C is fully cleared for later test-only integration; it does not block ARE-GATE-6 production acceptance and remains unmerged until the final production review closes.
-- Task 113 did not fail; it was interrupted by reviewer quota before a Result was submitted. The Task remains unclassified and acceptance remains fail-closed.
-- A durable quota-interruption checkpoint was written so the same independent reviewer can resume without repeating completed evidence unnecessarily.
-- `Last Accepted Production Commit` remains unchanged until Task 113 produces a remotely readable PASS/PASS_WITH_FINDINGS result with an affirmative acceptance recommendation and Orchestrator disposition.
+- Task 112 remains `PASS`; Track C remains fully cleared for later test-only integration and does not block production acceptance.
+- Task 113's originally routed Codex reviewer could not complete because of account quota. A second fresh Codex session could not start, confirming current reviewer unavailability rather than a candidate defect.
+- To avoid holding the final high-risk gate on tool quota, Task 113 is formally reassigned to a fresh independent Claude reviewer under `coordination/checkpoints/NYRON-T-20260827-113_Reviewer_Reassignment.md`.
+- Claude is an allowed high-risk independent reviewer under the Review Protocol. Provenance must remain explicit: the final Result is Claude-authored, not Codex-authored.
+- Claude may read the prior quota checkpoint but must independently verify evidence it relies on; production/test content remains read-only and the exact target remains `e47511aef987cd9fa5c171e319971f90ab549bd2`.
+- Until a remotely readable Task-113 Result is verified, the Task remains unclassified and `Last Accepted Production Commit` remains unchanged.
 
 ## Gate-6A Closure
 
