@@ -18,6 +18,11 @@ from .delivery import Delivery, DeliveryError, DeliveryProjector
 from .packet import Packet, PacketError, PacketRepository
 from .executor import AttemptExecutionError, AttemptExecutor
 from .run import Run, RunError, RunRepository
+from .replacement import (
+    ReplacementCleanup,
+    ReplacementCleanupError,
+    ReplacementCleanupResult,
+)
 from .value import DurableValueError, DurableValueRepository
 
 __all__ = [
@@ -43,6 +48,9 @@ __all__ = [
     "RunAttempt",
     "RunError",
     "RunRepository",
+    "ReplacementCleanup",
+    "ReplacementCleanupError",
+    "ReplacementCleanupResult",
     "RuntimeAuthorityResolver",
     "WorkflowExecution",
 ]
