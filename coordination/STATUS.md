@@ -1,118 +1,88 @@
 # Nyron Project Coordination Status
 
-> 本文件是 Nyron 项目级协调状态的唯一事实源，由 Active Orchestrator 裁决。Execution Agent 默认只读。
-> Status compacted at Revision 78. Historical detail remains canonical in prior STATUS revisions and `coordination/tasks/`, `coordination/results/`, `coordination/checkpoints/`.
+> Canonical coordination fact source. Execution Agents must not modify this file unless a Task explicitly grants authority.
 
 ## Coordination
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `2`
-- Coordination Revision: `78`
-- Last Accepted Commit: `d9ec1474df6ad5bf4f7406713918be5f1481983d`
+- Coordination Revision: `79`
+- Last Accepted Production Commit: `d9ec1474df6ad5bf4f7406713918be5f1481983d`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
-- Project Phase: `SYSTEM FOUNDATION IMPLEMENTATION`
-- First Slice Closure: `PASS / CLOSED`
-- Current Frozen Implementation Gate: `ARE-GATE-6 — Accounting / Recovery integration / ARE-GATE-6A BudgetReservation foundation`
-- Parallelism Policy: `DEFAULT_PARALLEL_WHEN_WRITE/CONTRACT_DEPENDENCIES_DO_NOT_CONFLICT`
+- Current Gate: `ARE-GATE-6 — Accounting / Recovery integration`
+- Current Sub-Gate: `ARE-GATE-6A — BudgetReservation foundation / BLOCKING CORRECTIONS`
+- Parallelism Policy: `DEFAULT_PARALLEL_UNLESS_WRITE_OR_UNSETTLED_CONTRACT_DEPENDENCY_CONFLICTS`
 
-## Active Tasks
+## Active / Routed Tasks
 
-| Task | Type | Agent | State | Parallel Role |
-|---|---|---|---|---|
-| `NYRON-T-20260826-076` | Task-074 static-binding replay identity correction | Claude Code | `READY` | production correction |
-| `NYRON-T-20260826-077` | independent adversarial pre-review of exact Task-074 content | Codex | `READY` | find additional HIGH-risk defects while 076 runs |
-| `NYRON-T-20260826-078` | mechanical validation / test-gap audit of exact Task-074 content | DeepSeek | `READY` | low-risk supplementary audit while 076 runs |
+| Task | Agent | State | Purpose |
+|---|---|---|---|
+| `NYRON-T-20260826-078` | DeepSeek | `READY / MAY_RUN` | supplementary mechanical audit of original Task-074 content |
+| `NYRON-T-20260826-080` | Claude Code | `READY` | implement correction for `077-F-003` policy shape/internal consistency |
+| `NYRON-T-20260826-081` | Codex | `READY` | determine whether `077-F-001` is implementation-local or requires Contract/Architecture clarification |
+| `NYRON-T-20260826-082` | Codex | `READY` | determine minimal safe semantics for `077-F-002` policy revision overlap/supersession |
 
-## Revision 78 Decision
+## Completed / Blocked Tasks
 
-- User-directed orchestration correction: independent work MUST be parallelized by default instead of being unnecessarily serialized.
-- Task 076 was not yet remotely started when Revision 78 was opened; no `task/NYRON-T-20260826-076` branch existed. It was therefore safely re-anchored from Revision 77 to Revision 78 without semantic change.
-- Task 076 remains the only production writer and corrects blocking finding `NYRON-T-20260826-074-F-001` on exact Task-074 content `3396c43bc7e67b01d4a7e4e312ddca458b8b89b0`.
-- Task 077 opens a concurrent READ_ONLY Codex adversarial PRE-REVIEW of that exact Task-074 content to search for additional defects beyond known F-001. It is not final acceptance and does not wait for Task 076.
-- Task 078 opens a concurrent READ_ONLY DeepSeek mechanical schema/trigger/test-gap/scope audit. It supplements but never substitutes for HIGH-risk Codex review.
-- After Task 076 returns, final acceptance review MUST target the corrected exact SHA. Results from 077/078 are folded into that review/correction route.
-- No later Gate-6 production slice is opened yet; UsageFact settlement, ReconciliationCase/Recovery, UNKNOWN integration, and Gate-6 closure remain unopened because they depend on the Gate-6A canonical contract being accepted.
+- `NYRON-T-20260826-074` — executor SUCCESS but `NOT_ACCEPTED`; original content `3396c43bc7e67b01d4a7e4e312ddca458b8b89b0`.
+- `NYRON-T-20260826-076` — correction SUCCESS at `6348f5ef2084e750839252a526762b5b4c553ae3`; exact static-binding replay defect technically repaired, but Gate content remains unaccepted because Task 077 found additional blockers.
+- `NYRON-T-20260826-077` — `FINDINGS`; canonical result: `coordination/results/NYRON-T-20260826-077.md`.
+- `NYRON-T-20260826-079` — `BLOCKED / DO_NOT_EXECUTE`; its reviewed SHA is obsolete for final acceptance after Task 077 findings. A new final review Task will be opened only after all blockers are resolved.
 
-## Task-074 Delivery Disposition
+## Open Blocking Findings
 
-- Task `NYRON-T-20260826-074` executor delivery: `SUCCESS / CORRECTION_REQUIRED / NOT_ACCEPTED`.
-- Exact remote content: `3396c43bc7e67b01d4a7e4e312ddca458b8b89b0`.
-- Task-local parent: `9a60d3688dd5c97f1ad2a8ada337d14824f15cfb`; exact Task-local delta is four authorized files and no coordination write.
-- Blocking finding `NYRON-T-20260826-074-F-001`: persisted `graph_revision_ref` and `definition_anchor_ref` are omitted from same-request replay equality.
-- No integration until correction + final independent Codex PASS/acceptable disposition.
+### `NYRON-T-20260826-074-F-001`
 
-## Accepted Production Baseline
+- Type: IMPLEMENTATION
+- State: `TECHNICALLY CORRECTED BY TASK 076 / PENDING FINAL INDEPENDENT CLOSURE`
+- Correction SHA: `6348f5ef2084e750839252a526762b5b4c553ae3`
 
-- First Slice — `PASS / CLOSED`.
-- `ARE-GATE-1 — Capability foundation` — `PASS / CLOSED`.
-- `ARE-GATE-2 — Resource foundation` — `PASS / CLOSED`.
-- `ARE-GATE-3 — EffectOperation foundation` — `PASS / CLOSED`.
-- `ARE-GATE-4 — Replacement Fencing` — `PASS / CLOSED`.
-- `ARE-GATE-5 — Module Host trust boundary` — `PASS / CLOSED`.
-- Gate-5 accepted integration tip: `d9ec1474df6ad5bf4f7406713918be5f1481983d`.
-- `ARE-GATE-6 — Accounting / Recovery integration` — `OPEN / GATE-6A CORRECTION + PARALLEL REVIEW`.
+### `NYRON-T-20260826-077-F-001`
 
-## Frozen Gate-6 Architecture Basis
+- Type: `IMPLEMENTATION / BOUNDARY VALIDATION`
+- Severity: `BLOCKING`
+- Problem: BudgetReservation can trust fabricated/unrelated Activation/Run/static-binding identity.
+- Route: Task 081 determines whether existing accepted Runtime read surfaces suffice for a narrow fail-closed implementation. No new cross-owner contract may be invented silently.
 
-- `design/Nyron_Accounting_Recovery_Frozen_Baseline_v0.1.md`
-- Frozen bundle includes:
-  - `design/Nyron_Accounting_Recovery_Design_Candidate_v0.1.md`
-  - `design/clarifications/NYRON-D-003_D-005_Lead_Integration_Clarification_001.md`
-  - `design/clarifications/NYRON-D-005_D-010_Lead_Integration_Clarification_002.md`
+### `NYRON-T-20260826-077-F-002`
 
-Load-bearing semantics:
+- Type: `IMPLEMENTATION / POLICY SEMANTICS`
+- Severity: `BLOCKING`
+- Problem: equal-effective/overlapping same-scope policy revisions can be resolved by opaque lexicographic policy-ref ordering, allowing a stricter hard limit to be ignored.
+- Route: Task 082 determines whether a safe implementation-local publication/resolution invariant is already authorized by frozen design or whether Design Clarification is required.
 
-- Accounting Owner and Recovery Owner remain separate canonical Owners.
-- Static accounting membership derives from immutable definition containment, not dynamic Packet/PWP/current state.
-- Full governing ancestry HARD-limit reservation is atomic inside one logical Accounting Owner transaction domain.
-- stable reservation request identity must fail closed on changed immutable/static binding.
-- `EffectOperation != BudgetReservation != ResourceLease != CapabilityGrant`.
-- Estimate and actual usage remain distinct.
-- UNKNOWN is not zero, success, or failure.
-- No global cross-owner transaction is assumed.
+### `NYRON-T-20260826-077-F-003`
 
-## Open Findings / Standing Interlocks
+- Type: `IMPLEMENTATION`
+- Severity: `BLOCKING`
+- Problem: mutable policy containers, duplicate/ambiguous identifiers, and orphan rule dimensions are not fully rejected.
+- Route: Task 080 implements the narrow correction immediately.
 
-- `NYRON-T-20260826-074-F-001` — `IMPLEMENTATION / HIGH / BLOCKING / OPEN` — same-request replay omits `graph_revision_ref` and `definition_anchor_ref`; Task 076 active.
-- `NYRON-T-20260825-038-F-001` — `SECURITY / NARROWED / OPEN` — less-trusted filesystem/managed-root namespace mutation activates blocking review.
-- `NYRON-T-20260826-043-F-001` — `ARCHITECTURE / NON_BLOCKING / OPEN` — synchronous SQLite single-writer discipline remains assumed; genuine concurrency/pools/raw writers/process-distributed authority activates mandatory revalidation.
-- `NYRON-T-20260826-048-F-001` — `IMPLEMENTATION / NON_BLOCKING / OPEN` — Effect recovery caller ergonomics debt.
-- `NYRON-T-20260826-056-F-001` — `IMPLEMENTATION / NON_BLOCKING / OPEN` — cross-version schema migration/rebuild debt.
+## Standing Interlocks
 
-## Parallel Scheduling Rule
+- `NYRON-T-20260825-038-F-001` — SECURITY / NARROWED / OPEN; not activated by current Accounting work.
+- `NYRON-T-20260826-043-F-001` — ARCHITECTURE / NON_BLOCKING / OPEN; synchronous SQLite single-writer assumption remains mandatory. Genuine concurrency/pools/raw writers/process-distributed authority trigger revalidation.
+- `NYRON-T-20260826-048-F-001` — IMPLEMENTATION / NON_BLOCKING / OPEN; Effect recovery caller ergonomics, out of current scope.
+- `NYRON-T-20260826-056-F-001` — IMPLEMENTATION / NON_BLOCKING / OPEN; cross-version schema migration/rebuild debt, unaffected.
 
-Default from Revision 78 onward:
+## Gate-6A Decision
 
-1. production tasks that write overlapping files or depend on an unsettled same contract remain serialized;
-2. independent READ_ONLY review, adversarial testing, repository audit, documentation consistency, and next-stage analysis should run concurrently whenever they can be pinned to exact content;
-3. multiple separate Codex/Claude/DeepSeek sessions may run concurrently; Agent name does not imply a single global session lock;
-4. HIGH implementation should receive independent cross-review, but pre-review may begin before implementation correction completes if pinned to the earlier exact SHA;
-5. final acceptance always reviews the exact final corrected delivery SHA, never merely a predecessor pre-review result;
-6. coordination writes remain centralized under the Orchestrator to avoid STATUS/task races.
+- No integration of Task-074/076 content is authorized.
+- No final Gate-6A review may run against `6348f5ef2084e750839252a526762b5b4c553ae3` as an acceptance candidate.
+- Tasks 080, 081 and 082 run in parallel; Task 078 may continue independently.
+- After 081/082 classify their findings, implementation/design follow-up Tasks should be opened immediately and in parallel where write boundaries permit.
+- A fresh independent final review must target the eventual exact corrected content SHA.
 
-## Current Next-Phase Decision
+## Repository-Result Protocol
 
-- `ARE-GATE-1` through `ARE-GATE-5` — PASS / CLOSED;
-- `ARE-GATE-6A` — `OPEN / Tasks 076 + 077 + 078 in parallel`;
-- final Gate-6A acceptance waits only on the corrected exact content + required final review, not on unrelated serial work;
-- later production Gate-6 slices remain unopened until Gate-6A canonical foundation is accepted.
+For new Tasks, formal Agent handoff is file-based:
 
-## Final Result SHA Rule
-
-For formal remote Repository delivery:
-
-`Commit == Remote Commit == final remotely reviewable delivery-content commit`.
-
-Final Results must include exact full 40-character SHA verification and canonical remote reachability evidence. Later Result/Checkpoint record commits may advance branch tips without changing content identity.
+- Task instruction: `coordination/tasks/<TaskID>.md`
+- Agent result: `coordination/results/<TaskID>.md` on the Agent's task/result branch
+- Orchestrator reads Repository result directly; user does not relay long Task Result text.
+- Chat/session is only a trigger/status channel.
+- Agents must not update this STATUS file.
 
 ## State Update Rule
 
-Any key coordination change must:
-
-1. be based on current Coordination Epoch/Revision;
-2. be decided by the Active Orchestrator;
-3. increment Revision on accepted coordination update;
-4. increment Epoch on Orchestrator handoff;
-5. obey CAS before write;
-6. keep implementation commits separate from coordination-state writes unless explicit authorization exists;
-7. preserve blocking Findings until explicit closure conditions are satisfied.
+Any key coordination change must be based on current Epoch/Revision, decided by the Active Orchestrator, increment Revision exactly once, preserve unresolved blocking Findings, and keep production delivery identity separate from later Result/coordination commits.
