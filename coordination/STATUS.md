@@ -6,7 +6,7 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `2`
-- Coordination Revision: `94`
+- Coordination Revision: `95`
 - Last Accepted Production Commit: `84156a5be8d77dc69fd21b02ffa2cf49f5154a8b`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Current Gate: `ARE-GATE-6 — Accounting / Recovery integration`
@@ -18,9 +18,9 @@
 
 | Task | Agent | State | Track / Purpose |
 |---|---|---|---|
-| `NYRON-T-20260826-105` | Codex | `READY / R94` | Settlement — targeted fix for Task-104 blockers F-104-001 / F-104-002 |
+| `NYRON-T-20260826-106` | Codex — existing independent Task-104 reviewer preferred | `READY / R95` | Settlement — targeted exact-SHA re-review of Task-105 fixed candidate `c324f837...` |
 
-Task 104 independent review is complete and failed with two blocking findings. Operator-local DeepSeek Track C continues separately as bounded Integrity / Regression work and must remain write-isolated from Settlement production/fix work.
+Task 105 targeted implementation fix is complete. Operator-local DeepSeek Track C continues separately as bounded Integrity / Regression work and must remain write-isolated from Settlement acceptance/integration.
 
 ## Stable Component Candidates
 
@@ -46,38 +46,40 @@ Task 104 independent review is complete and failed with two blocking findings. O
 ## Settlement Candidate
 
 - Task 102 executor result: `SUCCESS`.
-- Exact basis: `e5acf1abb9a03667315a364ba7e1a8b002ed31cd`.
-- Reviewed production candidate: `a708986c11f1b153ea8002803c00f886b3a5b1c5`.
-- Task 104 independent exact-SHA review: `FAIL`.
-- Review independence: `REQUIRED / SATISFIED`.
-- State: `BLOCKED / TARGETED FIX REQUIRED`.
-- Fix route: `NYRON-T-20260826-105`.
-- Settlement is not a stable component candidate and must not be globally integrated before both blockers are corrected and independently re-reviewed.
+- Exact Track-A basis: `e5acf1abb9a03667315a364ba7e1a8b002ed31cd`.
+- Task 102 production candidate: `a708986c11f1b153ea8002803c00f886b3a5b1c5`.
+- Task 104 independent exact-SHA review: `FAIL` with `F-104-001` and `F-104-002` blocking.
+- Task 105 targeted fix result: `SUCCESS`.
+- Exact fixed production candidate: `c324f837fca86e1b0a3b1cbba1196c68654aa30a`.
+- Task 105 focused validation: `88 passed, 12 subtests passed`.
+- Task 105 complete `tests/kernel`: `301 passed, 2 skipped, 96 subtests passed`.
+- Task 105 new findings / implementation blockers: `NONE / NONE`.
+- State: `PENDING_TARGETED_INDEPENDENT_RE_REVIEW`.
+- Re-review route: `NYRON-T-20260826-106`.
+- Settlement is not yet a stable component candidate and must not be globally integrated before Task 106 disposition.
 
-### Open Settlement Blocking Findings
+### Settlement Blocking Findings Under Re-Review
 
 #### `F-104-001`
 - Type: `CONTRACT`
 - Severity: `BLOCKING`
-- State: `OPEN / ROUTED TO TASK 105`
-- Summary: empty canonical UsageFact/adjustment evidence is incorrectly interpreted as known zero/no-use, releasing reserved exposure without adequate evidence.
-- Required direction: fail closed before any settlement/reservation/exposure mutation when adequate canonical evidence is absent; UNKNOWN/no-history policy remains outside ordinary known-actual Settlement.
+- State: `FIX IMPLEMENTED BY TASK 105 / PENDING TASK 106 RE-REVIEW`
+- Original issue: empty canonical UsageFact evidence was incorrectly interpreted as known zero/no-use.
+- Task-105 candidate behavior: empty evidence returns `SETTLEMENT_EVIDENCE_REQUIRED` before mutation; explicit canonical zero evidence remains supported.
 
 #### `F-104-002`
 - Type: `IMPLEMENTATION`
 - Severity: `BLOCKING`
-- State: `OPEN / ROUTED TO TASK 105`
-- Summary: UsageFact unit is not validated against canonical AccountingDimension unit/measurement semantics, allowing incompatible measurements to be committed under one dimension.
-- Required direction: validate canonical dimension/unit binding before mutation and fail closed on wrong/mixed/unresolved bindings.
+- State: `FIX IMPLEMENTED BY TASK 105 / PENDING TASK 106 RE-REVIEW`
+- Original issue: UsageFact unit was not validated against canonical AccountingDimension semantics.
+- Task-105 candidate behavior: canonical pinned dimension/unit binding is validated; wrong, mixed, unresolved, or conflicting definitions fail closed before mutation.
 
-## Revision 94 Decision
+## Revision 95 Decision
 
-- Task 104 Repository Result was verified as `FAIL` against exact SHA `a708986c11f1b153ea8002803c00f886b3a5b1c5` with required independent-review separation satisfied.
-- Two blocking findings are accepted as valid and reproducible: `F-104-001` missing-evidence fail-open behavior and `F-104-002` canonical unit-binding failure.
-- Correct evidence-backed `<`, `==`, `>` settlement, ancestry conversion, overrun, replay, crash rollback, adjustment replay, and settlement-row immutability behavior remain valid and should not be redesigned.
-- Task 105 is opened as the smallest targeted Settlement-local correction from exact fix basis `a708986c11f1b153ea8002803c00f886b3a5b1c5`.
-- Prefer reusing the original Task-102 Codex implementation session for Task 105 if its context remains reliable; no full historical reread is required.
-- After Task 105 SUCCESS, a targeted independent exact-SHA re-review is mandatory before Settlement can become stable.
+- Task 105 Repository Result was verified as `SUCCESS` from exact fix basis `a708986c11f1b153ea8002803c00f886b3a5b1c5` to exact fixed production SHA `c324f837fca86e1b0a3b1cbba1196c68654aa30a`.
+- The fix remained bounded to `settlement_authority.py` and focused settlement tests; no frozen Contract, Track-A semantics, Recovery, Runtime/Effect/Resource/Capability/Host, schema, or global coordination semantics were changed by the executor.
+- `F-104-001` and `F-104-002` are implementation-closed candidates only; they remain blocking until independently re-reviewed.
+- Task 106 is opened as a targeted exact-SHA re-review. Prefer the existing independent Task-104 Codex reviewer context if reliable; do not reopen a full historical review.
 - Track A and Track B remain stable candidates. `Last Accepted Production Commit` remains unchanged.
 
 ## Gate-6A Closure
