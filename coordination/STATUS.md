@@ -6,7 +6,7 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `2`
-- Coordination Revision: `90`
+- Coordination Revision: `91`
 - Last Accepted Production Commit: `84156a5be8d77dc69fd21b02ffa2cf49f5154a8b`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Current Gate: `ARE-GATE-6 — Accounting / Recovery integration`
@@ -18,13 +18,8 @@
 
 | Task | Agent | State | Track / Purpose |
 |---|---|---|---|
+| `NYRON-T-20260826-101` | Claude Code | `READY / R91` | Track B — targeted exact-SHA Recovery re-review of `365f8c3f...`; operator confirmed Claude may finish this already-routed task before restriction |
 | `NYRON-T-20260826-102` | Codex | `READY / R90` | Settlement — known-actual commit/release/overrun foundation on exact Track-A candidate `e5acf1ab...` |
-
-## Waiting / Review Capacity
-
-| Task | Agent | State | Reason |
-|---|---|---|---|
-| `NYRON-T-20260826-101` | Claude Code | `WAITING / R90` | Track B exact-SHA Recovery re-review; operator reports Claude unavailable until Friday 15:00 local. Do not substitute the Task-100 Codex implementer as independent reviewer. |
 
 ## Stable Component Candidates
 
@@ -41,17 +36,18 @@
 ## Track B — Recovery / ReconciliationCase
 
 - Task 100 fix result: `SUCCESS`; exact correction candidate `365f8c3f270ee0d428b95d73ccbf34bc178b979f`.
-- Task 101 targeted independent re-review is required before Track B can become a stable component candidate.
-- Task 101 is temporarily waiting only because the independent Claude reviewer is unavailable; Recovery semantics and exact review target are unchanged.
+- Task 101 targeted independent re-review is restored to `READY` by explicit operator correction: Claude may complete this already-routed review before becoming unavailable for further Nyron work.
+- Task 103 remains a backup route only and must not execute while Task 101 remains viable.
+- Track B is not yet a stable component candidate until the independent targeted re-review passes the exact candidate SHA.
 
-## Revision 90 Decision
+## Revision 91 Decision
 
-- Claude execution/review capacity is temporarily unavailable per operator report.
-- Task 102 Settlement implementation is reassigned from Claude Code to Codex. Exact basis, scope, risk, frozen semantics, validation, and acceptance boundary are unchanged.
-- Task 101 remains assigned to the independent Claude reviewer and is moved to `WAITING / REVIEWER CAPACITY` rather than weakening review independence.
-- The Codex implementer of Task 100 must not be used as the independent reviewer for Task 101.
-- Revision 90 does not change any Accounting / Recovery frozen Contract, Track-A stable candidate, Track-B exact review target, or Last Accepted Production Commit.
-- Settlement may continue immediately under Codex; Track B stable-candidate classification waits for independent review availability.
+- Operator clarified that Claude is about to become restricted but may complete the already-routed Track-B Task 101.
+- Prior interpretation that Task 101 should be voided or held for reviewer capacity is withdrawn.
+- Task 101 remains assigned to the independent Task-096 Claude reviewer and is executable now.
+- Task 103 is retained only as a backup route if Task 101 cannot complete; it is not an active parallel duplicate review.
+- After Task 101, Claude is not to be routed new Nyron development/review work unless the operator later changes this constraint.
+- Revision 91 does not change any frozen Contract, exact Recovery review target, Track-A stable candidate, Settlement basis, or Last Accepted Production Commit.
 
 ## Gate-6A Closure
 
