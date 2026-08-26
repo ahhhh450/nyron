@@ -384,6 +384,46 @@ class EffectOperationFoundationTest(unittest.TestCase):
         self.assertFalse(Path(admitted.target_ref).exists())
         self.assertEqual(admitted, self.effect.recover(OPERATION))
 
+    def test_active_is_durable_after_admission_and_before_mutation(self):
+        observed = []
+
+        def crash(stage, operation):
+            observed.append(stage)
+            if stage == "AFTER_ACTIVE_COMMIT":
+                current = self.effect.resolve(operation.operation_ref)
+                assert current is not None
+                self.assertEqual("ACTIVE", current.state)
+                self.assertIsNotNone(current.dispatch_admission_ref)
+                self.assertIsNone(current.completion_evidence)
+                self.assertFalse(Path(current.target_ref).exists())
+                raise InjectedCrash
+
+        with self.assertRaises(InjectedCrash):
+            self._effect_authority(crash).execute(self._request())
+        self.assertEqual(
+            ["AFTER_PREPARED_COMMIT", "AFTER_DISPATCH_ADMISSION", "AFTER_ACTIVE_COMMIT"],
+            observed,
+        )
+        active = self.effect.resolve(OPERATION)
+        assert active is not None
+        self.assertEqual("ACTIVE", active.state)
+
+    def test_active_with_absent_evidence_recovers_unknown_and_never_retries(self):
+        def crash(stage, _operation):
+            if stage == "AFTER_ACTIVE_COMMIT":
+                raise InjectedCrash
+
+        with self.assertRaises(InjectedCrash):
+            self._effect_authority(crash).execute(self._request())
+        target = self._target()
+        self.assertFalse(target.exists())
+        recovered = self._effect_authority().recover(OPERATION)
+        self.assertEqual("UNKNOWN", recovered.state)
+        self.assertIsNone(recovered.completion_evidence)
+        with self.assertRaises(EffectError):
+            self.effect.execute(self._request())
+        self.assertFalse(target.exists())
+
     def test_admission_wins_then_later_revoke_does_not_erase_inflight_work(self):
         def revoke_after_admission(stage, _operation):
             if stage == "AFTER_DISPATCH_ADMISSION":
@@ -429,7 +469,7 @@ class EffectOperationFoundationTest(unittest.TestCase):
             self._effect_authority(crash).execute(self._request())
         before = self.effect.resolve(OPERATION)
         assert before is not None
-        self.assertEqual("PREPARED", before.state)
+        self.assertEqual("ACTIVE", before.state)
         self.assertIsNotNone(before.dispatch_admission_ref)
         self.assertEqual(before.payload, Path(before.target_ref).read_text())
         recovered = self.effect.recover(OPERATION)
@@ -438,7 +478,7 @@ class EffectOperationFoundationTest(unittest.TestCase):
 
     def test_mismatched_or_partial_external_evidence_becomes_unknown(self):
         def crash(stage, _operation):
-            if stage == "AFTER_DISPATCH_ADMISSION":
+            if stage == "AFTER_ACTIVE_COMMIT":
                 raise InjectedCrash
 
         with self.assertRaises(InjectedCrash):
@@ -451,6 +491,21 @@ class EffectOperationFoundationTest(unittest.TestCase):
         with self.assertRaises(EffectError):
             self.effect.execute(self._request())
         self.assertEqual("partial or foreign", target.read_text())
+
+    def test_active_with_substituted_target_object_becomes_unknown(self):
+        def crash(stage, _operation):
+            if stage == "AFTER_ACTIVE_COMMIT":
+                raise InjectedCrash
+
+        with self.assertRaises(InjectedCrash):
+            self._effect_authority(crash).execute(self._request())
+        target = self._target()
+        target.mkdir()
+        (target / "foreign.txt").write_text("foreign")
+        recovered = self._effect_authority().recover(OPERATION)
+        self.assertEqual("UNKNOWN", recovered.state)
+        self.assertIsNone(recovered.completion_evidence)
+        self.assertEqual("foreign", (target / "foreign.txt").read_text())
 
     def test_unadmitted_preexisting_target_is_unknown_not_admitted_or_completed(self):
         prepared = self.effect.prepare(self._request())
@@ -563,6 +618,10 @@ class EffectOperationFoundationTest(unittest.TestCase):
         self.assertFalse(hasattr(self.effect, "module"))
         self.assertFalse(hasattr(self.effect, "managed_root"))
         self.assertNotIn("ResourceManager", inspect.signature(EffectRequest).parameters)
+        for forbidden in ("threading", "asyncio", "multiprocessing", "ThreadPool"):
+            self.assertNotIn(forbidden, source)
+        transaction_source = inspect.getsource(SQLiteStore.transaction)
+        self.assertIn('execute("BEGIN IMMEDIATE")', transaction_source)
 
 
 if __name__ == "__main__":

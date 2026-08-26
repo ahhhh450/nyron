@@ -88,6 +88,8 @@ class EffectAuthority:
         operation = self.prepare(request)
         if operation.state == "COMPLETED":
             return operation
+        if operation.state == "ACTIVE":
+            operation = self.recover(request.operation_ref)
         if operation.state != "PREPARED":
             raise EffectError("EFFECT_OPERATION_NOT_DISPATCHABLE")
 
@@ -100,7 +102,9 @@ class EffectAuthority:
         if recovered.dispatch_admission_ref is None:
             recovered = self._admit_dispatch(recovered)
         self._crash_hook("AFTER_DISPATCH_ADMISSION", recovered)
-        return self._mutate_and_complete(recovered)
+        active = self._activate(recovered)
+        self._crash_hook("AFTER_ACTIVE_COMMIT", active)
+        return self._mutate_and_complete(active)
 
     def prepare(self, request: EffectRequest) -> EffectOperation:
         """Commit exact PREPARED intent without consuming authority."""
@@ -163,10 +167,15 @@ class EffectAuthority:
         """Classify only from exact owner-local and external evidence."""
 
         operation = self._require_operation(operation_ref)
-        if operation.state != "PREPARED":
+        if operation.state not in {"PREPARED", "ACTIVE"}:
             return operation
         evidence = self._target_evidence(operation)
-        if operation.dispatch_admission_ref is None:
+        if operation.state == "ACTIVE":
+            if evidence == "EXACT":
+                self._commit_completed(operation)
+            else:
+                self._mark_unknown(operation_ref)
+        elif operation.dispatch_admission_ref is None:
             if evidence != "ABSENT":
                 self._mark_unknown(operation_ref)
         elif evidence == "EXACT":
@@ -246,6 +255,29 @@ class EffectAuthority:
             raise EffectError("EFFECT_DISPATCH_AUTHORITY_REJECTED")
         return self._require_operation(operation.operation_ref)
 
+    def _activate(self, operation: EffectOperation) -> EffectOperation:
+        with self._store.transaction() as connection:
+            row = connection.execute(
+                "SELECT state, dispatch_admission_ref FROM effect_operations WHERE operation_ref = ?",
+                (operation.operation_ref,),
+            ).fetchone()
+            if row is None:
+                raise EffectError("UNRESOLVED_EFFECT_OPERATION")
+            if row["state"] == "ACTIVE":
+                return self._operation_from_row(
+                    connection.execute(
+                        "SELECT * FROM effect_operations WHERE operation_ref = ?",
+                        (operation.operation_ref,),
+                    ).fetchone()
+                )
+            if row["state"] != "PREPARED" or row["dispatch_admission_ref"] is None:
+                raise EffectError("EFFECT_ACTIVATION_NOT_ALLOWED")
+            connection.execute(
+                "UPDATE effect_operations SET state = 'ACTIVE' WHERE operation_ref = ?",
+                (operation.operation_ref,),
+            )
+        return self._require_operation(operation.operation_ref)
+
     def _mutate_and_complete(self, operation: EffectOperation) -> EffectOperation:
         evidence = self._target_evidence(operation)
         if evidence == "ABSENT":
@@ -282,7 +314,7 @@ class EffectAuthority:
                 raise EffectError("UNRESOLVED_EFFECT_OPERATION")
             if row["state"] == "COMPLETED":
                 return
-            if row["state"] != "PREPARED" or row["dispatch_admission_ref"] is None:
+            if row["state"] != "ACTIVE" or row["dispatch_admission_ref"] is None:
                 raise EffectError("EFFECT_COMPLETION_NOT_ALLOWED")
             connection.execute(
                 """
@@ -301,7 +333,7 @@ class EffectAuthority:
             ).fetchone()
             if row is None:
                 raise EffectError("UNRESOLVED_EFFECT_OPERATION")
-            if row["state"] == "PREPARED":
+            if row["state"] in {"PREPARED", "ACTIVE"}:
                 connection.execute(
                     "UPDATE effect_operations SET state = 'UNKNOWN' WHERE operation_ref = ?",
                     (operation_ref,),

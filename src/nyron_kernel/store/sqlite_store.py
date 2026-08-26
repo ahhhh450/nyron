@@ -495,6 +495,10 @@ class SQLiteStore:
                      AND dispatch_admitted_at IS NOT NULL)
                 ),
                 CHECK (
+                    state != 'ACTIVE'
+                    OR dispatch_admission_ref IS NOT NULL
+                ),
+                CHECK (
                     (state = 'COMPLETED'
                      AND dispatch_admission_ref IS NOT NULL
                      AND completion_evidence_json IS NOT NULL)
@@ -560,7 +564,7 @@ class SQLiteStore:
             WHEN NOT (
                 NEW.state = OLD.state
                 OR (OLD.state = 'PREPARED'
-                    AND NEW.state IN ('COMPLETED', 'FENCED', 'UNKNOWN'))
+                    AND NEW.state IN ('ACTIVE', 'FENCED', 'UNKNOWN'))
                 OR (OLD.state = 'ACTIVE'
                     AND NEW.state IN (
                         'COMPLETED', 'REVOKE_REQUESTED', 'UNKNOWN'
@@ -570,6 +574,14 @@ class SQLiteStore:
             )
             BEGIN
                 SELECT RAISE(ABORT, 'invalid effect operation state transition');
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS effect_active_requires_admission
+            BEFORE UPDATE OF state ON effect_operations
+            WHEN NEW.state = 'ACTIVE'
+             AND NEW.dispatch_admission_ref IS NULL
+            BEGIN
+                SELECT RAISE(ABORT, 'active effect requires dispatch admission');
             END;
             """
         )
