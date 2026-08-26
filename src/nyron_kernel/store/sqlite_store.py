@@ -750,6 +750,71 @@ class SQLiteStore:
             """
         )
 
+    def create_usage_ledger_schema(self) -> None:
+        """Install the Usage/Ledger foundation tables: immutable UsageFact
+        and append-only UsageAdjustmentFact (ARE-GATE-6 Track A)."""
+
+        self.connection.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS usage_facts (
+                usage_fact_ref TEXT PRIMARY KEY,
+                accounting_scope_ref TEXT NOT NULL,
+                reservation_ref TEXT,
+                operation_ref TEXT,
+                resource_ref TEXT,
+                run_ref TEXT,
+                source_authority_ref TEXT NOT NULL,
+                source_fact_id TEXT NOT NULL,
+                dimension_ref TEXT NOT NULL,
+                quantity INTEGER NOT NULL CHECK (quantity >= 0),
+                unit TEXT NOT NULL,
+                fact_kind TEXT NOT NULL,
+                usage_period TEXT,
+                external_evidence_ref TEXT NOT NULL,
+                observed_at INTEGER,
+                ingested_at INTEGER NOT NULL,
+                caused_by_ref TEXT NOT NULL,
+                UNIQUE (
+                    source_authority_ref, source_fact_id, fact_kind, dimension_ref
+                ),
+                FOREIGN KEY (accounting_scope_ref)
+                    REFERENCES accounting_scopes(accounting_scope_ref)
+            );
+
+            CREATE TRIGGER IF NOT EXISTS usage_fact_immutable
+            BEFORE UPDATE ON usage_facts
+            BEGIN
+                SELECT RAISE(ABORT, 'usage fact is immutable');
+            END;
+
+            CREATE TABLE IF NOT EXISTS usage_adjustment_facts (
+                adjustment_fact_ref TEXT PRIMARY KEY,
+                adjusts_usage_fact_ref TEXT NOT NULL,
+                source_authority_ref TEXT NOT NULL,
+                source_fact_id TEXT NOT NULL,
+                fact_kind TEXT NOT NULL,
+                dimension_ref TEXT NOT NULL,
+                delta_quantity INTEGER NOT NULL CHECK (delta_quantity != 0),
+                unit TEXT NOT NULL,
+                reason TEXT NOT NULL,
+                evidence_ref TEXT NOT NULL,
+                ingested_at INTEGER NOT NULL,
+                caused_by_ref TEXT NOT NULL,
+                UNIQUE (
+                    source_authority_ref, source_fact_id, fact_kind, dimension_ref
+                ),
+                FOREIGN KEY (adjusts_usage_fact_ref)
+                    REFERENCES usage_facts(usage_fact_ref)
+            );
+
+            CREATE TRIGGER IF NOT EXISTS usage_adjustment_fact_immutable
+            BEFORE UPDATE ON usage_adjustment_facts
+            BEGIN
+                SELECT RAISE(ABORT, 'usage adjustment fact is immutable');
+            END;
+            """
+        )
+
     @contextmanager
     def transaction(self) -> Iterator[sqlite3.Connection]:
         """Commit all writes together, or roll the entire transaction back."""
