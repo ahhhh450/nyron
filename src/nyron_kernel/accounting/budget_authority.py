@@ -208,12 +208,12 @@ class BudgetAuthority:
         """Prove Runtime/static binding, then atomically evaluate and commit RESERVED/DENIED."""
 
         self._validate_request(request)
-        activation = self._prove_runtime_binding(request)
-
         existing = self._load_reservation_by_request_ref(request.request_ref)
         if existing is not None:
             self._require_identical_replay(existing, request)
             return existing
+
+        activation = self._prove_runtime_binding(request)
 
         reservation_ref = self._reservation_ref(request.request_ref)
         now = self._now()

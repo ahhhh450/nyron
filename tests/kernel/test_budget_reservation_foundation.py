@@ -498,12 +498,10 @@ class BudgetReservationFoundationTest(unittest.TestCase):
     # graph_revision_ref/definition_anchor_ref no longer matches the request's
     # own original values must still fail closed and leave prior state
     # untouched. Since Task-083 now proves graph_revision_ref/
-    # definition_anchor_ref against the real Activation on every call
-    # (including replay) *before* same-request_ref identity comparison ever
-    # runs, changing either field trips RESERVATION_STATIC_BINDING_MISMATCH
-    # rather than RESERVATION_REQUEST_CONFLICT -- a strictly earlier and
-    # stronger fail-closed gate than the original identity-conflict check,
-    # not a regression of it.
+    # definition_anchor_ref against the real Activation for first decisions.
+    # Amendment 001 makes committed outcomes owner-locally replayable, so a
+    # changed replay payload is rejected by the stable request identity gate
+    # without depending on fresh Runtime access.
     # ------------------------------------------------------------------
 
     def test_graph_revision_only_replay_conflict_after_reserved(self) -> None:
@@ -522,7 +520,7 @@ class BudgetReservationFoundationTest(unittest.TestCase):
 
         with self.assertRaises(BudgetAuthorityError) as raised:
             self.authority.reserve(variant)
-        self.assertEqual("RESERVATION_STATIC_BINDING_MISMATCH", raised.exception.code)
+        self.assertEqual("RESERVATION_REQUEST_CONFLICT", raised.exception.code)
 
         self.assertEqual(original, self.authority.resolve(original.reservation_ref))
         self.assertEqual(
@@ -547,7 +545,7 @@ class BudgetReservationFoundationTest(unittest.TestCase):
 
         with self.assertRaises(BudgetAuthorityError) as raised:
             self.authority.reserve(variant)
-        self.assertEqual("RESERVATION_STATIC_BINDING_MISMATCH", raised.exception.code)
+        self.assertEqual("RESERVATION_REQUEST_CONFLICT", raised.exception.code)
 
         self.assertEqual(original, self.authority.resolve(original.reservation_ref))
         self.assertEqual(
@@ -570,7 +568,7 @@ class BudgetReservationFoundationTest(unittest.TestCase):
 
         with self.assertRaises(BudgetAuthorityError) as raised:
             self.authority.reserve(variant)
-        self.assertEqual("RESERVATION_STATIC_BINDING_MISMATCH", raised.exception.code)
+        self.assertEqual("RESERVATION_REQUEST_CONFLICT", raised.exception.code)
 
         self.assertEqual(original, self.authority.resolve(original.reservation_ref))
         self.assertEqual(
@@ -595,7 +593,7 @@ class BudgetReservationFoundationTest(unittest.TestCase):
 
         with self.assertRaises(BudgetAuthorityError) as raised:
             self.authority.reserve(variant)
-        self.assertEqual("RESERVATION_STATIC_BINDING_MISMATCH", raised.exception.code)
+        self.assertEqual("RESERVATION_REQUEST_CONFLICT", raised.exception.code)
 
         self.assertEqual(original, self.authority.resolve(original.reservation_ref))
         self.assertEqual(
@@ -994,7 +992,7 @@ class BudgetReservationFoundationTest(unittest.TestCase):
         self.assertEqual("RESERVED", reservation.state)
         self.assertEqual((7, 0), self.authority.exposure(CHILD_SCOPE, "tokens"))
 
-    def test_existing_replay_cannot_bypass_runtime_binding_after_attempt_advances(
+    def test_existing_exact_replay_returns_accounting_outcome_after_attempt_advances(
         self,
     ) -> None:
         self._publish_policy(ROOT_SCOPE, (self._rule("rule:1", "tokens", 1000),))
@@ -1002,17 +1000,14 @@ class BudgetReservationFoundationTest(unittest.TestCase):
         original = self.authority.reserve(request)
         self.assertEqual("RESERVED", original.state)
 
-        # The Run's current Attempt advances; the stored request's attempt_seq
-        # (1) is no longer current. A literal replay of the same request must
-        # NOT just find the matching stored row and hand it back -- it must
-        # re-prove Runtime binding against present truth and fail closed.
+        # Amendment 001 makes a committed Accounting outcome independently
+        # replayable. Current Runtime proof remains mandatory for a first
+        # decision, but an exact replay returns owner-local canonical truth.
         RunRepository(self.store).replace_attempt(
             run_ref=RUN, expected_attempt_seq=1, expected_fencing_generation=1
         )
 
-        with self.assertRaises(BudgetAuthorityError) as raised:
-            self.authority.reserve(request)
-        self.assertEqual("RESERVATION_RUNTIME_AUTHORITY_MISMATCH", raised.exception.code)
+        self.assertEqual(original, self.authority.reserve(request))
 
         # The original canonical reservation and its exposure are untouched.
         self.assertEqual(original, self.authority.resolve(original.reservation_ref))

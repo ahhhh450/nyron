@@ -633,7 +633,6 @@ class SQLiteStore:
     def create_budget_schema(self) -> None:
         """Install ARE-GATE-6A BudgetPolicyRevision / BudgetReservation tables."""
 
-        self.create_run_attempt_schema()
         self.connection.executescript(
             """
             CREATE TABLE IF NOT EXISTS budget_policy_revisions (
@@ -692,9 +691,7 @@ class SQLiteStore:
                     (state != 'DENIED' AND deny_reason_code IS NULL)
                 ),
                 FOREIGN KEY (accounting_scope_ref)
-                    REFERENCES accounting_scopes(accounting_scope_ref),
-                FOREIGN KEY (run_ref, attempt_seq)
-                    REFERENCES run_attempts(run_ref, attempt_seq)
+                    REFERENCES accounting_scopes(accounting_scope_ref)
             );
 
             CREATE TRIGGER IF NOT EXISTS budget_reservation_identity_immutable
