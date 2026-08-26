@@ -230,6 +230,178 @@ class ReplacementCleanupTest(unittest.TestCase):
         assert r2 is not None
         return r2
 
+    def _issue_r2_authority(self):
+        r2 = self._replace()
+        self._issue_grant("grant:r2", r2)
+        self._issue_lease("lease:r2", r2)
+        return r2
+
+    def _r2_request(self, operation_ref: str, r2) -> EffectRequest:
+        return self._request(
+            operation_ref, r2, grant_ref="grant:r2", lease_ref="lease:r2"
+        )
+
+    def _assert_stale_r1_conflict_blocks_r2(self, state: str) -> None:
+        operation_ref = f"operation:r1-conflict:{state.lower()}"
+        if state == "PREPARED":
+            conflicting = self.effect.prepare(self._request(operation_ref))
+        else:
+            conflicting = self._leave_active(operation_ref)
+            if state == "REVOKE_REQUESTED":
+                conflicting = self.effect.request_revoke(operation_ref)
+            elif state == "UNKNOWN":
+                conflicting = self.effect.recover(operation_ref)
+        self.assertEqual(state, conflicting.state)
+        before = self._row("effect_operations", "operation_ref", operation_ref)
+        r2 = self._issue_r2_authority()
+
+        with self.assertRaises(EffectError) as rejected:
+            self.effect.execute(self._r2_request("operation:r2-conflict", r2))
+
+        self.assertEqual(
+            "EFFECT_DISPATCH_AUTHORITY_REJECTED", rejected.exception.code
+        )
+        self.assertEqual(
+            before, self._row("effect_operations", "operation_ref", operation_ref)
+        )
+        rejected_operation = self.effect.resolve("operation:r2-conflict")
+        assert rejected_operation is not None
+        self.assertFalse(Path(rejected_operation.target_ref).exists())
+
+    def test_stale_r1_prepared_blocks_r2_on_same_resource(self):
+        self._assert_stale_r1_conflict_blocks_r2("PREPARED")
+
+    def test_stale_r1_active_blocks_r2_on_same_resource(self):
+        self._assert_stale_r1_conflict_blocks_r2("ACTIVE")
+
+    def test_stale_r1_revoke_requested_blocks_r2_on_same_resource(self):
+        self._assert_stale_r1_conflict_blocks_r2("REVOKE_REQUESTED")
+
+    def test_stale_r1_unknown_blocks_r2_on_same_resource(self):
+        self._assert_stale_r1_conflict_blocks_r2("UNKNOWN")
+
+    def test_same_attempt_other_operation_blocks_but_current_excludes_itself(self):
+        first = self.effect.prepare(self._request("operation:same-attempt:first"))
+        self.assertEqual("PREPARED", first.state)
+
+        with self.assertRaises(EffectError) as rejected:
+            self.effect.execute(self._request("operation:same-attempt:second"))
+
+        self.assertEqual(
+            "EFFECT_DISPATCH_AUTHORITY_REJECTED", rejected.exception.code
+        )
+        self.effect.request_revoke(first.operation_ref)
+        completed = self.effect.execute(self._request("operation:self-exclusion"))
+        self.assertEqual("COMPLETED", completed.state)
+
+    def test_cross_run_operation_on_same_resource_blocks_admission(self):
+        other_activation = "activation:replacement-cleanup/other"
+        other_run = "run:replacement-cleanup/other"
+        with self.store.transaction() as connection:
+            connection.execute(
+                """
+                INSERT INTO activations VALUES (
+                    ?, ?, ?, ?, 'delivery:cleanup-other', '[]',
+                    'accounting:cleanup', 'event:activation:cleanup/other'
+                )
+                """,
+                (other_activation, EXECUTION, GRAPH, MODULE),
+            )
+            connection.execute(
+                "INSERT INTO activation_created_events VALUES ('event:activation:cleanup/other', ?, 'ActivationCreated')",
+                (other_activation,),
+            )
+        RunRepository(self.store).create_initial(
+            run_ref=other_run,
+            activation_ref=other_activation,
+            execution_ref=EXECUTION,
+        )
+        other = self.runtime.resolve_current(other_run)
+        assert other is not None
+        self._issue_grant("grant:other-run", other)
+        self._issue_lease("lease:other-run", other)
+        conflict = self.effect.prepare(
+            self._request(
+                "operation:other-run",
+                other,
+                grant_ref="grant:other-run",
+                lease_ref="lease:other-run",
+            )
+        )
+        before = self._row("effect_operations", "operation_ref", conflict.operation_ref)
+
+        with self.assertRaises(EffectError) as rejected:
+            self.effect.execute(self._request("operation:cross-run-current"))
+
+        self.assertEqual(
+            "EFFECT_DISPATCH_AUTHORITY_REJECTED", rejected.exception.code
+        )
+        self.assertEqual(
+            before,
+            self._row("effect_operations", "operation_ref", conflict.operation_ref),
+        )
+
+    def test_fenced_and_completed_history_clear_only_active_conflict_barrier(self):
+        fenced = self.effect.prepare(self._request("operation:history:fenced"))
+        fenced = self.effect.request_revoke(fenced.operation_ref)
+        self.assertEqual("FENCED", fenced.state)
+        completed = self.effect.execute(self._request("operation:history:completed"))
+        self.assertEqual("COMPLETED", completed.state)
+
+        admitted = self.effect.execute(self._request("operation:history:new"))
+
+        self.assertEqual("COMPLETED", admitted.state)
+        source = inspect.getsource(self.effect._admit_dispatch)
+        query = source[source.index("SELECT 1 FROM effect_operations") :]
+        query = query[: query.index('"""')]
+        self.assertNotIn("fence_evidence", query)
+        self.assertNotIn("completion_evidence", query)
+        self.assertEqual(
+            3,
+            self.store.connection.execute(
+                "SELECT COUNT(*) FROM effect_operations"
+            ).fetchone()[0],
+        )
+
+    def test_gate4b_fenced_cleanup_clears_barrier_but_unknown_does_not(self):
+        prepared = self.effect.prepare(self._request("operation:cleanup:fenced"))
+        r2 = self._issue_r2_authority()
+        with self.assertRaises(EffectError):
+            self.effect.execute(
+                self._r2_request("operation:r2:blocked-before-cleanup", r2)
+            )
+        self.cleanup.cleanup(self.r1)
+        self.assertEqual("FENCED", self.effect.resolve(prepared.operation_ref).state)
+        admitted = self.effect.execute(
+            self._r2_request("operation:r2:after-fenced-cleanup", r2)
+        )
+        self.assertEqual("COMPLETED", admitted.state)
+
+        # A separate exact R1 ACTIVE cleanup resolves to UNKNOWN and remains blocking.
+        self.tearDown()
+        self.setUp()
+        active = self._leave_active("operation:cleanup:unknown")
+        r2 = self._issue_r2_authority()
+        self.cleanup.cleanup(self.r1)
+        self.assertEqual("UNKNOWN", self.effect.resolve(active.operation_ref).state)
+        with self.assertRaises(EffectError) as rejected:
+            self.effect.execute(self._r2_request("operation:r2:after-unknown", r2))
+        self.assertEqual(
+            "EFFECT_DISPATCH_AUTHORITY_REJECTED", rejected.exception.code
+        )
+
+    def test_gate4b_exact_completion_cleanup_clears_barrier(self):
+        active = self._leave_active("operation:cleanup:completed")
+        Path(active.target_ref).write_text(active.payload, encoding="utf-8")
+        r2 = self._issue_r2_authority()
+        self.cleanup.cleanup(self.r1)
+        self.assertEqual("COMPLETED", self.effect.resolve(active.operation_ref).state)
+
+        admitted = self.effect.execute(
+            self._r2_request("operation:r2:after-completed-cleanup", r2)
+        )
+        self.assertEqual("COMPLETED", admitted.state)
+
     def test_exact_attempt_scoping_leaves_same_run_r2_rows_unchanged(self):
         self.effect.prepare(self._request("operation:r1"))
         r2 = self._replace()
@@ -308,9 +480,23 @@ class ReplacementCleanupTest(unittest.TestCase):
         self.assertNotEqual("FENCED", self.effect.resolve(operation.operation_ref).state)
 
     def test_active_and_revoke_requested_with_exact_completion_become_completed(self):
-        active = self._leave_active("operation:active-exact")
+        active = self.effect.prepare(self._request("operation:active-exact"))
+        requested = self.effect.prepare(self._request("operation:requested-exact"))
+        with self.store.transaction() as connection:
+            for operation in (active, requested):
+                connection.execute(
+                    """
+                    UPDATE effect_operations
+                    SET dispatch_admission_ref = ?, dispatch_admitted_at = ?
+                    WHERE operation_ref = ?
+                    """,
+                    (f"admission:{operation.operation_ref}", self.now, operation.operation_ref),
+                )
+                connection.execute(
+                    "UPDATE effect_operations SET state = 'ACTIVE' WHERE operation_ref = ?",
+                    (operation.operation_ref,),
+                )
         Path(active.target_ref).write_text(active.payload, encoding="utf-8")
-        requested = self._leave_active("operation:requested-exact")
         Path(requested.target_ref).write_text(requested.payload, encoding="utf-8")
         self.effect.request_revoke(requested.operation_ref)
         self._replace()

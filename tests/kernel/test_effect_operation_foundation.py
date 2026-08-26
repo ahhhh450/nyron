@@ -641,6 +641,9 @@ class EffectOperationFoundationTest(unittest.TestCase):
 
     def test_revoke_resolution_mismatch_or_substitution_is_unknown(self):
         for index, substitute in enumerate((False, True)):
+            if index:
+                self.tearDown()
+                self.setUp()
             operation_ref = f"effect-operation:revoke-ambiguous/{index}"
             self._leave_active(operation_ref)
             self.effect.request_revoke(operation_ref)
