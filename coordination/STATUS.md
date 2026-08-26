@@ -6,11 +6,11 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `2`
-- Coordination Revision: `98`
+- Coordination Revision: `99`
 - Last Accepted Production Commit: `84156a5be8d77dc69fd21b02ffa2cf49f5154a8b`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Current Gate: `ARE-GATE-6 — Accounting / Recovery integration`
-- Current Mode: `ARCHITECTURE ESCALATION + PARALLEL TRACK-C PARENT REVIEW`
+- Current Mode: `CROSS-OWNER IMPLEMENTATION RESUMED + PARALLEL TRACK-C PARENT REVIEW`
 - Orchestration Plan: `coordination/plans/ARE-GATE-6_Parallel_Development_Plan_v0.1.md`
 - Parallelism Policy: `DEFAULT_PARALLEL_UNLESS_WRITE_OR_UNSETTLED_CONTRACT_DEPENDENCY_CONFLICTS`
 
@@ -18,9 +18,10 @@
 
 | Task | Agent | State | Track / Purpose |
 |---|---|---|---|
-| `NYRON-T-20260827-109` | Codex — fresh independent review session | `READY / R98` | Track C Parent Review — exact test-only delivery review + compatibility validation against integrated checkpoint `9f217faf...` |
+| `NYRON-T-20260827-109` | Codex — fresh independent review session | `READY / R98; UNAFFECTED BY R99` | Track C Parent Review — exact test-only delivery review + compatibility validation against integrated checkpoint `9f217faf...` |
+| `NYRON-T-20260827-110` | Codex — existing Task-108 implementation session preferred | `READY / R99` | Global Integration — implement Runtime/Accounting Amendment 001 and resume bounded cross-owner crash/replay E2E |
 
-Global cross-owner implementation is paused after Task 108 correctly returned `ESCALATION_REQUIRED`. No further production wiring Task may be routed until the Lead Design Authority resolves the Runtime ↔ Accounting persistence/identity boundary finding.
+Task 109 is write-disjoint test-only review work and may proceed in parallel with Task 110.
 
 ## Stable Component Candidates
 
@@ -57,18 +58,20 @@ Global cross-owner implementation is paused after Task 108 correctly returned `E
 - Integration conflicts: `NONE`.
 - Reviewed component content dropped: `NONE`.
 - Complete `tests/kernel`: `313 passed, 2 skipped, 101 subtests passed`.
-- State: `ASSEMBLED / CROSS-OWNER IMPLEMENTATION BLOCKED BY ARCHITECTURE FINDING`.
+- State: `ASSEMBLED / CROSS-OWNER IMPLEMENTATION RESUMED UNDER FROZEN AMENDMENT`.
 
-## Task 108 — Cross-Owner Wiring / E2E
+## Task 108 Architecture Finding Closure
 
-- Result: `ESCALATION_REQUIRED`.
-- Exact execution basis: `9f217faf56149862455aa1be74659c79c884c373`.
-- Production/test delivery created: `NONE`.
-- Blocking finding: `CROSS_OWNER_RUNTIME_ACCOUNTING_STORAGE_BOUNDARY_UNFROZEN`.
-- Finding summary: Accounting validates Runtime identity through injected Runtime repositories, but `budget_reservations` also has a direct SQLite FK to Runtime-owned `run_attempts`. With physically separate owner-local stores, canonical Runtime proof succeeds but Accounting commit fails because the Runtime row is absent from the Accounting database.
-- Frozen design explicitly does not require one physical database and forbids silently inventing a new cross-owner persistence/evidence contract.
-- Required next authority: `Lead Design Authority`.
-- Until resolved: no implementation agent may choose shared physical DB, Runtime projection/evidence replication, or another storage boundary on its own.
+- Task 108 result: `ESCALATION_REQUIRED` from exact basis `9f217faf56149862455aa1be74659c79c884c373`.
+- Production/test delivery created by Task 108: `NONE`.
+- Finding: `CROSS_OWNER_RUNTIME_ACCOUNTING_STORAGE_BOUNDARY_UNFROZEN`.
+- Lead decision: `VALID BLOCKER / CLOSED BY ARCHITECTURE AMENDMENT`.
+- Frozen Amendment: `design/amendments/Runtime_Accounting_Amendment_001_Cross_Owner_Identity_Persistence_Boundary.md`.
+- Amendment authority commit: `5c227561fb762861cf85df8db6a4c1f9c4f8a143`.
+- Required implementation direction: continue supporting physically separate owner-local SQLite stores; keep authoritative Runtime identity validation through Runtime repository/resolver; remove Accounting's required local FK from `budget_reservations` to Runtime-owned `run_attempts`; do not create/copy Runtime canonical tables in Accounting merely to satisfy that FK.
+- Shared physical SQLite remains allowed but is not an architecture requirement or authority mechanism.
+- Owner-local Runtime evidence/projection remains optional derivative evidence and is not required for the current fix.
+- Architecture finding state: `CLOSED AT ARCHITECTURE LEVEL / IMPLEMENTATION PENDING TASK 110`.
 
 ## Operator-local Track C — Integrity / Regression Hardening
 
@@ -79,15 +82,16 @@ Global cross-owner implementation is paused after Task 108 correctly returned `E
 - Branch relationship: exactly `5` commits ahead, `0` behind.
 - Changed surface: exactly five new `tests/kernel/test_track_c_*.py` files; production `src/` changes `NONE`.
 - Parent review route: `NYRON-T-20260827-109`.
-- Task 109 must also overlay these tests onto exact integrated checkpoint `9f217faf...` and run normal kernel validation to clear/confirm DeepSeek sandbox environment debt.
 
-## Revision 98 Decision
+## Revision 99 Decision
 
-- Task 108 Repository Result was verified as `ESCALATION_REQUIRED`; the finding is accepted as a real architecture/contract boundary and implementation remains fail-closed.
-- The Accounting / Recovery frozen candidate states that one physical database is out of scope, so the Development Orchestrator will not select a physical-storage interpretation.
-- The finding is escalated to the Lead Design Authority for the smallest explicit clarification/amendment needed to unblock cross-owner Runtime ↔ Accounting wiring.
-- No Task-108 production code was created, so exact integrated checkpoint `9f217faf...` remains the current system integration basis.
-- Track C remote delivery is independently reviewable and write-disjoint from the blocked production wiring; Task 109 is therefore routed in parallel.
+- Lead Design Authority commit `5c227561fb762861cf85df8db6a4c1f9c4f8a143` was verified and freezes Runtime / Accounting Amendment 001.
+- The Task-108 architecture finding is valid and is now closed at architecture level. The Amendment explicitly resolves the implementation choice; the Development Orchestrator no longer needs to choose among competing persistence semantics.
+- Exact production basis remains Task-107 integrated candidate `9f217faf56149862455aa1be74659c79c884c373`, because Task 108 produced no production/test change.
+- Task 110 is routed as the smallest implementation continuation: implement the Amendment's required persistence boundary and then resume the bounded Task-108 cross-owner E2E/crash/replay proof on the same candidate line.
+- Task 110 must not introduce a generic Runtime projection framework, shared-global-database dependency, distributed transaction, saga/workflow engine, ownership transfer, or BudgetReservation lifecycle redesign.
+- Task 109 remains valid and independent in parallel because it is a read-only Parent Review of five Track-C test files.
+- Task 110 remains HIGH risk and requires an independent exact-SHA integrated review before ARE-GATE-6 acceptance.
 - `Last Accepted Production Commit` remains unchanged.
 
 ## Gate-6A Closure
