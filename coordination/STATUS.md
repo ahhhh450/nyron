@@ -6,7 +6,7 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `2`
-- Coordination Revision: `93`
+- Coordination Revision: `94`
 - Last Accepted Production Commit: `84156a5be8d77dc69fd21b02ffa2cf49f5154a8b`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Current Gate: `ARE-GATE-6 — Accounting / Recovery integration`
@@ -18,9 +18,9 @@
 
 | Task | Agent | State | Track / Purpose |
 |---|---|---|---|
-| `NYRON-T-20260826-104` | Codex — new independent review session | `READY / R93` | Settlement — independent exact-SHA review of `a708986c...` |
+| `NYRON-T-20260826-105` | Codex | `READY / R94` | Settlement — targeted fix for Task-104 blockers F-104-001 / F-104-002 |
 
-Task 102 implementation is complete and no longer occupies an implementation slot. Operator-local DeepSeek Track C is running separately as bounded Integrity / Regression work and must remain write-isolated from Settlement acceptance/integration.
+Task 104 independent review is complete and failed with two blocking findings. Operator-local DeepSeek Track C continues separately as bounded Integrity / Regression work and must remain write-isolated from Settlement production/fix work.
 
 ## Stable Component Candidates
 
@@ -47,23 +47,38 @@ Task 102 implementation is complete and no longer occupies an implementation slo
 
 - Task 102 executor result: `SUCCESS`.
 - Exact basis: `e5acf1abb9a03667315a364ba7e1a8b002ed31cd`.
-- Exact production candidate: `a708986c11f1b153ea8002803c00f886b3a5b1c5`.
-- Focused settlement tests: `10 passed`.
-- Track-A Usage/Ledger + BudgetReservation focused validation: `71 passed, 12 subtests passed`.
-- Complete `tests/kernel`: `294 passed, 2 skipped, 96 subtests passed`.
-- Executor Findings / Blockers: `NONE / NONE`.
-- State: `PENDING_INDEPENDENT_REVIEW`.
-- Independent review route: `NYRON-T-20260826-104`.
-- Settlement is not yet a stable component candidate and must not be globally integrated before independent review disposition.
+- Reviewed production candidate: `a708986c11f1b153ea8002803c00f886b3a5b1c5`.
+- Task 104 independent exact-SHA review: `FAIL`.
+- Review independence: `REQUIRED / SATISFIED`.
+- State: `BLOCKED / TARGETED FIX REQUIRED`.
+- Fix route: `NYRON-T-20260826-105`.
+- Settlement is not a stable component candidate and must not be globally integrated before both blockers are corrected and independently re-reviewed.
 
-## Revision 93 Decision
+### Open Settlement Blocking Findings
 
-- Task 102 Repository Result was verified as `SUCCESS` at exact production SHA `a708986c11f1b153ea8002803c00f886b3a5b1c5` with no executor finding/blocker.
-- Because Settlement contains high-risk Accounting correctness / replay / crash-consistency behavior, executor SUCCESS is not sufficient for stable-candidate classification.
-- Claude capacity is temporarily constrained; Repository Review Protocol permits selecting Codex for complex code review provided the Independent Reviewer is a distinct Agent. Task 104 therefore requires a brand-new Codex reviewer session, isolated from the Task-102 implementation session and worktree.
-- Task 104 is read-only for production/tests and reviews the exact SHA only.
-- DeepSeek continues operator-local Track C Integrity / Regression work; it is not used as the final high-risk Settlement release reviewer and must not overlap Settlement production writes.
-- Track A and Track B remain stable candidates. `Last Accepted Production Commit` remains unchanged until explicit global integration.
+#### `F-104-001`
+- Type: `CONTRACT`
+- Severity: `BLOCKING`
+- State: `OPEN / ROUTED TO TASK 105`
+- Summary: empty canonical UsageFact/adjustment evidence is incorrectly interpreted as known zero/no-use, releasing reserved exposure without adequate evidence.
+- Required direction: fail closed before any settlement/reservation/exposure mutation when adequate canonical evidence is absent; UNKNOWN/no-history policy remains outside ordinary known-actual Settlement.
+
+#### `F-104-002`
+- Type: `IMPLEMENTATION`
+- Severity: `BLOCKING`
+- State: `OPEN / ROUTED TO TASK 105`
+- Summary: UsageFact unit is not validated against canonical AccountingDimension unit/measurement semantics, allowing incompatible measurements to be committed under one dimension.
+- Required direction: validate canonical dimension/unit binding before mutation and fail closed on wrong/mixed/unresolved bindings.
+
+## Revision 94 Decision
+
+- Task 104 Repository Result was verified as `FAIL` against exact SHA `a708986c11f1b153ea8002803c00f886b3a5b1c5` with required independent-review separation satisfied.
+- Two blocking findings are accepted as valid and reproducible: `F-104-001` missing-evidence fail-open behavior and `F-104-002` canonical unit-binding failure.
+- Correct evidence-backed `<`, `==`, `>` settlement, ancestry conversion, overrun, replay, crash rollback, adjustment replay, and settlement-row immutability behavior remain valid and should not be redesigned.
+- Task 105 is opened as the smallest targeted Settlement-local correction from exact fix basis `a708986c11f1b153ea8002803c00f886b3a5b1c5`.
+- Prefer reusing the original Task-102 Codex implementation session for Task 105 if its context remains reliable; no full historical reread is required.
+- After Task 105 SUCCESS, a targeted independent exact-SHA re-review is mandatory before Settlement can become stable.
+- Track A and Track B remain stable candidates. `Last Accepted Production Commit` remains unchanged.
 
 ## Gate-6A Closure
 
