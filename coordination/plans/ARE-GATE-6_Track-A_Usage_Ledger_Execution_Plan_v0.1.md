@@ -46,11 +46,32 @@ Claude Code and Codex are the principal development capacity. DeepSeek should no
 
 Multiple concurrent sessions of Claude Code or Codex are allowed when their write surfaces and dependencies are independent and the active-slot policy permits it. DeepSeek tasks should preferentially remain read-only or mechanically bounded so they can assist the main development line without becoming an implicit architecture authority.
 
+## Agent Session Reuse Policy
+
+Default behavior is **reuse an existing Agent conversation when its context remains relevant and trustworthy**. A new formal Task does not automatically require a new chat/session.
+
+Prefer continuing the same Agent conversation when:
+
+- the next Task is a direct continuation, fix, re-review, or bounded follow-up of work already understood in that session;
+- the Agent already has the necessary repository/design context and re-reading it would only consume context without improving independence;
+- there is no independence requirement between the previous and next responsibility;
+- the existing conversation is still reasonably sized, coherent, and anchored to current repository truth.
+
+Open a new Agent conversation only when materially useful, especially when:
+
+- an **independent review** must be isolated from the implementation session or prior reviewer reasoning;
+- the next work is a genuinely independent component or parallel branch of work;
+- the existing conversation has accumulated enough context that precision, focus, or remaining context budget is becoming a concern;
+- the role changes enough that stale assumptions from the old session are a meaningful risk;
+- the prior session is unavailable, stale, confused, or no longer anchored to the required exact SHA / current Task.
+
+When reusing a conversation, instruct the Agent to continue from the new formal Task and repository truth rather than mechanically re-reading every previously consumed document. It should read only new or changed Task/Result/exact-SHA material needed for the follow-up.
+
+Session reuse never relaxes formal Task boundaries, exact-SHA requirements, independence requirements, or Repository Result Protocol.
+
 ## Agent Session Naming Rule
 
-Every newly opened Track-A Agent conversation must begin by self-declaring a unique session name before execution.
-
-Required format:
+When a new Track-A Agent conversation is opened for a formal Task, use:
 
 `TRACK_A_TASK_<TASK_NUMBER>`
 
@@ -60,7 +81,7 @@ Examples:
 - Task 093: `TRACK_A_TASK_093`
 - Task 095: `TRACK_A_TASK_095`
 
-The formal Task number is the session identity. Multiple concurrent conversations of the same Agent family are allowed when they are assigned different formal Tasks and their write surfaces/dependencies are independent. Session identity is not a substitute for exact production SHA.
+The formal Task number is the session identity when a new session is actually opened. Multiple concurrent conversations of the same Agent family are allowed when assigned independent Tasks and their write surfaces/dependencies permit it. Session identity is not a substitute for exact production SHA.
 
 ## Planned Route
 
@@ -105,7 +126,7 @@ Outcome:
 
 ### A2 — Independent high-risk semantic review
 
-Trigger: A1 clean or its findings dispositioned.
+Trigger: Task 090 exact production SHA exists. May run in parallel with A1 because both are read-only when no dependency exists.
 Preferred Agent: `Codex`, independent from Task 090 implementation.
 Mode: exact-SHA review; no production edits.
 
@@ -123,25 +144,25 @@ Reviewer must verify frozen Usage/Ledger semantics, especially:
 
 Outcome:
 
-- `PASS / FINDINGS NONE` => route to A4;
+- `PASS / FINDINGS NONE` => route to A4 after peer evidence is reconciled;
 - blocking implementation/test finding => A3 fix;
 - contract/architecture finding => STOP / ESCALATE.
 
 ### A3 — Fix and Re-Review loop, only if required
 
-Preferred implementation Agent: reuse the original Claude Code implementation session when context remains valid; otherwise open another uniquely named Claude session. Codex may instead own a fix when independence, workload balancing, or task characteristics make it the better primary developer.
+Preferred implementation Agent: reuse the original Claude Code implementation session when its context remains valid. Codex may instead own a fix when independence, workload balancing, or task characteristics make it the better primary developer.
 
 Rules:
 
 - fix must be a new formal Task based on the reviewed exact production SHA;
 - no scope expansion;
 - produce new exact production SHA and separate Result commit;
-- reviewer re-reviews the new exact SHA;
+- for an independent re-review, reuse the prior independent reviewer session when independence from the implementer is still preserved and context remains healthy; open a fresh reviewer session only when independence/context quality requires it;
 - repeat until `PASS` or escalation.
 
 ### A4 — Track A stable-candidate handoff
 
-Trigger: exact-SHA independent review is `PASS` with no unresolved blocking finding.
+Trigger: exact-SHA independent review is `PASS` with no unresolved blocking finding and required peer evidence is reconciled.
 
 Produce a Track-A-local handoff/checkpoint identifying:
 
@@ -163,7 +184,7 @@ On each such report, Track-A Orchestrator will:
 2. verify exact production SHA and task freshness;
 3. classify findings/blockers;
 4. create the next formal Task when required;
-5. give the operator only the next Agent-opening instruction, if a new session is needed;
+5. prefer sending the next instruction into an existing suitable Agent conversation; request a new Agent conversation only when session isolation, independence, parallelism, or context health makes it useful;
 6. report Track A progress using the fixed sections below.
 
 ## Mandatory Progress Report Format
