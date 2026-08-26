@@ -231,10 +231,40 @@ class SQLiteStore:
                 attempt_seq INTEGER NOT NULL CHECK (attempt_seq > 0),
                 fencing_token TEXT NOT NULL UNIQUE
                     CHECK (length(fencing_token) > 0),
-                state TEXT NOT NULL,
+                state TEXT NOT NULL CHECK (state IN (
+                    'CREATED', 'ACTIVE', 'SUCCEEDED', 'FAILED', 'REPLACED'
+                )),
                 PRIMARY KEY (run_ref, attempt_seq),
                 FOREIGN KEY (run_ref) REFERENCES runs(run_ref)
             );
+
+            CREATE TRIGGER IF NOT EXISTS run_attempt_state_transition
+            BEFORE UPDATE OF state ON run_attempts
+            WHEN NOT (
+                NEW.state = OLD.state
+                OR (OLD.state = 'CREATED'
+                    AND NEW.state IN ('ACTIVE', 'FAILED', 'REPLACED'))
+                OR (OLD.state = 'ACTIVE'
+                    AND NEW.state IN ('SUCCEEDED', 'FAILED', 'REPLACED'))
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'invalid run attempt state transition');
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS run_authority_counter_transition
+            BEFORE UPDATE OF current_attempt_seq, fencing_generation ON runs
+            WHEN NOT (
+                (NEW.current_attempt_seq = OLD.current_attempt_seq
+                 AND NEW.fencing_generation = OLD.fencing_generation)
+                OR
+                (NEW.current_attempt_seq > OLD.current_attempt_seq
+                 AND NEW.fencing_generation > OLD.fencing_generation
+                 AND NEW.current_attempt_seq - OLD.current_attempt_seq
+                     = NEW.fencing_generation - OLD.fencing_generation)
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'invalid run authority counter transition');
+            END;
             """
         )
 

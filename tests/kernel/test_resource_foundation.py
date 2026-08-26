@@ -362,8 +362,10 @@ class ResourceFoundationTest(unittest.TestCase):
             lease.lease_ref, RESOURCE, "holder:module/1", self.authority
         )
         self.assertTrue(cached.valid)
-        self.store.connection.execute(
-            "UPDATE runs SET fencing_generation = 2 WHERE run_ref = ?", (RUN,)
+        RunRepository(self.store).replace_attempt(
+            run_ref=RUN,
+            expected_attempt_seq=1,
+            expected_fencing_generation=1,
         )
         current = self.manager.validate_lease_advisory(
             lease.lease_ref, RESOURCE, "holder:module/1", self.authority

@@ -9,7 +9,7 @@ import unittest
 from dataclasses import FrozenInstanceError
 from pathlib import Path
 
-from nyron_kernel.execution import RunError, RunRepository
+from nyron_kernel.execution import RuntimeAuthorityResolver, RunError, RunRepository
 from nyron_kernel.store import SQLiteStore
 
 
@@ -232,17 +232,146 @@ class RunAttemptAuthorityTest(unittest.TestCase):
 
     def test_current_authority_inconsistency_fails_closed(self) -> None:
         self._create()
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.store.connection.execute(
+                "UPDATE runs SET fencing_generation = 2 WHERE run_ref = ?",
+                (RUN_REF,),
+            )
+        self.assertEqual(1, self.runs.resolve(RUN_REF)[0].fencing_generation)
+
+    def test_replace_created_attempt_atomically_cuts_over_exact_authority(self):
+        r1_run, r1_attempt = self._create()
+        resolver = RuntimeAuthorityResolver(self.store)
+        r1 = resolver.resolve_current(RUN_REF)
+        assert r1 is not None
+
+        r2_run, r2_attempt = self.runs.replace_attempt(
+            run_ref=RUN_REF,
+            expected_attempt_seq=1,
+            expected_fencing_generation=1,
+        )
+
+        self.assertEqual(r1_run.run_ref, r2_run.run_ref)
+        self.assertEqual(r1_run.activation_ref, r2_run.activation_ref)
+        self.assertEqual(r1_run.execution_ref, r2_run.execution_ref)
+        self.assertEqual((2, 2), (r2_run.current_attempt_seq, r2_run.fencing_generation))
+        self.assertEqual((RUN_REF, 2, "CREATED"), (r2_attempt.run_ref, r2_attempt.attempt_seq, r2_attempt.state))
+        self.assertNotEqual(r1_attempt.fencing_token, r2_attempt.fencing_token)
+        self.assertEqual(
+            "REPLACED",
+            self.store.connection.execute(
+                "SELECT state FROM run_attempts WHERE run_ref = ? AND attempt_seq = 1",
+                (RUN_REF,),
+            ).fetchone()[0],
+        )
+        r2 = resolver.resolve_current(RUN_REF)
+        assert r2 is not None
+        self.assertFalse(resolver.is_current(r1))
+        self.assertTrue(resolver.is_current(r2))
+        self.assertEqual((r1.execution_ref, r1.activation_ref, r1.run_ref), (r2.execution_ref, r2.activation_ref, r2.run_ref))
+        self.assertEqual((2, 2, r2_attempt.fencing_token), (r2.attempt_seq, r2.fencing_generation, r2.fencing_token))
+
+    def test_replace_active_attempt_is_allowed(self):
+        self._create()
         self.store.connection.execute(
-            "UPDATE runs SET fencing_generation = 2 WHERE run_ref = ?",
+            "UPDATE run_attempts SET state = 'ACTIVE' WHERE run_ref = ? AND attempt_seq = 1",
             (RUN_REF,),
         )
-
-        with self.assertRaises(RunError) as raised:
-            self.runs.resolve(RUN_REF)
-
-        self.assertEqual(
-            "RUN_CURRENT_AUTHORITY_INCONSISTENT", raised.exception.code
+        _, replacement = self.runs.replace_attempt(
+            run_ref=RUN_REF,
+            expected_attempt_seq=1,
+            expected_fencing_generation=1,
         )
+        self.assertEqual("CREATED", replacement.state)
+
+    def test_replacement_cas_mismatch_writes_nothing(self):
+        for field, seq, generation in (
+            ("attempt", 2, 1),
+            ("generation", 1, 2),
+        ):
+            with self.subTest(field=field):
+                if self.runs.resolve(RUN_REF) is None:
+                    self._create()
+                with self.assertRaises(RunError) as raised:
+                    self.runs.replace_attempt(
+                        run_ref=RUN_REF,
+                        expected_attempt_seq=seq,
+                        expected_fencing_generation=generation,
+                    )
+                self.assertEqual("RUN_REPLACEMENT_CAS_MISMATCH", raised.exception.code)
+                run, attempt = self.runs.resolve(RUN_REF)
+                self.assertEqual((1, 1, "CREATED"), (run.current_attempt_seq, run.fencing_generation, attempt.state))
+                self.assertEqual(1, self._count("run_attempts"))
+
+    def test_replacement_failure_rolls_back_r1_and_r2(self):
+        self._create()
+        with self.assertRaises(RunError) as raised:
+            self.runs.replace_attempt(
+                run_ref=RUN_REF,
+                expected_attempt_seq=1,
+                expected_fencing_generation=1,
+                inject_failure="after_replaced",
+            )
+        self.assertEqual("INJECTED_RUN_REPLACEMENT_FAILURE", raised.exception.code)
+        run, attempt = self.runs.resolve(RUN_REF)
+        self.assertEqual((1, 1, "CREATED"), (run.current_attempt_seq, run.fencing_generation, attempt.state))
+        self.assertEqual(1, self._count("run_attempts"))
+
+    def test_terminal_or_replaced_current_attempt_cannot_be_replaced(self):
+        for state in ("SUCCEEDED", "FAILED", "REPLACED"):
+            with self.subTest(state=state):
+                self.store.close()
+                self.store = SQLiteStore()
+                self.runs = RunRepository(self.store)
+                self._seed_dependencies(self.store)
+                self._create()
+                if state == "SUCCEEDED":
+                    self.store.connection.execute(
+                        "UPDATE run_attempts SET state = 'ACTIVE' WHERE run_ref = ? AND attempt_seq = 1",
+                        (RUN_REF,),
+                    )
+                self.store.connection.execute(
+                    "UPDATE run_attempts SET state = ? WHERE run_ref = ? AND attempt_seq = 1",
+                    (state, RUN_REF),
+                )
+                for target_state in ("CREATED", "ACTIVE"):
+                    with self.assertRaises(sqlite3.IntegrityError):
+                        self.store.connection.execute(
+                            "UPDATE run_attempts SET state = ? WHERE run_ref = ? AND attempt_seq = 1",
+                            (target_state, RUN_REF),
+                        )
+                with self.assertRaises(RunError) as raised:
+                    self.runs.replace_attempt(
+                        run_ref=RUN_REF,
+                        expected_attempt_seq=1,
+                        expected_fencing_generation=1,
+                    )
+                self.assertEqual("RUN_ATTEMPT_NOT_REPLACEABLE", raised.exception.code)
+
+    def test_raw_sql_cannot_reactivate_or_drift_run_authority(self):
+        self._create()
+        self.runs.replace_attempt(
+            run_ref=RUN_REF,
+            expected_attempt_seq=1,
+            expected_fencing_generation=1,
+        )
+        for state in ("CREATED", "ACTIVE"):
+            with self.subTest(state=state), self.assertRaises(sqlite3.IntegrityError):
+                self.store.connection.execute(
+                    "UPDATE run_attempts SET state = ? WHERE run_ref = ? AND attempt_seq = 1",
+                    (state, RUN_REF),
+                )
+        attacks = (
+            ("UPDATE runs SET current_attempt_seq = 1, fencing_generation = 1 WHERE run_ref = ?",),
+            ("UPDATE runs SET current_attempt_seq = 3 WHERE run_ref = ?",),
+            ("UPDATE runs SET fencing_generation = 3 WHERE run_ref = ?",),
+            ("UPDATE runs SET current_attempt_seq = 4, fencing_generation = 3 WHERE run_ref = ?",),
+        )
+        for (statement,) in attacks:
+            with self.subTest(statement=statement), self.assertRaises(sqlite3.IntegrityError):
+                self.store.connection.execute(statement, (RUN_REF,))
+        run, _ = self.runs.resolve(RUN_REF)
+        self.assertEqual((2, 2), (run.current_attempt_seq, run.fencing_generation))
 
     def test_file_reopen_preserves_current_authority_exactly(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -295,9 +424,6 @@ class RunAttemptAuthorityTest(unittest.TestCase):
             "EffectOperation",
             "Recovery",
             "attempt_seq = 2",
-            '"SUCCEEDED"',
-            '"FAILED"',
-            '"ACTIVE"',
         ):
             self.assertNotIn(forbidden, source)
 
