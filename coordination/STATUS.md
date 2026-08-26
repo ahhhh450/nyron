@@ -6,11 +6,11 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `2`
-- Coordination Revision: `95`
+- Coordination Revision: `96`
 - Last Accepted Production Commit: `84156a5be8d77dc69fd21b02ffa2cf49f5154a8b`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Current Gate: `ARE-GATE-6 — Accounting / Recovery integration`
-- Current Mode: `PARALLEL COMPONENT DEVELOPMENT / MAX 2 ACTIVE DEVELOPMENT TRACKS`
+- Current Mode: `INTEGRATION CHECKPOINT / MAX 2 ACTIVE DEVELOPMENT TRACKS`
 - Orchestration Plan: `coordination/plans/ARE-GATE-6_Parallel_Development_Plan_v0.1.md`
 - Parallelism Policy: `DEFAULT_PARALLEL_UNLESS_WRITE_OR_UNSETTLED_CONTRACT_DEPENDENCY_CONFLICTS`
 
@@ -18,69 +18,58 @@
 
 | Task | Agent | State | Track / Purpose |
 |---|---|---|---|
-| `NYRON-T-20260826-106` | Codex — existing independent Task-104 reviewer preferred | `READY / R95` | Settlement — targeted exact-SHA re-review of Task-105 fixed candidate `c324f837...` |
+| `NYRON-T-20260827-107` | Codex | `READY / R96` | Global Integration — exact-SHA component assembly checkpoint from reviewed Accounting/Settlement + Recovery candidates |
 
-Task 105 targeted implementation fix is complete. Operator-local DeepSeek Track C continues separately as bounded Integrity / Regression work and must remain write-isolated from Settlement acceptance/integration.
+Operator-local DeepSeek Track C continues separately as bounded Integrity / Regression work and must remain isolated from global integration production decisions.
 
 ## Stable Component Candidates
 
 ### Track A — Usage / Ledger
 
-- State: `COMPLETED / STABLE CANDIDATE READY FOR GLOBAL INTEGRATION`
+- State: `COMPLETED / STABLE CANDIDATE READY FOR INTEGRATION`
 - Exact reviewed production candidate: `e5acf1abb9a03667315a364ba7e1a8b002ed31cd`
 - Stable checkpoint: `coordination/checkpoints/ARE-GATE-6_Track-A_Usage_Ledger_Stable_Candidate.md`
 - Review chain: Task 090 implementation -> 093 mechanical audit -> 094 semantic review -> 095 fix -> 099 exact-SHA re-review PASS.
 - Open blocking findings: `NONE`.
-- Global acceptance/integration: `PENDING`.
 
 ### Track B — Recovery / ReconciliationCase
 
-- State: `COMPLETED / STABLE CANDIDATE READY FOR GLOBAL INTEGRATION`
+- State: `COMPLETED / STABLE CANDIDATE READY FOR INTEGRATION`
 - Exact reviewed production candidate: `365f8c3f270ee0d428b95d73ccbf34bc178b979f`
 - Stable checkpoint: `coordination/checkpoints/ARE-GATE-6_Track-B_Recovery_Stable_Candidate.md`
 - Review chain: Task 092 implementation -> 096 semantic review -> 097 mechanical audit -> 098 code review -> 100 fix -> 101 targeted exact-SHA re-review PASS.
 - Open blocking findings: `NONE`.
 - Backup Task 103: `VOID / BACKUP NOT NEEDED / DO NOT EXECUTE`.
-- Global acceptance/integration: `PENDING`.
 
-## Settlement Candidate
+### Settlement — BudgetReservation Settlement / Overrun
 
-- Task 102 executor result: `SUCCESS`.
-- Exact Track-A basis: `e5acf1abb9a03667315a364ba7e1a8b002ed31cd`.
-- Task 102 production candidate: `a708986c11f1b153ea8002803c00f886b3a5b1c5`.
-- Task 104 independent exact-SHA review: `FAIL` with `F-104-001` and `F-104-002` blocking.
-- Task 105 targeted fix result: `SUCCESS`.
-- Exact fixed production candidate: `c324f837fca86e1b0a3b1cbba1196c68654aa30a`.
-- Task 105 focused validation: `88 passed, 12 subtests passed`.
-- Task 105 complete `tests/kernel`: `301 passed, 2 skipped, 96 subtests passed`.
-- Task 105 new findings / implementation blockers: `NONE / NONE`.
-- State: `PENDING_TARGETED_INDEPENDENT_RE_REVIEW`.
-- Re-review route: `NYRON-T-20260826-106`.
-- Settlement is not yet a stable component candidate and must not be globally integrated before Task 106 disposition.
+- State: `COMPLETED / STABLE CANDIDATE READY FOR INTEGRATION`
+- Exact reviewed production candidate: `c324f837fca86e1b0a3b1cbba1196c68654aa30a`
+- Exact Track-A basis: `e5acf1abb9a03667315a364ba7e1a8b002ed31cd`
+- Stable checkpoint: `coordination/checkpoints/ARE-GATE-6_Settlement_Stable_Candidate.md`
+- Review chain: Task 102 implementation -> 104 independent review FAIL -> 105 targeted fix -> 106 targeted exact-SHA re-review PASS.
+- `F-104-001`: `CLOSED`.
+- `F-104-002`: `CLOSED`.
+- Open blocking findings: `NONE`.
+- Final targeted validation: focused component suites `88 passed, 12 subtests passed`; complete `tests/kernel` `301 passed, 2 skipped, 96 subtests passed`; `git diff --check` clean.
 
-### Settlement Blocking Findings Under Re-Review
+## Integration Inputs
 
-#### `F-104-001`
-- Type: `CONTRACT`
-- Severity: `BLOCKING`
-- State: `FIX IMPLEMENTED BY TASK 105 / PENDING TASK 106 RE-REVIEW`
-- Original issue: empty canonical UsageFact evidence was incorrectly interpreted as known zero/no-use.
-- Task-105 candidate behavior: empty evidence returns `SETTLEMENT_EVIDENCE_REQUIRED` before mutation; explicit canonical zero evidence remains supported.
+- Parent accepted backbone: `84156a5be8d77dc69fd21b02ffa2cf49f5154a8b`.
+- Exact Accounting / Usage / Settlement lineage: `c324f837fca86e1b0a3b1cbba1196c68654aa30a`.
+- Exact Recovery lineage: `365f8c3f270ee0d428b95d73ccbf34bc178b979f`.
+- Integration route: `NYRON-T-20260827-107`.
+- Task 107 is a bounded exact-SHA assembly checkpoint. It must not invent unresolved cross-owner semantics; any such ambiguity fails closed and escalates.
+- Final ARE-GATE-6 closure still requires the remaining bounded cross-owner/E2E work identified after assembly and an exact-SHA independent integrated review.
 
-#### `F-104-002`
-- Type: `IMPLEMENTATION`
-- Severity: `BLOCKING`
-- State: `FIX IMPLEMENTED BY TASK 105 / PENDING TASK 106 RE-REVIEW`
-- Original issue: UsageFact unit was not validated against canonical AccountingDimension semantics.
-- Task-105 candidate behavior: canonical pinned dimension/unit binding is validated; wrong, mixed, unresolved, or conflicting definitions fail closed before mutation.
+## Revision 96 Decision
 
-## Revision 95 Decision
-
-- Task 105 Repository Result was verified as `SUCCESS` from exact fix basis `a708986c11f1b153ea8002803c00f886b3a5b1c5` to exact fixed production SHA `c324f837fca86e1b0a3b1cbba1196c68654aa30a`.
-- The fix remained bounded to `settlement_authority.py` and focused settlement tests; no frozen Contract, Track-A semantics, Recovery, Runtime/Effect/Resource/Capability/Host, schema, or global coordination semantics were changed by the executor.
-- `F-104-001` and `F-104-002` are implementation-closed candidates only; they remain blocking until independently re-reviewed.
-- Task 106 is opened as a targeted exact-SHA re-review. Prefer the existing independent Task-104 Codex reviewer context if reliable; do not reopen a full historical review.
-- Track A and Track B remain stable candidates. `Last Accepted Production Commit` remains unchanged.
+- Task 106 Repository Result was verified as `PASS / ALL TARGETED FINDINGS CLOSED` at exact SHA `c324f837fca86e1b0a3b1cbba1196c68654aa30a` with review independence satisfied.
+- Settlement is therefore classified as a stable component candidate; `F-104-001` and `F-104-002` are closed.
+- Track A, Track B, and Settlement are now all stable exact-SHA inputs.
+- Per the active ARE-GATE-6 plan, Task 107 opens the first exact-SHA integrated component checkpoint: start from the reviewed Accounting / Usage / Settlement lineage and integrate the reviewed Recovery lineage using ancestry-preserving Git integration.
+- Task 107 is intentionally smaller than final Gate-6 closure. It assembles and validates reviewed component content first, then reports any remaining required cross-owner wiring/E2E slice.
+- `Last Accepted Production Commit` remains unchanged until explicit integrated acceptance/review.
 
 ## Gate-6A Closure
 
