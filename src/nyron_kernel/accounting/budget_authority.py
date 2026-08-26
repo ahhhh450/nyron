@@ -1,0 +1,904 @@
+"""Accounting Owner: BudgetPolicyRevision / BudgetReservation foundation
+(ARE-GATE-6A).
+
+This slice implements only reservation authorization: durable
+BudgetPolicyRevision publication, static-ancestry-atomic hard-limit
+reserve/deny, and stable request-identity idempotency. It deliberately does
+NOT implement UsageFact settlement, the COMMITTED/RELEASED transition,
+ReconciliationCase/Recovery, or provider billing -- those remain future
+Gate-6 slices. ``committed_dimensions``/``released_dimensions`` therefore
+stay empty on every reservation this module ever produces.
+
+Only ``LIFETIME_LIMIT`` rules are enforced in this slice (a single
+monotonic hard cap with no window/reset machinery). Publishing a rule with
+any other ``limit_kind`` is rejected at publish time rather than silently
+accepted and left unenforced at reserve time -- an unenforced HARD rule
+would be an unsafe silent gap, not a narrower implementation.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import sqlite3
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Callable
+
+from nyron_kernel.accounting.scope_resolver import (
+    AccountingScopeError,
+    AccountingScopeResolver,
+)
+from nyron_kernel.store import SQLiteStore
+
+if TYPE_CHECKING:
+    # Type-only: nyron_kernel.execution imports nyron_kernel.accounting at
+    # module load time (admission-time scope resolution), so a real
+    # module-level import here would be circular. BudgetAuthority never
+    # constructs these itself -- it only calls read methods on instances the
+    # caller injects -- so a runtime import is never actually needed.
+    from nyron_kernel.execution import (
+        Activation,
+        ActivationRepository,
+        RuntimeAuthorityResolver,
+    )
+
+_SUPPORTED_LIMIT_KINDS = ("LIFETIME_LIMIT",)
+_SUPPORTED_ENFORCEMENTS = ("HARD", "SOFT")
+_RESERVATION_STATES = (
+    "REQUESTED",
+    "RESERVED",
+    "DENIED",
+    "RECONCILING",
+    "COMMITTED",
+    "RELEASED",
+)
+
+
+class BudgetAuthorityError(RuntimeError):
+    """Fail-closed Accounting-owned error with a stable reason code."""
+
+    def __init__(self, code: str, **context: object) -> None:
+        super().__init__(code)
+        self.code = code
+        self.context = context
+
+
+@dataclass(frozen=True)
+class BudgetDimension:
+    dimension_ref: str
+    unit: str
+    measurement_semantics_ref: str
+
+
+@dataclass(frozen=True)
+class BudgetRule:
+    rule_ref: str
+    dimension_ref: str
+    limit_amount: int
+    limit_kind: str
+    enforcement: str
+
+
+@dataclass(frozen=True)
+class BudgetPolicyRevision:
+    budget_policy_revision_ref: str
+    accounting_scope_ref: str
+    effective_from: int
+    effective_until: int | None
+    dimensions: tuple[BudgetDimension, ...]
+    enforcement_rules: tuple[BudgetRule, ...]
+    created_by_ref: str
+    supersedes_ref: str | None
+
+
+@dataclass(frozen=True)
+class BudgetReservationRequest:
+    """Caller-supplied reservation intent. Not itself canonical truth."""
+
+    request_ref: str
+    activation_ref: str
+    run_ref: str
+    attempt_seq: int
+    accounting_scope_ref: str
+    graph_revision_ref: str
+    definition_anchor_ref: str
+    estimate_ref: str
+    reserved_dimensions: tuple[tuple[str, int], ...]
+    subject_refs: tuple[str, ...]
+    caused_by_ref: str
+
+
+@dataclass(frozen=True)
+class BudgetReservation:
+    reservation_ref: str
+    request_ref: str
+    activation_ref: str
+    run_ref: str
+    attempt_seq: int
+    accounting_scope_ref: str
+    graph_revision_ref: str
+    definition_anchor_ref: str
+    ancestry_snapshot: tuple[str, ...]
+    policy_revision_refs: tuple[str, ...]
+    estimate_ref: str
+    requested_dimensions: tuple[tuple[str, int], ...]
+    reserved_dimensions: tuple[tuple[str, int], ...]
+    committed_dimensions: tuple[tuple[str, int], ...]
+    released_dimensions: tuple[tuple[str, int], ...]
+    state: str
+    deny_reason_code: str | None
+    subject_refs: tuple[str, ...]
+    created_at: int
+    updated_at: int
+    caused_by_ref: str
+
+
+class BudgetAuthority:
+    """Sole canonical writer for BudgetPolicyRevision and BudgetReservation."""
+
+    def __init__(
+        self,
+        store: SQLiteStore,
+        scope_resolver: AccountingScopeResolver,
+        activation_repository: ActivationRepository,
+        runtime_authority: RuntimeAuthorityResolver,
+        clock: Callable[[], int],
+        crash_hook: Callable[[str], None] | None = None,
+    ) -> None:
+        self._store = store
+        self._scope_resolver = scope_resolver
+        self._activation_repository = activation_repository
+        self._runtime_authority = runtime_authority
+        self._clock = clock
+        self._crash_hook = crash_hook or (lambda _stage: None)
+        self._store.create_budget_schema()
+
+    # ------------------------------------------------------------------
+    # BudgetPolicyRevision publication
+    # ------------------------------------------------------------------
+
+    def publish_policy_revision(
+        self, revision: BudgetPolicyRevision
+    ) -> BudgetPolicyRevision:
+        """Persist one immutable policy revision, idempotently for identical facts."""
+
+        self._validate_revision(revision)
+        existing = self._load_revision(revision.budget_policy_revision_ref)
+        if existing is not None:
+            if existing == revision:
+                return existing
+            raise BudgetAuthorityError(
+                "BUDGET_POLICY_REVISION_IDENTITY_CONFLICT",
+                budget_policy_revision_ref=revision.budget_policy_revision_ref,
+            )
+        try:
+            with self._store.transaction() as connection:
+                self._validate_chain_linkage(connection, revision)
+                connection.execute(
+                    """
+                    INSERT INTO budget_policy_revisions(
+                        budget_policy_revision_ref, accounting_scope_ref,
+                        effective_from, effective_until, dimensions_json,
+                        enforcement_rules_json, created_by_ref, supersedes_ref
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        revision.budget_policy_revision_ref,
+                        revision.accounting_scope_ref,
+                        revision.effective_from,
+                        revision.effective_until,
+                        self._encode_dimensions(revision.dimensions),
+                        self._encode_rules(revision.enforcement_rules),
+                        revision.created_by_ref,
+                        revision.supersedes_ref,
+                    ),
+                )
+        except sqlite3.IntegrityError as error:
+            raise BudgetAuthorityError(
+                "BUDGET_POLICY_REVISION_IDENTITY_CONFLICT",
+                budget_policy_revision_ref=revision.budget_policy_revision_ref,
+            ) from error
+        return revision
+
+    # ------------------------------------------------------------------
+    # BudgetReservation
+    # ------------------------------------------------------------------
+
+    def reserve(self, request: BudgetReservationRequest) -> BudgetReservation:
+        """Prove Runtime/static binding, then atomically evaluate and commit RESERVED/DENIED."""
+
+        self._validate_request(request)
+        activation = self._prove_runtime_binding(request)
+
+        existing = self._load_reservation_by_request_ref(request.request_ref)
+        if existing is not None:
+            self._require_identical_replay(existing, request)
+            return existing
+
+        reservation_ref = self._reservation_ref(request.request_ref)
+        now = self._now()
+
+        try:
+            with self._store.transaction() as connection:
+                try:
+                    resolution = self._scope_resolver.resolve(
+                        activation.static_accounting_scope_ref,
+                        activation.graph_revision_ref,
+                        activation.module_instance_revision_ref,
+                    )
+                except AccountingScopeError as error:
+                    raise BudgetAuthorityError(
+                        "ACCOUNTING_SCOPE_INVALID",
+                        accounting_scope_ref=request.accounting_scope_ref,
+                    ) from error
+
+                ancestry = resolution.ancestry
+                policy_revision_refs: list[str] = []
+                deny_reason: str | None = None
+                for scope in ancestry:
+                    revision_row = self._select_current_policy_revision(
+                        connection, scope.accounting_scope_ref, now
+                    )
+                    if revision_row is None:
+                        continue
+                    policy_revision_refs.append(
+                        revision_row["budget_policy_revision_ref"]
+                    )
+                    if deny_reason is not None:
+                        continue
+                    for rule in json.loads(revision_row["enforcement_rules_json"]):
+                        if rule["enforcement"] != "HARD":
+                            continue
+                        requested_amount = dict(request.reserved_dimensions).get(
+                            rule["dimension_ref"], 0
+                        )
+                        if requested_amount <= 0:
+                            continue
+                        exposure = self._load_exposure(
+                            connection,
+                            scope.accounting_scope_ref,
+                            rule["dimension_ref"],
+                        )
+                        projected = (
+                            exposure["reserved_amount"]
+                            + exposure["committed_amount"]
+                            + requested_amount
+                        )
+                        if projected > rule["limit_amount"]:
+                            deny_reason = (
+                                "HARD_LIMIT_EXCEEDED"
+                                if scope.accounting_scope_ref
+                                == request.accounting_scope_ref
+                                else "ANCESTOR_LIMIT_EXCEEDED"
+                            )
+                            break
+
+                ancestry_refs = tuple(
+                    scope.accounting_scope_ref for scope in ancestry
+                )
+                if deny_reason is not None:
+                    self._insert_reservation(
+                        connection,
+                        request=request,
+                        reservation_ref=reservation_ref,
+                        ancestry_refs=ancestry_refs,
+                        policy_revision_refs=tuple(policy_revision_refs),
+                        reserved_dimensions=(),
+                        state="DENIED",
+                        deny_reason_code=deny_reason,
+                        now=now,
+                    )
+                else:
+                    for scope in ancestry:
+                        for dimension_ref, amount in request.reserved_dimensions:
+                            if amount <= 0:
+                                continue
+                            self._increment_exposure(
+                                connection,
+                                scope.accounting_scope_ref,
+                                dimension_ref,
+                                amount,
+                            )
+                    self._crash_hook("AFTER_EXPOSURE_INCREMENT")
+                    self._insert_reservation(
+                        connection,
+                        request=request,
+                        reservation_ref=reservation_ref,
+                        ancestry_refs=ancestry_refs,
+                        policy_revision_refs=tuple(policy_revision_refs),
+                        reserved_dimensions=request.reserved_dimensions,
+                        state="RESERVED",
+                        deny_reason_code=None,
+                        now=now,
+                    )
+        except sqlite3.IntegrityError as error:
+            raise BudgetAuthorityError(
+                "RESERVATION_REQUEST_CONFLICT", request_ref=request.request_ref
+            ) from error
+
+        result = self._load_reservation_by_ref(reservation_ref)
+        assert result is not None
+        return result
+
+    def resolve(self, reservation_ref: str) -> BudgetReservation | None:
+        return self._load_reservation_by_ref(reservation_ref)
+
+    def resolve_by_request(self, request_ref: str) -> BudgetReservation | None:
+        return self._load_reservation_by_request_ref(request_ref)
+
+    def exposure(self, accounting_scope_ref: str, dimension_ref: str) -> tuple[int, int]:
+        """Return (reserved_amount, committed_amount) for one (scope, dimension)."""
+
+        row = self._load_exposure(
+            self._store.connection, accounting_scope_ref, dimension_ref
+        )
+        return row["reserved_amount"], row["committed_amount"]
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _insert_reservation(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        request: BudgetReservationRequest,
+        reservation_ref: str,
+        ancestry_refs: tuple[str, ...],
+        policy_revision_refs: tuple[str, ...],
+        reserved_dimensions: tuple[tuple[str, int], ...],
+        state: str,
+        deny_reason_code: str | None,
+        now: int,
+    ) -> None:
+        connection.execute(
+            """
+            INSERT INTO budget_reservations(
+                reservation_ref, request_ref, activation_ref, run_ref,
+                attempt_seq, accounting_scope_ref, graph_revision_ref,
+                definition_anchor_ref, ancestry_snapshot_json,
+                policy_revision_refs_json, estimate_ref,
+                requested_dimensions_json, reserved_dimensions_json,
+                committed_dimensions_json, released_dimensions_json,
+                state, deny_reason_code,
+                subject_refs_json, created_at, updated_at, caused_by_ref
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                reservation_ref,
+                request.request_ref,
+                request.activation_ref,
+                request.run_ref,
+                request.attempt_seq,
+                request.accounting_scope_ref,
+                request.graph_revision_ref,
+                request.definition_anchor_ref,
+                self._encode_str_tuple(ancestry_refs),
+                self._encode_str_tuple(policy_revision_refs),
+                request.estimate_ref,
+                self._encode_dimension_amounts(request.reserved_dimensions),
+                self._encode_dimension_amounts(reserved_dimensions),
+                self._encode_dimension_amounts(()),
+                self._encode_dimension_amounts(()),
+                state,
+                deny_reason_code,
+                self._encode_str_tuple(request.subject_refs),
+                now,
+                now,
+                request.caused_by_ref,
+            ),
+        )
+
+    def _increment_exposure(
+        self,
+        connection: sqlite3.Connection,
+        accounting_scope_ref: str,
+        dimension_ref: str,
+        amount: int,
+    ) -> None:
+        connection.execute(
+            """
+            INSERT INTO budget_scope_exposure(
+                accounting_scope_ref, dimension_ref, reserved_amount, committed_amount
+            ) VALUES (?, ?, ?, 0)
+            ON CONFLICT(accounting_scope_ref, dimension_ref)
+            DO UPDATE SET reserved_amount = reserved_amount + excluded.reserved_amount
+            """,
+            (accounting_scope_ref, dimension_ref, amount),
+        )
+
+    def _load_exposure(
+        self,
+        connection: sqlite3.Connection,
+        accounting_scope_ref: str,
+        dimension_ref: str,
+    ) -> dict[str, int]:
+        row = connection.execute(
+            """
+            SELECT reserved_amount, committed_amount FROM budget_scope_exposure
+            WHERE accounting_scope_ref = ? AND dimension_ref = ?
+            """,
+            (accounting_scope_ref, dimension_ref),
+        ).fetchone()
+        if row is None:
+            return {"reserved_amount": 0, "committed_amount": 0}
+        return {
+            "reserved_amount": row["reserved_amount"],
+            "committed_amount": row["committed_amount"],
+        }
+
+    def _resolve_chain(
+        self, connection: sqlite3.Connection, accounting_scope_ref: str
+    ) -> tuple[sqlite3.Row, ...]:
+        """Return the validated genesis-to-tip same-scope revision chain, or
+        an empty tuple when that scope has no published history.
+
+        Clarification-003 SS2/SS3/SS8: fails closed with POLICY_NOT_RESOLVABLE
+        if stored history is not a single unambiguous linear chain -- zero or
+        multiple genesis rows, a branch, a cycle, a disconnected row, a
+        non-increasing effective_from step, or a predecessor/successor
+        overlap. Never repairs or guesses; never tie-breaks on ref/row/arrival
+        order.
+        """
+
+        rows = connection.execute(
+            "SELECT * FROM budget_policy_revisions WHERE accounting_scope_ref = ?",
+            (accounting_scope_ref,),
+        ).fetchall()
+        if not rows:
+            return ()
+
+        successors: dict[str | None, list[sqlite3.Row]] = {}
+        for row in rows:
+            successors.setdefault(row["supersedes_ref"], []).append(row)
+
+        genesis_candidates = successors.get(None, [])
+        if len(genesis_candidates) != 1:
+            raise BudgetAuthorityError(
+                "POLICY_NOT_RESOLVABLE", accounting_scope_ref=accounting_scope_ref
+            )
+
+        chain = [genesis_candidates[0]]
+        visited = {chain[0]["budget_policy_revision_ref"]}
+        while True:
+            next_candidates = successors.get(
+                chain[-1]["budget_policy_revision_ref"], []
+            )
+            if not next_candidates:
+                break
+            if len(next_candidates) != 1:
+                raise BudgetAuthorityError(
+                    "POLICY_NOT_RESOLVABLE", accounting_scope_ref=accounting_scope_ref
+                )
+            next_row = next_candidates[0]
+            if next_row["budget_policy_revision_ref"] in visited:
+                raise BudgetAuthorityError(
+                    "POLICY_NOT_RESOLVABLE", accounting_scope_ref=accounting_scope_ref
+                )
+            chain.append(next_row)
+            visited.add(next_row["budget_policy_revision_ref"])
+
+        if len(chain) != len(rows):
+            raise BudgetAuthorityError(
+                "POLICY_NOT_RESOLVABLE", accounting_scope_ref=accounting_scope_ref
+            )
+
+        for predecessor, successor in zip(chain, chain[1:]):
+            if successor["effective_from"] <= predecessor["effective_from"]:
+                raise BudgetAuthorityError(
+                    "POLICY_NOT_RESOLVABLE", accounting_scope_ref=accounting_scope_ref
+                )
+            if (
+                predecessor["effective_until"] is not None
+                and predecessor["effective_until"] > successor["effective_from"]
+            ):
+                raise BudgetAuthorityError(
+                    "POLICY_NOT_RESOLVABLE", accounting_scope_ref=accounting_scope_ref
+                )
+
+        return tuple(chain)
+
+    def _select_current_policy_revision(
+        self, connection: sqlite3.Connection, accounting_scope_ref: str, now: int
+    ) -> sqlite3.Row | None:
+        """Deterministic half-open-interval current selection (Clarification-003
+        SS1/SS7). ``None`` means this scope has no published history at all --
+        it contributes no local rule but does not block the reservation.
+        A scope WITH history but zero or more than one applicable revision at
+        ``now`` fails the whole new authorization closed instead.
+        """
+
+        chain = self._resolve_chain(connection, accounting_scope_ref)
+        if not chain:
+            return None
+
+        applicable: list[sqlite3.Row] = []
+        for index, row in enumerate(chain):
+            if row["effective_until"] is not None:
+                logical_until = row["effective_until"]
+            elif index + 1 < len(chain):
+                logical_until = chain[index + 1]["effective_from"]
+            else:
+                logical_until = None
+            if row["effective_from"] <= now and (
+                logical_until is None or now < logical_until
+            ):
+                applicable.append(row)
+
+        if len(applicable) != 1:
+            raise BudgetAuthorityError(
+                "POLICY_NOT_RESOLVABLE", accounting_scope_ref=accounting_scope_ref
+            )
+        return applicable[0]
+
+    def _validate_chain_linkage(
+        self, connection: sqlite3.Connection, revision: BudgetPolicyRevision
+    ) -> None:
+        """Fail closed unless ``revision`` is a valid genesis or a valid direct
+        successor of the exact current same-scope chain tip (Clarification-003
+        SS2-SS5), evaluated inside the same transaction as its insert.
+        """
+
+        chain = self._resolve_chain(connection, revision.accounting_scope_ref)
+
+        if not chain:
+            if revision.supersedes_ref is not None:
+                raise BudgetAuthorityError(
+                    "BUDGET_POLICY_REVISION_GENESIS_SUPERSEDES_FORBIDDEN",
+                    budget_policy_revision_ref=revision.budget_policy_revision_ref,
+                )
+            return
+
+        if revision.supersedes_ref is None:
+            raise BudgetAuthorityError(
+                "BUDGET_POLICY_REVISION_SUPERSEDES_REQUIRED",
+                budget_policy_revision_ref=revision.budget_policy_revision_ref,
+            )
+
+        target = self._load_revision_row(connection, revision.supersedes_ref)
+        if target is None:
+            raise BudgetAuthorityError(
+                "BUDGET_POLICY_REVISION_SUPERSESSION_TARGET_UNRESOLVED",
+                supersedes_ref=revision.supersedes_ref,
+            )
+        if target["accounting_scope_ref"] != revision.accounting_scope_ref:
+            raise BudgetAuthorityError(
+                "BUDGET_POLICY_REVISION_SUPERSESSION_CROSS_SCOPE",
+                supersedes_ref=revision.supersedes_ref,
+            )
+
+        tip = chain[-1]
+        if target["budget_policy_revision_ref"] != tip["budget_policy_revision_ref"]:
+            raise BudgetAuthorityError(
+                "BUDGET_POLICY_REVISION_SUPERSESSION_NOT_TIP",
+                supersedes_ref=revision.supersedes_ref,
+            )
+
+        if revision.effective_from <= tip["effective_from"]:
+            raise BudgetAuthorityError(
+                "BUDGET_POLICY_REVISION_EFFECTIVE_FROM_NOT_INCREASING",
+                budget_policy_revision_ref=revision.budget_policy_revision_ref,
+            )
+        if (
+            tip["effective_until"] is not None
+            and tip["effective_until"] > revision.effective_from
+        ):
+            raise BudgetAuthorityError(
+                "BUDGET_POLICY_REVISION_PREDECESSOR_OVERLAP",
+                budget_policy_revision_ref=revision.budget_policy_revision_ref,
+            )
+
+    @staticmethod
+    def _load_revision_row(
+        connection: sqlite3.Connection, budget_policy_revision_ref: str
+    ) -> sqlite3.Row | None:
+        return connection.execute(
+            "SELECT * FROM budget_policy_revisions WHERE budget_policy_revision_ref = ?",
+            (budget_policy_revision_ref,),
+        ).fetchone()
+
+    def _load_revision(
+        self, budget_policy_revision_ref: str
+    ) -> BudgetPolicyRevision | None:
+        row = self._store.connection.execute(
+            "SELECT * FROM budget_policy_revisions WHERE budget_policy_revision_ref = ?",
+            (budget_policy_revision_ref,),
+        ).fetchone()
+        if row is None:
+            return None
+        return self._revision_from_row(row)
+
+    def _revision_from_row(self, row: sqlite3.Row) -> BudgetPolicyRevision:
+        return BudgetPolicyRevision(
+            budget_policy_revision_ref=row["budget_policy_revision_ref"],
+            accounting_scope_ref=row["accounting_scope_ref"],
+            effective_from=row["effective_from"],
+            effective_until=row["effective_until"],
+            dimensions=tuple(
+                BudgetDimension(**item)
+                for item in json.loads(row["dimensions_json"])
+            ),
+            enforcement_rules=tuple(
+                BudgetRule(**item)
+                for item in json.loads(row["enforcement_rules_json"])
+            ),
+            created_by_ref=row["created_by_ref"],
+            supersedes_ref=row["supersedes_ref"],
+        )
+
+    def _load_reservation_by_ref(
+        self, reservation_ref: str
+    ) -> BudgetReservation | None:
+        row = self._store.connection.execute(
+            "SELECT * FROM budget_reservations WHERE reservation_ref = ?",
+            (reservation_ref,),
+        ).fetchone()
+        return self._reservation_from_row(row) if row is not None else None
+
+    def _load_reservation_by_request_ref(
+        self, request_ref: str
+    ) -> BudgetReservation | None:
+        row = self._store.connection.execute(
+            "SELECT * FROM budget_reservations WHERE request_ref = ?",
+            (request_ref,),
+        ).fetchone()
+        return self._reservation_from_row(row) if row is not None else None
+
+    @staticmethod
+    def _reservation_from_row(row: sqlite3.Row) -> BudgetReservation:
+        return BudgetReservation(
+            reservation_ref=row["reservation_ref"],
+            request_ref=row["request_ref"],
+            activation_ref=row["activation_ref"],
+            run_ref=row["run_ref"],
+            attempt_seq=row["attempt_seq"],
+            accounting_scope_ref=row["accounting_scope_ref"],
+            graph_revision_ref=row["graph_revision_ref"],
+            definition_anchor_ref=row["definition_anchor_ref"],
+            ancestry_snapshot=tuple(json.loads(row["ancestry_snapshot_json"])),
+            policy_revision_refs=tuple(
+                json.loads(row["policy_revision_refs_json"])
+            ),
+            estimate_ref=row["estimate_ref"],
+            requested_dimensions=tuple(
+                tuple(item) for item in json.loads(row["requested_dimensions_json"])
+            ),
+            reserved_dimensions=tuple(
+                tuple(item) for item in json.loads(row["reserved_dimensions_json"])
+            ),
+            committed_dimensions=tuple(
+                tuple(item) for item in json.loads(row["committed_dimensions_json"])
+            ),
+            released_dimensions=tuple(
+                tuple(item) for item in json.loads(row["released_dimensions_json"])
+            ),
+            state=row["state"],
+            deny_reason_code=row["deny_reason_code"],
+            subject_refs=tuple(json.loads(row["subject_refs_json"])),
+            created_at=row["created_at"],
+            updated_at=row["updated_at"],
+            caused_by_ref=row["caused_by_ref"],
+        )
+
+    def _prove_runtime_binding(self, request: BudgetReservationRequest) -> Activation:
+        """Fail closed unless the request is the exact canonical Runtime/static
+        binding for its Activation -- required before any policy evaluation,
+        exposure mutation, RESERVED/DENIED insert, or existing-request replay.
+        """
+
+        activation = self._activation_repository.resolve(request.activation_ref)
+        if activation is None:
+            raise BudgetAuthorityError(
+                "RESERVATION_ACTIVATION_UNRESOLVED",
+                activation_ref=request.activation_ref,
+            )
+        if (
+            activation.graph_revision_ref != request.graph_revision_ref
+            or activation.static_accounting_scope_ref != request.accounting_scope_ref
+            or activation.module_instance_revision_ref != request.definition_anchor_ref
+        ):
+            raise BudgetAuthorityError(
+                "RESERVATION_STATIC_BINDING_MISMATCH",
+                activation_ref=request.activation_ref,
+            )
+
+        authority = self._runtime_authority.resolve_current(request.run_ref)
+        if (
+            authority is None
+            or authority.activation_ref != activation.activation_ref
+            or authority.execution_ref != activation.execution_ref
+            or authority.run_ref != request.run_ref
+            or authority.attempt_seq != request.attempt_seq
+        ):
+            raise BudgetAuthorityError(
+                "RESERVATION_RUNTIME_AUTHORITY_MISMATCH",
+                run_ref=request.run_ref,
+                attempt_seq=request.attempt_seq,
+            )
+        return activation
+
+    @staticmethod
+    def _require_identical_replay(
+        existing: BudgetReservation, request: BudgetReservationRequest
+    ) -> None:
+        if (
+            existing.activation_ref != request.activation_ref
+            or existing.run_ref != request.run_ref
+            or existing.attempt_seq != request.attempt_seq
+            or existing.accounting_scope_ref != request.accounting_scope_ref
+            or existing.graph_revision_ref != request.graph_revision_ref
+            or existing.definition_anchor_ref != request.definition_anchor_ref
+            or existing.estimate_ref != request.estimate_ref
+            or existing.requested_dimensions != request.reserved_dimensions
+            or existing.subject_refs != request.subject_refs
+            or existing.caused_by_ref != request.caused_by_ref
+        ):
+            raise BudgetAuthorityError(
+                "RESERVATION_REQUEST_CONFLICT", request_ref=request.request_ref
+            )
+
+    @staticmethod
+    def _reservation_ref(request_ref: str) -> str:
+        digest = hashlib.sha256(request_ref.encode("utf-8")).hexdigest()
+        return f"budget-reservation:{digest}"
+
+    def _now(self) -> int:
+        value = self._clock()
+        if type(value) is not int:
+            raise BudgetAuthorityError("BUDGET_CLOCK_INVALID")
+        return value
+
+    @staticmethod
+    def _encode_str_tuple(values: tuple[str, ...]) -> str:
+        return json.dumps(list(values), ensure_ascii=True, separators=(",", ":"))
+
+    @staticmethod
+    def _encode_dimension_amounts(pairs: tuple[tuple[str, int], ...]) -> str:
+        return json.dumps(
+            [list(pair) for pair in pairs],
+            ensure_ascii=True,
+            separators=(",", ":"),
+        )
+
+    @staticmethod
+    def _encode_dimensions(dimensions: tuple[BudgetDimension, ...]) -> str:
+        return json.dumps(
+            [
+                {
+                    "dimension_ref": dimension.dimension_ref,
+                    "unit": dimension.unit,
+                    "measurement_semantics_ref": dimension.measurement_semantics_ref,
+                }
+                for dimension in dimensions
+            ],
+            ensure_ascii=True,
+            separators=(",", ":"),
+        )
+
+    @staticmethod
+    def _encode_rules(rules: tuple[BudgetRule, ...]) -> str:
+        return json.dumps(
+            [
+                {
+                    "rule_ref": rule.rule_ref,
+                    "dimension_ref": rule.dimension_ref,
+                    "limit_amount": rule.limit_amount,
+                    "limit_kind": rule.limit_kind,
+                    "enforcement": rule.enforcement,
+                }
+                for rule in rules
+            ],
+            ensure_ascii=True,
+            separators=(",", ":"),
+        )
+
+    @classmethod
+    def _validate_revision(cls, revision: BudgetPolicyRevision) -> None:
+        if not isinstance(revision, BudgetPolicyRevision):
+            raise BudgetAuthorityError("BUDGET_POLICY_REVISION_INVALID")
+        identity_values = (
+            revision.budget_policy_revision_ref,
+            revision.accounting_scope_ref,
+            revision.created_by_ref,
+        )
+        if any(not cls._is_nonempty(value) for value in identity_values):
+            raise BudgetAuthorityError("BUDGET_POLICY_REVISION_INVALID")
+        if type(revision.effective_from) is not int:
+            raise BudgetAuthorityError("BUDGET_POLICY_REVISION_INVALID")
+        if revision.effective_until is not None and (
+            type(revision.effective_until) is not int
+            or revision.effective_until <= revision.effective_from
+        ):
+            raise BudgetAuthorityError("BUDGET_POLICY_REVISION_INVALID")
+        if type(revision.dimensions) is not tuple:
+            raise BudgetAuthorityError("BUDGET_POLICY_REVISION_INVALID")
+        if type(revision.enforcement_rules) is not tuple:
+            raise BudgetAuthorityError("BUDGET_POLICY_REVISION_INVALID")
+        declared_dimension_refs: set[str] = set()
+        for dimension in revision.dimensions:
+            if not isinstance(dimension, BudgetDimension) or any(
+                not cls._is_nonempty(value)
+                for value in (
+                    dimension.dimension_ref,
+                    dimension.unit,
+                    dimension.measurement_semantics_ref,
+                )
+            ):
+                raise BudgetAuthorityError("BUDGET_POLICY_REVISION_INVALID")
+            if dimension.dimension_ref in declared_dimension_refs:
+                raise BudgetAuthorityError(
+                    "BUDGET_POLICY_REVISION_DIMENSION_DUPLICATE",
+                    dimension_ref=dimension.dimension_ref,
+                )
+            declared_dimension_refs.add(dimension.dimension_ref)
+        seen_rule_refs: set[str] = set()
+        for rule in revision.enforcement_rules:
+            if not isinstance(rule, BudgetRule):
+                raise BudgetAuthorityError("BUDGET_POLICY_REVISION_INVALID")
+            if not cls._is_nonempty(rule.rule_ref) or not cls._is_nonempty(
+                rule.dimension_ref
+            ):
+                raise BudgetAuthorityError("BUDGET_POLICY_REVISION_INVALID")
+            if type(rule.limit_amount) is not int or rule.limit_amount < 0:
+                raise BudgetAuthorityError("BUDGET_POLICY_REVISION_INVALID")
+            if rule.limit_kind not in _SUPPORTED_LIMIT_KINDS:
+                raise BudgetAuthorityError(
+                    "BUDGET_RULE_LIMIT_KIND_UNSUPPORTED",
+                    limit_kind=rule.limit_kind,
+                )
+            if rule.enforcement not in _SUPPORTED_ENFORCEMENTS:
+                raise BudgetAuthorityError("BUDGET_POLICY_REVISION_INVALID")
+            if rule.rule_ref in seen_rule_refs:
+                raise BudgetAuthorityError(
+                    "BUDGET_POLICY_REVISION_RULE_DUPLICATE",
+                    rule_ref=rule.rule_ref,
+                )
+            seen_rule_refs.add(rule.rule_ref)
+            if rule.dimension_ref not in declared_dimension_refs:
+                raise BudgetAuthorityError(
+                    "BUDGET_POLICY_REVISION_RULE_DIMENSION_UNDECLARED",
+                    rule_ref=rule.rule_ref,
+                    dimension_ref=rule.dimension_ref,
+                )
+
+    @classmethod
+    def _validate_request(cls, request: BudgetReservationRequest) -> None:
+        if not isinstance(request, BudgetReservationRequest):
+            raise BudgetAuthorityError("RESERVATION_REQUEST_INVALID")
+        identity_values = (
+            request.request_ref,
+            request.activation_ref,
+            request.run_ref,
+            request.accounting_scope_ref,
+            request.graph_revision_ref,
+            request.definition_anchor_ref,
+            request.estimate_ref,
+            request.caused_by_ref,
+        )
+        if any(not cls._is_nonempty(value) for value in identity_values):
+            raise BudgetAuthorityError("RESERVATION_REQUEST_INVALID")
+        if type(request.attempt_seq) is not int or request.attempt_seq <= 0:
+            raise BudgetAuthorityError("RESERVATION_REQUEST_INVALID")
+        if type(request.reserved_dimensions) is not tuple:
+            raise BudgetAuthorityError("RESERVATION_REQUEST_INVALID")
+        seen_dimensions: set[str] = set()
+        for pair in request.reserved_dimensions:
+            if (
+                type(pair) is not tuple
+                or len(pair) != 2
+                or not cls._is_nonempty(pair[0])
+                or type(pair[1]) is not int
+                or pair[1] < 0
+            ):
+                raise BudgetAuthorityError("RESERVATION_REQUEST_INVALID")
+            if pair[0] in seen_dimensions:
+                raise BudgetAuthorityError("RESERVATION_REQUEST_INVALID")
+            seen_dimensions.add(pair[0])
+        if type(request.subject_refs) is not tuple or any(
+            not cls._is_nonempty(value) for value in request.subject_refs
+        ):
+            raise BudgetAuthorityError("RESERVATION_REQUEST_INVALID")
+
+    @staticmethod
+    def _is_nonempty(value: object) -> bool:
+        return isinstance(value, str) and bool(value.strip())
