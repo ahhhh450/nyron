@@ -6,71 +6,60 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `2`
-- Coordination Revision: `103`
-- Last Accepted Production Commit: `84156a5be8d77dc69fd21b02ffa2cf49f5154a8b`
+- Coordination Revision: `104`
+- Last Accepted Production Commit: `e47511aef987cd9fa5c171e319971f90ab549bd2`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
-- Current Gate: `ARE-GATE-6 — Accounting / Recovery integration`
-- Current Mode: `FINAL INDEPENDENT INTEGRATED REVIEW — CLAUDE REASSIGNED / TRACK C REVIEW COMPLETE`
+- Current Gate: `ARE-GATE-6 — PASS / CLOSED`
+- Current Mode: `POST-GATE TEST-ONLY REPOSITORY FINALIZATION`
 - Orchestration Plan: `coordination/plans/ARE-GATE-6_Parallel_Development_Plan_v0.1.md`
-- Parallelism Policy: `DEFAULT_PARALLEL_UNLESS_WRITE_OR_UNSETTLED_CONTRACT_DEPENDENCY_CONFLICTS`
 
 ## Active / Routed Tasks
 
 | Task | Agent | State | Track / Purpose |
 |---|---|---|---|
-| `NYRON-T-20260827-113` | Claude — fresh independent high-risk reviewer | `IN PROGRESS / R103 REASSIGNMENT` | Final ARE-GATE-6 exact-SHA integrated review of `e47511ae...` |
+| `NYRON-T-20260827-114` | `Codex or DeepSeek — mechanical integration only` | `READY / R104` | Integrate already-reviewed Track C regression tests onto exact accepted production SHA without production changes |
 
-Task 112 is complete. No new production implementation is authorized while Task 113 remains unclassified.
+No new production implementation is authorized by Task 114.
 
-## Stable Component Candidates
+## ARE-GATE-6 Final Acceptance
+
+- State: `PASS / CLOSED`.
+- Acceptance checkpoint: `coordination/checkpoints/ARE-GATE-6_Final_Acceptance.md`.
+- Exact accepted production/test content SHA: `e47511aef987cd9fa5c171e319971f90ab549bd2`.
+- Prior integrated component basis: `9f217faf56149862455aa1be74659c79c884c373`.
+- Frozen Runtime / Accounting Amendment authority: `5c227561fb762861cf85df8db6a4c1f9c4f8a143`.
+- Task 110 executor result: `SUCCESS / READY FOR INDEPENDENT EXACT-SHA INTEGRATED REVIEW`.
+- Task 113 independent reviewer: `Claude`.
+- Task 113 review independence: `REQUIRED / SATISFIED`.
+- Task 113 final classification: `PASS`.
+- Task 113 acceptance recommendation: `YES`.
+- Task 113 blocking / non-blocking findings: `NONE / NONE`.
+- Task 113 complete `tests/kernel`: `319 passed, 2 skipped, 101 subtests passed`.
+- Separate Runtime / Accounting owner-local persistence: `VERIFIED`.
+- Runtime identity authority boundary: `VERIFIED`.
+- exact replay / conflict replay / crash rollback / restart exactly-once / response-loss replay: `VERIFIED`.
+- Recovery / Effect / Resource Owner boundaries: `VERIFIED PRESERVED`.
+- UNKNOWN conversion: `VERIFIED ABSENT`.
+- global transaction / 2PC / saga / shadow Runtime canonical tables / generic projection framework: `NOT INTRODUCED`.
+- Complexity / `OVER_ENGINEERING`: `NO FINDING`.
+
+## Stable Component Lineage
 
 ### Track A — Usage / Ledger
-- State: `COMPLETED / STABLE CANDIDATE READY FOR INTEGRATION`
-- Exact reviewed production candidate: `e5acf1abb9a03667315a364ba7e1a8b002ed31cd`
-- Stable checkpoint: `coordination/checkpoints/ARE-GATE-6_Track-A_Usage_Ledger_Stable_Candidate.md`
-- Open blocking findings: `NONE`.
+- Exact reviewed production candidate: `e5acf1abb9a03667315a364ba7e1a8b002ed31cd`.
+- Stable checkpoint: `coordination/checkpoints/ARE-GATE-6_Track-A_Usage_Ledger_Stable_Candidate.md`.
+- State: `INCLUDED IN ACCEPTED GATE-6 CANDIDATE`.
 
 ### Track B — Recovery / ReconciliationCase
-- State: `COMPLETED / STABLE CANDIDATE READY FOR INTEGRATION`
-- Exact reviewed production candidate: `365f8c3f270ee0d428b95d73ccbf34bc178b979f`
-- Stable checkpoint: `coordination/checkpoints/ARE-GATE-6_Track-B_Recovery_Stable_Candidate.md`
-- Open blocking findings: `NONE`.
+- Exact reviewed production candidate: `365f8c3f270ee0d428b95d73ccbf34bc178b979f`.
+- Stable checkpoint: `coordination/checkpoints/ARE-GATE-6_Track-B_Recovery_Stable_Candidate.md`.
+- State: `INCLUDED IN ACCEPTED GATE-6 CANDIDATE`.
 
 ### Settlement — BudgetReservation Settlement / Overrun
-- State: `COMPLETED / STABLE CANDIDATE READY FOR INTEGRATION`
-- Exact reviewed production candidate: `c324f837fca86e1b0a3b1cbba1196c68654aa30a`
-- Stable checkpoint: `coordination/checkpoints/ARE-GATE-6_Settlement_Stable_Candidate.md`
+- Exact reviewed production candidate: `c324f837fca86e1b0a3b1cbba1196c68654aa30a`.
+- Stable checkpoint: `coordination/checkpoints/ARE-GATE-6_Settlement_Stable_Candidate.md`.
 - Review chain: Task 102 -> 104 FAIL -> 105 fix -> 106 PASS.
-- Open blocking findings: `NONE`.
-
-## Integrated Candidate — Task 110
-
-- Prior integrated component basis: `9f217faf56149862455aa1be74659c79c884c373`.
-- Task 110 result: `SUCCESS / READY FOR INDEPENDENT EXACT-SHA INTEGRATED REVIEW`.
-- Exact production/test content SHA: `e47511aef987cd9fa5c171e319971f90ab549bd2`.
-- Frozen Runtime/Accounting Amendment authority: `5c227561fb762861cf85df8db6a4c1f9c4f8a143`.
-- Separate Runtime / Accounting owner-local SQLite stores: `VERIFIED WORKING`.
-- Former required Accounting -> Runtime `run_attempts` relational FK: `REMOVED`.
-- Runtime identity validation remains authoritative through Runtime repository/resolver: `YES`.
-- Replay / conflicting replay / crash rollback / restart exactly-once / response-loss replay: `VERIFIED BY TASK 110`.
-- Recovery / Effect / Resource ownership boundaries: `PRESERVED BY TASK 110`.
-- Complete `tests/kernel` from executor: `319 passed, 2 skipped, 101 subtests passed`.
-- State: `PENDING COMPLETION OF INDEPENDENT TASK-113 REVIEW`.
-
-## Task 113 — Final Independent Integrated Review
-
-- Exact review target: `e47511aef987cd9fa5c171e319971f90ab549bd2`.
-- Original route: fresh independent Codex review session.
-- Codex disposition: `INTERRUPTED_BY_REVIEWER_QUOTA / NO FINAL CLASSIFICATION`; subsequent fresh Codex launch also blocked by account quota before producing evidence.
-- Quota checkpoint: `coordination/checkpoints/NYRON-T-20260827-113_Quota_Interruption.md`.
-- Reviewer reassignment checkpoint: `coordination/checkpoints/NYRON-T-20260827-113_Reviewer_Reassignment.md`.
-- Current assigned reviewer: `Claude — fresh independent high-risk reviewer`.
-- Current review independence: `REQUIRED`; separate from Codex Task-108/110 implementation context/worktree.
-- Exact target remains unchanged.
-- Claude must truthfully identify itself as reviewer and independently verify any prior checkpoint evidence it relies on.
-- Remote Result: `NONE YET`.
-- Final classification: `UNSET`.
-- `ARE-GATE-6_ACCEPTANCE_RECOMMENDATION`: `UNSET`.
+- State: `INCLUDED IN ACCEPTED GATE-6 CANDIDATE`.
 
 ## Task 108 Architecture Finding Closure
 
@@ -78,7 +67,8 @@ Task 112 is complete. No new production implementation is authorized while Task 
 - Lead decision: `VALID BLOCKER / CLOSED BY ARCHITECTURE AMENDMENT`.
 - Frozen Amendment: `design/amendments/Runtime_Accounting_Amendment_001_Cross_Owner_Identity_Persistence_Boundary.md`.
 - Amendment authority commit: `5c227561fb762861cf85df8db6a4c1f9c4f8a143`.
-- Task 110 implements the required owner-local persistence direction at candidate SHA `e47511ae...`.
+- Implementation delivered by Task 110 and independently accepted by Task 113.
+- State: `CLOSED`.
 
 ## Operator-local Track C — Integrity / Regression Hardening
 
@@ -86,23 +76,20 @@ Task 112 is complete. No new production implementation is authorized while Task 
 - Task 109 Parent Review: `FAIL` with one blocking test-only finding `NYRON-T-20260827-109-F-001`.
 - Task 111 targeted fix: `SUCCESS` at exact corrected SHA `9947e352f829f06c5082f9849b8d47a1189091f8`.
 - Task 112 targeted independent re-review: `PASS`.
-- Exact final compatibility basis: `e47511aef987cd9fa5c171e319971f90ab549bd2`.
-- Corrected Task 002: `40 passed, 150 subtests passed`.
-- All five corrected Track C tests: `97 passed, 279 subtests passed`.
-- Task-110 E2E + BudgetReservation with overlay: `56 passed, 12 subtests passed`.
-- Complete `tests/kernel` with corrected Track C overlay: `416 passed, 2 skipped, 380 subtests passed`.
 - `NYRON-T-20260827-109-F-001`: `CLOSED`.
+- Exact compatibility basis: accepted Gate-6 SHA `e47511aef987cd9fa5c171e319971f90ab549bd2`.
+- Complete compatibility `tests/kernel` with Track C overlay: `416 passed, 2 skipped, 380 subtests passed`.
 - New findings: `NONE`.
-- State: `REVIEW COMPLETE / READY_FOR_LATER_INTEGRATION: YES / NOT YET MERGED`.
+- Review disposition: `READY_FOR_LATER_INTEGRATION: YES`.
+- Current state: `TASK 114 FINAL TEST-ONLY INTEGRATION ROUTED / NOT YET REPOSITORY-FINALIZED`.
 
-## Revision 103 Decision
+## Revision 104 Decision
 
-- Task 112 remains `PASS`; Track C remains fully cleared for later test-only integration and does not block production acceptance.
-- Task 113's originally routed Codex reviewer could not complete because of account quota. A second fresh Codex session could not start, confirming current reviewer unavailability rather than a candidate defect.
-- To avoid holding the final high-risk gate on tool quota, Task 113 is formally reassigned to a fresh independent Claude reviewer under `coordination/checkpoints/NYRON-T-20260827-113_Reviewer_Reassignment.md`.
-- Claude is an allowed high-risk independent reviewer under the Review Protocol. Provenance must remain explicit: the final Result is Claude-authored, not Codex-authored.
-- Claude may read the prior quota checkpoint but must independently verify evidence it relies on; production/test content remains read-only and the exact target remains `e47511aef987cd9fa5c171e319971f90ab549bd2`.
-- Until a remotely readable Task-113 Result is verified, the Task remains unclassified and `Last Accepted Production Commit` remains unchanged.
+- Task 113 Repository Result was verified as an independent Claude `PASS` at exact SHA `e47511aef987cd9fa5c171e319971f90ab549bd2`, with `ARE-GATE-6_ACCEPTANCE_RECOMMENDATION: YES`, no findings, and all required validation independently reproduced.
+- The final exact-SHA independent-review requirement in the ARE-GATE-6 orchestration plan is satisfied.
+- The Development Orchestrator therefore accepts `e47511aef987cd9fa5c171e319971f90ab549bd2` as the new Last Accepted Production Commit and closes ARE-GATE-6.
+- Track C is already independently reviewed and compatible with the accepted production SHA. Because it is test-only and changes no production semantics, it is routed through one final mechanical integration Task 114 rather than reopening Gate-6 production review.
+- Task 114 must preserve the accepted `src/` tree byte-for-byte and may add only the five exact reviewed Track C test files.
 
 ## Gate-6A Closure
 
