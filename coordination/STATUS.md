@@ -6,7 +6,7 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `2`
-- Coordination Revision: `91`
+- Coordination Revision: `92`
 - Last Accepted Production Commit: `84156a5be8d77dc69fd21b02ffa2cf49f5154a8b`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Current Gate: `ARE-GATE-6 — Accounting / Recovery integration`
@@ -18,8 +18,9 @@
 
 | Task | Agent | State | Track / Purpose |
 |---|---|---|---|
-| `NYRON-T-20260826-101` | Claude Code | `READY / R91` | Track B — targeted exact-SHA Recovery re-review of `365f8c3f...`; operator confirmed Claude may finish this already-routed task before restriction |
-| `NYRON-T-20260826-102` | Codex | `READY / R90` | Settlement — known-actual commit/release/overrun foundation on exact Track-A candidate `e5acf1ab...` |
+| `NYRON-T-20260826-102` | Codex | `READY / R92` | Settlement — known-actual commit/release/overrun foundation on exact Track-A candidate `e5acf1ab...` |
+
+No second active development task is currently routed. Track B has completed its stable-candidate review chain and released its slot.
 
 ## Stable Component Candidates
 
@@ -33,21 +34,27 @@
 - Final validation at exact candidate: focused Usage/Ledger `21 passed`; full kernel `284 passed, 2 skipped, 96 subtests passed`; `git diff --check` clean.
 - Global acceptance/integration: `PENDING`.
 
-## Track B — Recovery / ReconciliationCase
+### Track B — Recovery / ReconciliationCase
 
-- Task 100 fix result: `SUCCESS`; exact correction candidate `365f8c3f270ee0d428b95d73ccbf34bc178b979f`.
-- Task 101 targeted independent re-review is restored to `READY` by explicit operator correction: Claude may complete this already-routed review before becoming unavailable for further Nyron work.
-- Task 103 remains a backup route only and must not execute while Task 101 remains viable.
-- Track B is not yet a stable component candidate until the independent targeted re-review passes the exact candidate SHA.
+- State: `COMPLETED / STABLE CANDIDATE READY FOR GLOBAL INTEGRATION`
+- Exact reviewed production candidate: `365f8c3f270ee0d428b95d73ccbf34bc178b979f`
+- Stable checkpoint: `coordination/checkpoints/ARE-GATE-6_Track-B_Recovery_Stable_Candidate.md`
+- Review chain: Task 092 implementation -> 096 semantic review -> 097 mechanical audit -> 098 code review -> 100 fix -> 101 targeted exact-SHA re-review PASS.
+- Task 101 result: `PASS / ALL TARGETED FINDINGS CLOSED`.
+- Open blocking findings: `NONE`.
+- Final independent validation at exact candidate: focused Recovery `12 passed, 5 subtests passed`; full kernel `275 passed, 2 skipped, 101 subtests passed`; `git diff --check` clean; independent retry/restart, divergent-binding, race, and raw-DELETE probes PASS.
+- Backup Task 103: `VOID / BACKUP NOT NEEDED / DO NOT EXECUTE`.
+- Global acceptance/integration: `PENDING`.
 
-## Revision 91 Decision
+## Revision 92 Decision
 
-- Operator clarified that Claude is about to become restricted but may complete the already-routed Track-B Task 101.
-- Prior interpretation that Task 101 should be voided or held for reviewer capacity is withdrawn.
-- Task 101 remains assigned to the independent Task-096 Claude reviewer and is executable now.
-- Task 103 is retained only as a backup route if Task 101 cannot complete; it is not an active parallel duplicate review.
-- After Task 101, Claude is not to be routed new Nyron development/review work unless the operator later changes this constraint.
-- Revision 91 does not change any frozen Contract, exact Recovery review target, Track-A stable candidate, Settlement basis, or Last Accepted Production Commit.
+- Task 101 Repository Result was verified as `PASS / ALL TARGETED FINDINGS CLOSED` against exact SHA `365f8c3f270ee0d428b95d73ccbf34bc178b979f` with required review independence satisfied.
+- Track B is therefore classified as a stable component candidate ready for global integration.
+- Track B releases its active development slot; this does not automatically create a new task or increase the operator's parallel-capacity ceiling.
+- Task 103 remains void because the primary independent review route completed successfully.
+- Settlement Task 102 remains the only currently routed implementation task and is mechanically re-anchored to Revision 92; its exact Track-A basis, semantics, scope, and acceptance boundary are unchanged.
+- Track A and Track B stable-candidate classifications do not change `Last Accepted Production Commit`; global exact-SHA integration remains separate.
+- The prior Task-092 session-name/process mismatch remains a NON_BLOCKING process record and does not prevent Track-B stable-candidate classification.
 
 ## Gate-6A Closure
 
@@ -73,6 +80,12 @@
 - Severity: `NON_BLOCKING`
 - State: `OPEN / DEFERRED`
 - Summary: focused validation branch coverage debt retained for later bounded cleanup.
+
+### `R-096-03 / NYRON-T-20260826-098-F-004 / NYRON-T-20260826-097-F-001`
+- Type: `PROCESS`
+- Severity: `NON_BLOCKING`
+- State: `OPEN / RECORD-ONLY`
+- Summary: Task-092 Result used the older session-name form instead of the later fixed `TRACK_B_TASK_092` convention; no production correctness impact.
 
 ## Standing Interlocks
 
