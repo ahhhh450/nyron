@@ -4,46 +4,44 @@
 >
 > Bootstrap provenance: migrated from `design/coordination/STATUS.md` at repository state `04d7c2222d2a4e27dae68259d70b6f0d95b139fb`.
 >
-> Status compacted at Revision 62. Historical detail remains canonical in prior STATUS revisions and `coordination/tasks/`, `coordination/results/`, `coordination/checkpoints/`.
+> Status compacted at Revision 63. Historical detail remains canonical in prior STATUS revisions and `coordination/tasks/`, `coordination/results/`, `coordination/checkpoints/`.
 
 ## Coordination
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `1`
-- Coordination Revision: `62`
+- Coordination Revision: `63`
 - Last Accepted Commit: `e410ca50a27fcb3273848000ef3846279ebda00d`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Project Phase: `SYSTEM FOUNDATION IMPLEMENTATION`
 - First Slice Closure: `PASS / CLOSED`
-- Current Frozen Implementation Gate: `ARE-GATE-5 — Module Host trust boundary`
+- Current Frozen Implementation Gate: `ARE-GATE-5 — Module Host trust boundary / RuntimeContext foundation under independent review`
 
 ## Active Tasks
 
 | Task | Type | Agent | State | Depends On |
 |---|---|---|---|---|
-| `NYRON-T-20260826-061` | Gate-5 trusted Host broker-only mediation implementation | Claude Code | `READY` | overall ARE-GATE-4 PASS/CLOSED |
+| `NYRON-T-20260826-061` | Gate-5 RuntimeContext / inert handle trust-boundary implementation | Claude Code | `IN_REVIEW` | overall ARE-GATE-4 PASS/CLOSED |
+| `NYRON-T-20260826-062` | independent HIGH-risk review of Task 061 | Codex | `READY` | Task 061 remote content delivered |
+| `NYRON-T-20260826-063` | frozen-contract live-broker ABI evidence inventory | DeepSeek | `READY` | read-only; runs in parallel with Task 062 |
 
 ## Accepted / Reviewed This Revision
 
-- `NYRON-T-20260826-060` — independent HIGH-risk Review of Task 059 — `PASS / ACCEPTED`; Findings `NONE`; Blockers `NONE`.
-- Task 060 independently verified exact Task-059 content `213bfdae0b35a4f3af2aae4b675d0a5fc01f55f7` and Result-record tip `fc6d26c91f5b75196968b1fa9bb37afe5e83fbe0` on the exact Revision-61 review basis.
-- Reviewer-originated validation constructed direct-storage conflict rows for same-Run stale R1, same-Attempt second operation and cross-Run overlap, then drove the real Effect admission path and proved all required conflicts fail closed.
-- Reviewer captured full 21-column snapshots of prior conflicting EffectOperation rows and proved byte-for-byte immutability across rejection.
-- Task 060 canonical Result is recorded at `coordination/results/NYRON-T-20260826-060.md`; record commit `6f6c33817c1d8d946f3e4e408becec48ada6ab70`.
-- `NYRON-T-20260826-059` — Gate-4C same-resource Effect conflict admission barrier — `ACCEPTED / INTEGRATED`.
-- Task 059 content commit: `213bfdae0b35a4f3af2aae4b675d0a5fc01f55f7`.
-- Task 059 Result-record tip: `fc6d26c91f5b75196968b1fa9bb37afe5e83fbe0`.
-- Integration PR: `#25`.
-- Integration merge commit: `e410ca50a27fcb3273848000ef3846279ebda00d`.
-- Task-059 HIGH-risk Review Debt is `CLOSED` by accepted Task 060.
-- `ARE-GATE-4C — Conflicting / Non-Conflicting R2 Effect Admission Barrier` is `PASS / CLOSED`.
-- Overall `ARE-GATE-4 — Replacement Fencing` is `PASS / CLOSED`.
-- Accepted Gate-4 chain now proves: atomic R1→R2 authority cutover; stale-R1 authority rejection; exact-R1 old Effect/Lease cleanup through Owners; truthful fencing/UNKNOWN semantics; same-resource conflict blocking across stale same-Run R1, same Attempt and cross-Run operations; FENCED/COMPLETED clear only active conflict and never imply semantic retry authorization.
-- `ARE-GATE-5 — Module Host trust boundary` is opened via Task `NYRON-T-20260826-061`.
-- Task 061 is assigned to `Claude Code` as core implementation. Planned independent Reviewer is `Codex`, restoring Claude/Codex as alternating primary implementation + high-risk cross-review agents rather than using Claude as a default review-only lane.
-- Gate-5 frozen target is broker-only effects/resources, no raw DB/StateStore exposure, real effect-boundary fencing through accepted Owner paths, and no hostile third-party isolation claim without physical isolation.
-- Task 061 must remain TRUSTED MODULE MODE only and MUST NOT introduce Module filesystem access. If Host implementation requires filesystem namespace exposure or hostile/untrusted Module support, `NYRON-T-20260825-038-F-001` becomes a blocking prerequisite and the Task must stop/escalate.
-- No additional parallel production Task is opened in this revision. Gate-5 is a new trust-boundary phase with a standing security interlock; parallel work will be opened only when repository facts show an independent lane that cannot invalidate Task-061 correctness basis.
+- No Task-061 production implementation is accepted or integrated in Revision 63.
+- Task `NYRON-T-20260826-061` returned Executor `SUCCESS` on exact Epoch 1 / Revision 62 basis.
+- Orchestrator independently verified content commit `dd6a41bc539d00a09a8a0fcc075b7cc0a0b63225` is a direct child of exact Revision-62 main commit `7bb32c091f07193011fb3d714542b53adec83e54`; compare is `ahead 1 / behind 0`.
+- Exact delivery-content delta is four authorized files only: `src/nyron_kernel/host/runtime_context.py`, `src/nyron_kernel/host/trusted_host.py`, `src/nyron_kernel/host/__init__.py`, `tests/kernel/test_trusted_host_runtime_context.py`.
+- No Store, Capability Owner, Resource Owner, Effect Owner, Gate-4 production, schema, Frozen Design or STATUS change exists in Task-061 delivery content.
+- Task-061 canonical Result is recorded by the Orchestrator at `coordination/results/NYRON-T-20260826-061.md`; record commit `f9e3ca6611e7f5ee88605f34d72b0da763263fcc`. This record does not change delivery-content identity.
+- Executor reports focused RuntimeContext/Host `22 pass + 8 subtests`, existing trusted-host concat `19 pass + 8 subtests`, complete `tests/kernel` `223 pass + 2 expected skips + 82 subtests`, `git diff --check` PASS and exact scope PASS.
+- Delivered `RuntimeContext` is immutable primitive/opaque data; `CapabilityHandle` copies capability identity refs only; `ResourceHandle` carries only `resource_ref` + `lease_ref` and no `Resource.external_ref` / managed-root path. `TrustedModuleHost.execute()` accepts only `None` or exact `RuntimeContext` type.
+- Executor explicitly did NOT implement a Module-callable live broker/effect invocation ABI. Therefore Task 061 cannot by itself close overall ARE-GATE-5.
+- Executor surfaced `NYRON-T-20260826-061-F-001` as an `ARCHITECTURE / NON_BLOCKING CANDIDATE / OPEN PENDING REVIEW`: current frozen contracts specify the RuntimeContext/trust-boundary direction but, according to Executor, do not uniquely determine a concrete Python live-broker invocation ABI without inventing a generalized Host SDK or importing an out-of-scope effect surface.
+- Task 061 moves to `IN_REVIEW`; HIGH-risk Review Debt is OPEN.
+- Independent Codex Task `NYRON-T-20260826-062` is opened on exact content `dd6a41bc539d00a09a8a0fcc075b7cc0a0b63225`. Reviewer must add its own negative validation, verify inert-handle/no-smuggling claims, and independently classify `061-F-001`.
+- In parallel, LOW-risk read-only DeepSeek Task `NYRON-T-20260826-063` inventories only what the frozen/current contracts explicitly specify vs leave unspecified about a live Module broker ABI. It has no design/acceptance authority and uses `RECHECK_AND_CONTINUE_IF_UNAFFECTED`.
+- Parallelism is intentional and safe: Task 062 reviews immutable Task-061 content; Task 063 performs read-only contract evidence extraction. Neither changes production or coordination state, and both start on Revision 63.
+- `ARE-GATE-5` remains `OPEN / IN_REVIEW`; no Gate-6 production work is authorized.
 
 ## Accepted Production Baseline
 
@@ -53,18 +51,19 @@
 - `ARE-GATE-3 — EffectOperation foundation` — `PASS / CLOSED`.
 - `ARE-GATE-4A — Runtime Attempt Replacement + Stale-Authority Cutover` — `PASS / CLOSED`; Task 055 integrated, Task 056 accepted.
 - `ARE-GATE-4B — Old Effect / Lease Fencing on Replacement` — `PASS / CLOSED`; Task 057 integrated, Task 058 accepted.
-- `ARE-GATE-4C — Conflicting / Non-Conflicting R2 Effect Admission Barrier` — `PASS / CLOSED`; Task 059 content `213bfdae0b35a4f3af2aae4b675d0a5fc01f55f7`; Task 060 review `PASS`; integration merge `e410ca50a27fcb3273848000ef3846279ebda00d`.
-- Overall `ARE-GATE-4 — Replacement Fencing` — `PASS / CLOSED`.
-- `ARE-GATE-5 — Module Host trust boundary` — `OPEN / READY` via Task 061.
-- `ARE-GATE-6 — Accounting/Recovery integration` — future.
+- `ARE-GATE-4C — Conflicting / Non-Conflicting R2 Effect Admission Barrier` — `PASS / CLOSED`; Task 059 integrated after Task 060 PASS.
+- Overall `ARE-GATE-4 — Replacement Fencing` — `PASS / CLOSED`; integration tip `e410ca50a27fcb3273848000ef3846279ebda00d`.
+- `ARE-GATE-5 — Module Host trust boundary` — `OPEN / IN_REVIEW`; Task 061 bounded RuntimeContext foundation is submitted but not accepted.
+- `ARE-GATE-6 — Accounting/Recovery integration` — future / not open.
 
 ## Review Debt
 
 - No OPEN Review Debt remains through ARE-GATE-4.
-- Task `NYRON-T-20260826-061` is HIGH-risk production work and requires a new independent Codex Review after remote delivery before Gate-5 acceptance/integration.
+- `NYRON-T-20260826-061` HIGH-risk Review Debt is OPEN and can only be cleared by current-basis independent Task `NYRON-T-20260826-062` with Reviewer-originated validation and no blocking Finding.
 
 ## Open Findings
 
+- `NYRON-T-20260826-061-F-001` — `ARCHITECTURE / NON_BLOCKING CANDIDATE / OPEN PENDING REVIEW` — Task 061 implements only RuntimeContext/opaque inert handles and no live Module-callable broker/effect invocation ABI. Codex Task 062 must determine whether this is a valid bounded Gate-5 remainder or a blocking Task-scope failure. Overall Gate-5 cannot close while this remains unresolved.
 - `NYRON-T-20260825-038-F-001` — `SECURITY / NARROWED / OPEN` — Resource provenance residual pre-first-identity namespace race. Activation Condition: less-trusted/co-resident actor gains concurrent mutation capability over managed-root/path namespace. Module filesystem/Host trust-boundary exposure, shared/network-root assumptions or equivalent namespace attacker capability make this blocking.
 - `NYRON-T-20260826-043-F-001` — `ARCHITECTURE / NON_BLOCKING / OPEN` — authority-consumption linearization depends on canonical `SQLiteStore.transaction()` / `BEGIN IMMEDIATE`, logically single-writer execution and unchanged connection/locking model. Genuine multi-thread/worker/pool/raw writer/process/distributed authority or long/async ordering change activates mandatory revalidation.
 - `NYRON-T-20260826-048-F-001` — `IMPLEMENTATION / NON_BLOCKING / OPEN` — safe Effect recovery can heal to COMPLETED but second execute returns `EFFECT_OPERATION_NOT_DISPATCHABLE`; caller ergonomics only.
@@ -94,8 +93,8 @@ Frozen D-004 §26 route:
 - `ARE-GATE-2` — PASS / CLOSED;
 - `ARE-GATE-3` — PASS / CLOSED;
 - `ARE-GATE-4` — PASS / CLOSED;
-- `ARE-GATE-5` — `OPEN / READY` via Task 061;
-- `ARE-GATE-6` — future.
+- `ARE-GATE-5` — `OPEN / IN_REVIEW` via Tasks 061/062, with Task 063 parallel evidence inventory;
+- `ARE-GATE-6` — future / not open.
 
 Gate-5 must preserve these load-bearing semantics:
 
@@ -106,7 +105,7 @@ Gate-5 must preserve these load-bearing semantics:
 - Resource handles are proxies, not raw lifecycle ownership or raw managed-root path authority;
 - current in-process Trusted Module Mode may continue, but it is not hostile-plugin isolation;
 - third-party hostile code support cannot be claimed without real enforceable physical isolation;
-- current Gate-5 slice must not activate 038-F-001 or 043-F-001.
+- current Gate-5 work must not activate 038-F-001 or 043-F-001.
 
 ## Final Result SHA Rule
 
