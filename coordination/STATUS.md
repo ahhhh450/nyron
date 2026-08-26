@@ -8,37 +8,38 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `1`
-- Coordination Revision: `57`
-- Last Accepted Commit: `e55e4929fe7166f11c4a53450efb3b5f623270ac`
+- Coordination Revision: `58`
+- Last Accepted Commit: `1be4f8e46c27130cb815503165193164214003e6`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Project Phase: `SYSTEM FOUNDATION IMPLEMENTATION`
 - First Slice Closure: `PASS / CLOSED`
-- Current Frozen Implementation Gate: `ARE-GATE-4A — Runtime Attempt Replacement + Stale-Authority Cutover / Independent Review`
+- Current Frozen Implementation Gate: `ARE-GATE-4B — Old Effect / Lease Fencing on Replacement`
 
 ## Active Tasks
 
 | Task | Type | Agent | State | Depends On |
 |---|---|---|---|---|
-| `NYRON-T-20260826-055` | Gate-4A Runtime Attempt replacement + stale-authority cutover | Codex | `IN_REVIEW` | corrected Gate-4 plan accepted/integrated via Tasks 053/054 |
-| `NYRON-T-20260826-056` | independent Gate-4A replacement/stale-authority review | Claude Code | `READY` | Task 055 remote Result submitted |
+| `NYRON-T-20260826-057` | Gate-4B exact-R1 Effect/Lease fencing orchestration | Codex | `READY` | ARE-GATE-4A PASS/CLOSED; Task 055 integrated; Task 056 accepted |
 
 ## Accepted This Revision
 
-- No Task-055 production implementation is accepted or integrated in Revision 57.
-- Task `NYRON-T-20260826-055` returned Executor `SUCCESS` on the exact Epoch 1 / Revision 56 basis.
-- Orchestrator independently verified content commit `dde52c2440b8e757febe7a7624977968af93e089` is a direct child of Revision-56 main commit `6381a840159504b98bca9812ddf10074a4f32039`; compare is `ahead 1 / behind 0`.
-- Task-055 content delta is exactly the authorized eight files: `src/nyron_kernel/execution/run.py`, `src/nyron_kernel/store/sqlite_store.py`, five existing kernel test files plus `tests/kernel/test_run_attempt_authority.py`, and Task-055 checkpoint. Capability/Resource/Effect production Owners are untouched.
-- Task-055 canonical Result is recorded at `coordination/results/NYRON-T-20260826-055.md`; Result-record tip `f7daf805290a68f3fa5627d5a811408a469c79e2` is record-only and does not change content identity.
-- Executor reports targeted Gate-4A validation `94 passed`, `2 capability skips`, `66 subtests`; complete `tests/kernel` `183 passed`, `2 capability skips`, `74 subtests`; atomic rollback/CAS, raw-SQL counter/non-reactivation attacks, stale-R1 Capability/Resource/Effect/terminal-commit rejection, R2 current-authority resolution, `git diff --check` and scope checks PASS.
-- Orchestrator code inspection confirms `replace_attempt()` performs the R1→R2 cutover inside one canonical store transaction and does not implement Gate 4B/4C or modify downstream authority Owners.
-- Storage triggers are treated only as structural invariants; no SQLite caller-provenance claim is accepted.
-- An explicit upgrade-compatibility risk remains to be independently tested: a pre-4A existing `run_attempts` table may retain the old SQLite state CHECK that lacks `REPLACED`, because `CREATE TABLE IF NOT EXISTS` does not rewrite existing table constraints. This is not yet classified as a Finding; Task 056 must establish actual shipped behavior on a real pre-4A database.
-- Task 055 moves to `IN_REVIEW`.
-- Independent HIGH-risk Claude Task `NYRON-T-20260826-056` is opened against exact content `dde52c2440b8e757febe7a7624977968af93e089` and Result-record tip `f7daf805290a68f3fa5627d5a811408a469c79e2`.
-- Task 056 must add Reviewer-originated adversarial validation, including mandatory pre-4A existing-database upgrade testing plus stale-R1/storage attacks.
-- `ARE-GATE-4A` remains `OPEN / IN_REVIEW`; no 4B or 4C production work is authorized.
-- `NYRON-T-20260826-054` remains `SUCCESS / ACCEPTED / INTEGRATED`; corrected Gate-4 plan is the current non-normative implementation-planning baseline.
-- `NYRON-T-20260826-053-F-001` remains `CLOSED` by Task 054.
+- `NYRON-T-20260826-056` — independent HIGH-risk review of Task 055 — `PASS_WITH_FINDINGS / ACCEPTED`; Blocking Findings `NONE`.
+- Task 056 executed on exact Epoch 1 / Revision 57 basis and independently verified Task-055 content `dde52c2440b8e757febe7a7624977968af93e089` plus Result-record tip `f7daf805290a68f3fa5627d5a811408a469c79e2`.
+- Reviewer independently re-ran the targeted Run/Capability/Resource/Effect/terminal-commit/E2E suites and complete `tests/kernel`: `183 passed + 2 expected skips`.
+- Reviewer-originated adversarial validation included a real file-backed pre-4A database upgrade probe and an independently-constructed stale-R1-vs-current-R2 end-to-end attack spanning Capability, Resource, Effect and terminal commit.
+- Gate-4A core proof is accepted: one CAS-guarded canonical `BEGIN IMMEDIATE` transaction marks exact R1 `REPLACED`, creates R2 `CREATED`, advances `current_attempt_seq` and `fencing_generation`, and makes R1 immediately stale at all already-existing authority-consumption/terminal-commit boundaries without downstream Owner production changes.
+- `NYRON-T-20260826-056-F-001` — `IMPLEMENTATION / NON_BLOCKING / OPEN` — existing SQLite tables are not rebuilt by `CREATE TABLE IF NOT EXISTS`, so a pre-4A database does not retroactively gain the new `run_attempts.state` CHECK. Replacement and all security-critical transition/monotonicity/pairing triggers still work on the old database. Activation Condition: any real persistent Nyron database is expected to survive across a schema-adding version boundary. Closure requires an explicit fresh-database-only policy for this phase or a real SQLite schema migration/rebuild mechanism before that activation.
+- `NYRON-T-20260826-056-F-002` — `IMPLEMENTATION / NON_BLOCKING` — `CLOSED / NO_ACTION_REQUIRED`; `replace_attempt()` uses a direct fault-injection parameter rather than the common constructor `crash_hook` pattern, with no correctness/security impact. Optional consistency cleanup only if RunRepository later gains more crash points.
+- `NYRON-T-20260826-055` — Gate-4A implementation — `ACCEPTED / INTEGRATED`.
+- Task 055 content commit: `dde52c2440b8e757febe7a7624977968af93e089`.
+- Task 055 Result-record tip: `f7daf805290a68f3fa5627d5a811408a469c79e2`.
+- Integration PR: `#23`.
+- Integration merge commit: `1be4f8e46c27130cb815503165193164214003e6`.
+- Task-055 HIGH-risk Review Debt is `CLOSED` by accepted Task 056.
+- `ARE-GATE-4A — Runtime Attempt Replacement + Stale-Authority Cutover` is `PASS / CLOSED`.
+- Both standing interlocks remain un-crossed: `NYRON-T-20260826-043-F-001` is NOT ACTIVATED under the synchronous single-writer canonical SQLite discipline, and `NYRON-T-20260825-038-F-001` is NOT ACTIVATED because no Resource filesystem trust surface was expanded.
+- `ARE-GATE-4B — Old Effect / Lease Fencing on Replacement` is opened only via Task `NYRON-T-20260826-057`.
+- `ARE-GATE-4C` remains `NOT OPEN`; no EffectConflictScope/conflict-admission production work is authorized yet.
 
 ## First Slice Closure
 
@@ -59,24 +60,24 @@ The accepted connected path is:
 `-> admitted WorkflowExecution`
 `-> input Packet / Delivery`
 `-> transactional Activation`
-`-> exactly one Run + initial RunAttempt(1, CREATED)`
-`-> durable CREATED -> ACTIVE before Module invocation`
-`-> TrustedModuleHost.execute()`
-`-> durable output value`
-`-> full current-attempt fenced terminal canonical commit`
-`-> Attempt SUCCEEDED / Run SUCCESS`
-`-> immutable source-bound Output Packet`
-`-> replay-safe Delivery projection`.
+`-> Run + current RunAttempt`
+`-> durable Attempt execution / terminal commit`
+`-> Capability / Resource / Effect authority-consumption foundations`
+`-> durable Effect ACTIVE / crash ambiguity / revoke / truthful fencing`
+`-> atomic R1 -> R2 Attempt replacement cutover`
+`-> stale R1 authority rejection across all existing Owner boundaries`.
 
 ## Accepted Production Baseline
 
+- `NYRON-T-20260826-056` — independent Gate-4A replacement review — `PASS_WITH_FINDINGS / ACCEPTED`; no blocking Finding.
+- `NYRON-T-20260826-055` — atomic Attempt replacement / stale-authority cutover — `ACCEPTED / INTEGRATED`; content `dde52c2440b8e757febe7a7624977968af93e089`; merge `1be4f8e46c27130cb815503165193164214003e6`.
 - `NYRON-T-20260826-052` — targeted independent revoke/fence correction re-review — `PASS / ACCEPTED`; Blocking Findings `NONE`.
 - `NYRON-T-20260826-049/051` — corrected Effect revoke/fence foundation — `ACCEPTED / INTEGRATED`; Task 049 content `4e4aa98c464a1a5f588080bd3c2873c862b8f441`; correction content `8c5823aaa01a86c926daa887fe74744ac9264a5f`; integration merge `96698eda3e708945e9e12933ce8fe8793137db7f`.
 - `NYRON-T-20260826-048` — independent durable ACTIVE / crash-ambiguity EffectOperation review — `PASS_WITH_FINDINGS / ACCEPTED`; Blocking Findings `NONE`.
 - `NYRON-T-20260826-047` — durable ACTIVE / crash-ambiguity EffectOperation foundation — `ACCEPTED / INTEGRATED`; content `3e18a09420d2cd5e367fe59d812e9a9bf1324418`; merge `5ae6cef47fe198448979a4ce74a0de6f40ecb9db`.
 - `NYRON-T-20260826-046` — independent Resource provenance hardening review — `PASS_WITH_FINDINGS / ACCEPTED`; parent security finding `NARROWED / OPEN`.
 - `NYRON-T-20260826-045` — Resource provenance/path-substitution hardening — `ACCEPTED / INTEGRATED`; content `e2978722199fbab2034268a62c7ee629d9ebb7c0`; merge `99d46f2fd627c0a930c6867dd9e1bfb577abe970`.
-- `NYRON-T-20260826-043` — independent bounded EffectOperation review — `PASS_WITH_FINDINGS / ACCEPTED`; real multi-connection reviewer probe established the current SQLite linearization proof and left an explicit future-concurrency interlock.
+- `NYRON-T-20260826-043` — independent bounded EffectOperation review — `PASS_WITH_FINDINGS / ACCEPTED`; real multi-connection probe established the current SQLite linearization proof and left an explicit future-concurrency interlock.
 - `NYRON-T-20260825-042` — bounded EffectOperation / first real authority-consumption foundation — `ACCEPTED / INTEGRATED`; content `15b01a3efd49011fa7919b913d1acd3cd11d0b84`; merge `18541069a4e4987c97dae7bf8ba3b5ab6c31844c`.
 - `NYRON-T-20260825-037/038/040` — Resource / ResourceLease foundation + independent review chain — `ACCEPTED / INTEGRATED`.
 - `NYRON-T-20260825-034/035/036/041` — Capability foundation + review/coverage chain — `ACCEPTED / INTEGRATED`.
@@ -93,14 +94,15 @@ Final Results must include exact full 40-character `SHA Verification Evidence` w
 
 ## Review Debt
 
-- No OPEN Review Debt remains from `ARE-GATE-3`.
-- `NYRON-T-20260826-055` — HIGH-risk Gate-4A production Review Debt — OPEN. Clearance requires current-basis independent Task 056 with Reviewer-originated adversarial validation and no blocking Finding.
+- No OPEN Review Debt remains from `ARE-GATE-3` or `ARE-GATE-4A`.
+- Task `NYRON-T-20260826-057` is HIGH-risk production work and will require a new independent Claude Review after remote delivery before 4B acceptance/integration.
 
 ## Open Findings
 
 - `NYRON-T-20260825-038-F-001` — `SECURITY / NARROWED / OPEN` — final-component symlink/junction/reparse adoption is rejected and post-first-identity substitution is hardened, but substitution before the first identity/descriptor read remains possible. Activation Condition: any less-trusted/co-resident actor gains concurrent mutation capability over the managed root or relevant path namespace. Module filesystem access, Host trust-boundary exposure, shared/network-root assumptions or equivalent namespace attacker capability make this a blocking prerequisite.
 - `NYRON-T-20260826-043-F-001` — `ARCHITECTURE / NON_BLOCKING / OPEN` — authority-consumption linearization depends on every authority-mutating write preserving canonical `SQLiteStore.transaction()` / `BEGIN IMMEDIATE` discipline. Activation Condition: genuine multi-threaded/worker-pool Runtime, connection pooling, independent/raw writer path, changed SQLite locking/transaction discipline, process/distributed authority, or long/async execution that changes the ordering proof. Real concurrency revalidation is required if crossed.
 - `NYRON-T-20260826-048-F-001` — `IMPLEMENTATION / NON_BLOCKING / OPEN` — replaying `execute()` after mutation-before-completion crash safely heals durable state to `COMPLETED` without duplicate mutation but returns `EFFECT_OPERATION_NOT_DISPATCHABLE` rather than the recovered operation; caller-ergonomics/observability debt only.
+- `NYRON-T-20260826-056-F-001` — `IMPLEMENTATION / NON_BLOCKING / OPEN` — schema-adding code does not retroactively rebuild existing SQLite table constraints. Current Gate-4A correctness/security remains accepted because the real old-database probe proved replacement and security-critical triggers work. Activation Condition: any real persistent Nyron database is expected to survive across a schema-adding version boundary. Closure requires explicit fresh-database-only policy or real migration/rebuild support before activation.
 
 ## Stable Baseline
 
@@ -127,9 +129,9 @@ Final Results must include exact full 40-character `SHA Verification Evidence` w
 - Resource / ResourceLease foundation is integrated and accepted: one real managed-directory Resource, durable PROVISIONING/AVAILABLE/DESTROYING/DESTROYED/UNKNOWN lifecycle, exact provenance/recovery, exact Attempt/fencing-bound Lease lifecycle, non-transferability, release/revoke/expiry and advisory/non-consumptive validation.
 - Resource provenance hardening is integrated and accepted under the explicit trusted-root residual assumption.
 - EffectOperation Gate 3 is integrated and accepted: durable PREPARED, exact authority admission, durable ACTIVE, bounded external mutation, exact completion/UNKNOWN recovery, durable revoke request, truthful fencing, evidence immutability, terminal non-reactivation and no semantic retry clearance from FENCED.
-- Corrected Gate-4 implementation plan is accepted as non-normative planning guidance. It fixes R1/R2 exact-Attempt targeting and defines the 4A -> 4B -> 4C sequence.
-- Task-055 Gate-4A implementation is remotely delivered but NOT ACCEPTED / NOT INTEGRATED pending Task 056 independent review.
-- R1->R2 old Effect/Lease cleanup, conflict clearance and non-conflicting eligibility remain unimplemented. 4B/4C are not authorized.
+- Corrected Gate-4 implementation plan is accepted as non-normative planning guidance and defines strict sequential 4A -> 4B -> 4C.
+- Gate-4A is integrated and accepted: atomic same-Run R1->R2 Attempt replacement, exact CAS cutover, terminal R1, fresh R2, paired fencing-generation advancement, immediate stale-R1 rejection across existing Capability/Resource/Effect/terminal-commit boundaries, no downstream Owner rewrite.
+- Old R1 Effect/Lease cleanup, conflict clearance and non-conflicting R2 eligibility remain unimplemented. Only 4B is currently authorized.
 - Real async/background execution, Canonical Command, generalized Recovery/Reconciliation, Accounting integration and Module filesystem trust-boundary work remain future work.
 
 ## Current Next-Phase Decision
@@ -139,17 +141,17 @@ Frozen D-004 §26 route:
 - `ARE-GATE-1` — Capability foundation — PASS / CLOSED;
 - `ARE-GATE-2` — Resource foundation — PASS / CLOSED;
 - `ARE-GATE-3` — EffectOperation foundation — PASS / CLOSED;
-- `ARE-GATE-4A` — Runtime Attempt Replacement + Stale-Authority Cutover — `OPEN / IN_REVIEW` via Tasks 055/056;
-- `ARE-GATE-4B` — old Effect / Lease fencing — `NOT OPEN`;
-- `ARE-GATE-4C` — conflicting/non-conflicting R2 admission barrier — `NOT OPEN`;
+- `ARE-GATE-4A` — Runtime Attempt Replacement + Stale-Authority Cutover — `PASS / CLOSED`;
+- `ARE-GATE-4B` — Old Effect / Lease Fencing on Replacement — `OPEN / READY` via Task 057;
+- `ARE-GATE-4C` — Conflicting / Non-Conflicting R2 Admission Barrier — `NOT OPEN`;
 - `ARE-GATE-5` — Module Host trust boundary — future;
 - `ARE-GATE-6` — Accounting/Recovery integration — future.
 
-Task 056 is the only eligible Gate-4 task. It must independently verify Task 055's atomic R1->R2 authority cutover, stale-R1 rejection at existing Owner boundaries, storage invariants, both standing interlocks, and pre-4A existing-database upgrade compatibility.
+Task 057 may only orchestrate exact-R1 cleanup after a durable replacement: discover by exact Attempt identity, call existing Effect Authority / Resource Manager Owner APIs, preserve evidence truthfulness, and never directly mutate Owner tables. Replacement itself is already complete before 4B begins.
 
-Gate 4 must continue to distinguish logical overlapping lifetimes/non-conflicting eligibility from genuine OS/thread/process concurrency. If Task 055 crosses any activation condition of `NYRON-T-20260826-043-F-001`, acceptance is blocked pending real-concurrency revalidation.
+Gate 4 must continue to distinguish logical overlapping lifetimes/non-conflicting eligibility from genuine OS/thread/process concurrency. If Task 057 crosses any activation condition of `NYRON-T-20260826-043-F-001`, it must STOP and require real-concurrency revalidation.
 
-Gate 4 must preserve the orthogonality between active-conflict clearance and semantic retry clearance: later `FENCED` state may clear an active continuation for an exact operation but never proves that no historical consequence occurred or that retrying the same semantic effect is safe.
+Gate 4 must preserve active-conflict-clearance vs semantic-retry-clearance orthogonality. `FENCED` may clear the active continuation for one exact operation but never proves no historical consequence and never grants retry authority.
 
 Threat-model-dependent NON_BLOCKING findings must be re-evaluated against every future Task that touches their subject area. If a Task crosses an accepted activation condition, the finding becomes a blocking prerequisite until closed or formally reclassified on current evidence.
 
@@ -176,13 +178,14 @@ The Active Orchestrator does not perform complex production implementation. Comp
 
 ## Next Eligible Tasks
 
-1. Execute independent Claude HIGH-risk Review `NYRON-T-20260826-056` against exact Task-055 content `dde52c2440b8e757febe7a7624977968af93e089` and Result-record tip `f7daf805290a68f3fa5627d5a811408a469c79e2`.
-2. Do not integrate Task 055, close 4A, or open 4B until Task 056 returns no blocking Finding and the Orchestrator accepts the Review.
-3. Mandatory Task-056 adversarial coverage includes a real pre-4A existing-database upgrade probe to determine whether legacy `run_attempts.state` CHECK constraints are safely handled.
+1. Execute HIGH-risk Codex Task `NYRON-T-20260826-057` against Epoch 1 / Revision 58.
+2. After Task 057 remote Result, create a new independent Claude HIGH-risk Review before any integration or 4B closure.
+3. Do not open 4C until Task 057 and its independent Review are accepted/integrated.
 4. Do not introduce genuine multi-thread/process/worker or connection-pool authority while `NYRON-T-20260826-043-F-001` remains un-revalidated.
 5. Do not expose managed Resource namespaces to less-trusted concurrent mutation while `NYRON-T-20260825-038-F-001` remains `NARROWED / OPEN`.
-6. Preserve `NYRON-T-20260826-048-F-001` as explicit non-blocking caller-ergonomics debt unless separately resolved.
-7. `NYRON-D-006` remains deferred behind P0 System Foundation unless explicitly reprioritized.
+6. Do not activate persistent cross-schema database compatibility while `NYRON-T-20260826-056-F-001` remains OPEN without an explicit migration/fresh-database policy.
+7. Preserve `NYRON-T-20260826-048-F-001` as explicit non-blocking caller-ergonomics debt unless separately resolved.
+8. `NYRON-D-006` remains deferred behind P0 System Foundation unless explicitly reprioritized.
 
 ## State Update Rule
 
