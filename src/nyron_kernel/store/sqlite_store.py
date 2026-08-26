@@ -630,6 +630,126 @@ class SQLiteStore:
             """
         )
 
+    def create_budget_schema(self) -> None:
+        """Install ARE-GATE-6A BudgetPolicyRevision / BudgetReservation tables."""
+
+        self.create_run_attempt_schema()
+        self.connection.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS budget_policy_revisions (
+                budget_policy_revision_ref TEXT PRIMARY KEY,
+                accounting_scope_ref TEXT NOT NULL,
+                effective_from INTEGER NOT NULL,
+                effective_until INTEGER,
+                dimensions_json TEXT NOT NULL,
+                enforcement_rules_json TEXT NOT NULL,
+                created_by_ref TEXT NOT NULL,
+                supersedes_ref TEXT,
+                CHECK (
+                    effective_until IS NULL
+                    OR effective_until > effective_from
+                ),
+                FOREIGN KEY (accounting_scope_ref)
+                    REFERENCES accounting_scopes(accounting_scope_ref),
+                FOREIGN KEY (supersedes_ref)
+                    REFERENCES budget_policy_revisions(budget_policy_revision_ref)
+            );
+
+            CREATE TRIGGER IF NOT EXISTS budget_policy_revision_immutable
+            BEFORE UPDATE ON budget_policy_revisions
+            BEGIN
+                SELECT RAISE(ABORT, 'budget policy revision is immutable');
+            END;
+
+            CREATE TABLE IF NOT EXISTS budget_reservations (
+                reservation_ref TEXT PRIMARY KEY,
+                request_ref TEXT NOT NULL UNIQUE,
+                activation_ref TEXT NOT NULL,
+                run_ref TEXT NOT NULL,
+                attempt_seq INTEGER NOT NULL CHECK (attempt_seq > 0),
+                accounting_scope_ref TEXT NOT NULL,
+                graph_revision_ref TEXT NOT NULL,
+                definition_anchor_ref TEXT NOT NULL,
+                ancestry_snapshot_json TEXT NOT NULL,
+                policy_revision_refs_json TEXT NOT NULL,
+                estimate_ref TEXT NOT NULL,
+                requested_dimensions_json TEXT NOT NULL,
+                reserved_dimensions_json TEXT NOT NULL,
+                committed_dimensions_json TEXT NOT NULL,
+                released_dimensions_json TEXT NOT NULL,
+                state TEXT NOT NULL CHECK (state IN (
+                    'REQUESTED', 'RESERVED', 'DENIED',
+                    'RECONCILING', 'COMMITTED', 'RELEASED'
+                )),
+                deny_reason_code TEXT,
+                subject_refs_json TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL,
+                caused_by_ref TEXT NOT NULL,
+                CHECK (
+                    (state = 'DENIED' AND deny_reason_code IS NOT NULL)
+                    OR
+                    (state != 'DENIED' AND deny_reason_code IS NULL)
+                ),
+                FOREIGN KEY (accounting_scope_ref)
+                    REFERENCES accounting_scopes(accounting_scope_ref),
+                FOREIGN KEY (run_ref, attempt_seq)
+                    REFERENCES run_attempts(run_ref, attempt_seq)
+            );
+
+            CREATE TRIGGER IF NOT EXISTS budget_reservation_identity_immutable
+            BEFORE UPDATE ON budget_reservations
+            WHEN NEW.reservation_ref != OLD.reservation_ref
+              OR NEW.request_ref != OLD.request_ref
+              OR NEW.activation_ref != OLD.activation_ref
+              OR NEW.run_ref != OLD.run_ref
+              OR NEW.attempt_seq != OLD.attempt_seq
+              OR NEW.accounting_scope_ref != OLD.accounting_scope_ref
+              OR NEW.graph_revision_ref != OLD.graph_revision_ref
+              OR NEW.definition_anchor_ref != OLD.definition_anchor_ref
+              OR NEW.ancestry_snapshot_json != OLD.ancestry_snapshot_json
+              OR NEW.policy_revision_refs_json != OLD.policy_revision_refs_json
+              OR NEW.estimate_ref != OLD.estimate_ref
+              OR NEW.requested_dimensions_json != OLD.requested_dimensions_json
+              OR NEW.reserved_dimensions_json != OLD.reserved_dimensions_json
+              OR NEW.subject_refs_json != OLD.subject_refs_json
+              OR NEW.caused_by_ref != OLD.caused_by_ref
+              OR NEW.created_at != OLD.created_at
+            BEGIN
+                SELECT RAISE(ABORT, 'budget reservation identity is immutable');
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS budget_reservation_state_transition
+            BEFORE UPDATE OF state ON budget_reservations
+            WHEN NOT (
+                NEW.state = OLD.state
+                OR (OLD.state = 'REQUESTED'
+                    AND NEW.state IN ('RESERVED', 'DENIED'))
+                OR (OLD.state = 'RESERVED'
+                    AND NEW.state IN ('COMMITTED', 'RELEASED', 'RECONCILING'))
+                OR (OLD.state = 'RELEASED' AND NEW.state = 'RECONCILING')
+                OR (OLD.state = 'COMMITTED' AND NEW.state = 'RECONCILING')
+                OR (OLD.state = 'RECONCILING'
+                    AND NEW.state IN ('COMMITTED', 'RELEASED'))
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'invalid budget reservation state transition');
+            END;
+
+            CREATE TABLE IF NOT EXISTS budget_scope_exposure (
+                accounting_scope_ref TEXT NOT NULL,
+                dimension_ref TEXT NOT NULL,
+                reserved_amount INTEGER NOT NULL DEFAULT 0
+                    CHECK (reserved_amount >= 0),
+                committed_amount INTEGER NOT NULL DEFAULT 0
+                    CHECK (committed_amount >= 0),
+                PRIMARY KEY (accounting_scope_ref, dimension_ref),
+                FOREIGN KEY (accounting_scope_ref)
+                    REFERENCES accounting_scopes(accounting_scope_ref)
+            );
+            """
+        )
+
     @contextmanager
     def transaction(self) -> Iterator[sqlite3.Connection]:
         """Commit all writes together, or roll the entire transaction back."""
