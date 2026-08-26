@@ -22,13 +22,25 @@ import hashlib
 import json
 import sqlite3
 from dataclasses import dataclass
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
 
 from nyron_kernel.accounting.scope_resolver import (
     AccountingScopeError,
     AccountingScopeResolver,
 )
 from nyron_kernel.store import SQLiteStore
+
+if TYPE_CHECKING:
+    # Type-only: nyron_kernel.execution imports nyron_kernel.accounting at
+    # module load time (admission-time scope resolution), so a real
+    # module-level import here would be circular. BudgetAuthority never
+    # constructs these itself -- it only calls read methods on instances the
+    # caller injects -- so a runtime import is never actually needed.
+    from nyron_kernel.execution import (
+        Activation,
+        ActivationRepository,
+        RuntimeAuthorityResolver,
+    )
 
 _SUPPORTED_LIMIT_KINDS = ("LIFETIME_LIMIT",)
 _SUPPORTED_ENFORCEMENTS = ("HARD", "SOFT")
@@ -128,11 +140,15 @@ class BudgetAuthority:
         self,
         store: SQLiteStore,
         scope_resolver: AccountingScopeResolver,
+        activation_repository: ActivationRepository,
+        runtime_authority: RuntimeAuthorityResolver,
         clock: Callable[[], int],
         crash_hook: Callable[[str], None] | None = None,
     ) -> None:
         self._store = store
         self._scope_resolver = scope_resolver
+        self._activation_repository = activation_repository
+        self._runtime_authority = runtime_authority
         self._clock = clock
         self._crash_hook = crash_hook or (lambda _stage: None)
         self._store.create_budget_schema()
@@ -188,9 +204,11 @@ class BudgetAuthority:
     # ------------------------------------------------------------------
 
     def reserve(self, request: BudgetReservationRequest) -> BudgetReservation:
-        """Validate identity, then atomically evaluate and commit RESERVED/DENIED."""
+        """Prove Runtime/static binding, then atomically evaluate and commit RESERVED/DENIED."""
 
         self._validate_request(request)
+        activation = self._prove_runtime_binding(request)
+
         existing = self._load_reservation_by_request_ref(request.request_ref)
         if existing is not None:
             self._require_identical_replay(existing, request)
@@ -203,9 +221,9 @@ class BudgetAuthority:
             with self._store.transaction() as connection:
                 try:
                     resolution = self._scope_resolver.resolve(
-                        request.accounting_scope_ref,
-                        request.graph_revision_ref,
-                        request.definition_anchor_ref,
+                        activation.static_accounting_scope_ref,
+                        activation.graph_revision_ref,
+                        activation.module_instance_revision_ref,
                     )
                 except AccountingScopeError as error:
                     raise BudgetAuthorityError(
@@ -505,6 +523,43 @@ class BudgetAuthority:
             updated_at=row["updated_at"],
             caused_by_ref=row["caused_by_ref"],
         )
+
+    def _prove_runtime_binding(self, request: BudgetReservationRequest) -> Activation:
+        """Fail closed unless the request is the exact canonical Runtime/static
+        binding for its Activation -- required before any policy evaluation,
+        exposure mutation, RESERVED/DENIED insert, or existing-request replay.
+        """
+
+        activation = self._activation_repository.resolve(request.activation_ref)
+        if activation is None:
+            raise BudgetAuthorityError(
+                "RESERVATION_ACTIVATION_UNRESOLVED",
+                activation_ref=request.activation_ref,
+            )
+        if (
+            activation.graph_revision_ref != request.graph_revision_ref
+            or activation.static_accounting_scope_ref != request.accounting_scope_ref
+            or activation.module_instance_revision_ref != request.definition_anchor_ref
+        ):
+            raise BudgetAuthorityError(
+                "RESERVATION_STATIC_BINDING_MISMATCH",
+                activation_ref=request.activation_ref,
+            )
+
+        authority = self._runtime_authority.resolve_current(request.run_ref)
+        if (
+            authority is None
+            or authority.activation_ref != activation.activation_ref
+            or authority.execution_ref != activation.execution_ref
+            or authority.run_ref != request.run_ref
+            or authority.attempt_seq != request.attempt_seq
+        ):
+            raise BudgetAuthorityError(
+                "RESERVATION_RUNTIME_AUTHORITY_MISMATCH",
+                run_ref=request.run_ref,
+                attempt_seq=request.attempt_seq,
+            )
+        return activation
 
     @staticmethod
     def _require_identical_replay(

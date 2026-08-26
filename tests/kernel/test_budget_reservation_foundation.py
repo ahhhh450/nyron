@@ -28,7 +28,12 @@ from nyron_kernel.accounting import (
     compute_ancestry_hash,
 )
 from nyron_kernel.accounting import budget_authority as budget_authority_module
-from nyron_kernel.execution import RunRepository
+from nyron_kernel.definitions import ModuleRegistry
+from nyron_kernel.execution import (
+    ActivationRepository,
+    RunRepository,
+    RuntimeAuthorityResolver,
+)
 from nyron_kernel.store import SQLiteStore
 
 
@@ -37,6 +42,10 @@ MODULE = "module-instance:budget@1"
 EXECUTION = "execution:budget/1"
 ACTIVATION = "activation:budget/1"
 RUN = "run:budget/1"
+MODULE2 = "module-instance:budget-other@1"
+EXECUTION2 = "execution:budget/2"
+ACTIVATION2 = "activation:budget/2"
+RUN2 = "run:budget/2"
 ROOT_SCOPE = "accounting:budget/root"
 CHILD_SCOPE = "accounting:budget/child"
 GRANDCHILD_SCOPE = "accounting:budget/grandchild"
@@ -72,7 +81,10 @@ class BudgetReservationFoundationTest(unittest.TestCase):
         self.root_dir = Path(self.temp.name)
         self.store = SQLiteStore(self.root_dir / "kernel.db")
         self._seed_runtime()
+        self._seed_unrelated_run()
         self.resolver = AccountingScopeResolver(self.store)
+        self.activations = ActivationRepository(self.store, ModuleRegistry(self.store))
+        self.runtime_authority = RuntimeAuthorityResolver(self.store)
         self.now = 100
         self.authority = self._authority()
 
@@ -95,7 +107,14 @@ class BudgetReservationFoundationTest(unittest.TestCase):
         self.temp.cleanup()
 
     def _authority(self, crash_hook=None) -> BudgetAuthority:
-        return BudgetAuthority(self.store, self.resolver, lambda: self.now, crash_hook)
+        return BudgetAuthority(
+            self.store,
+            self.resolver,
+            self.activations,
+            self.runtime_authority,
+            lambda: self.now,
+            crash_hook,
+        )
 
     def _seed_runtime(self) -> None:
         self.store.create_run_attempt_schema()
@@ -144,6 +163,54 @@ class BudgetReservationFoundationTest(unittest.TestCase):
             run_ref=RUN, activation_ref=ACTIVATION, execution_ref=EXECUTION
         )
 
+    def _seed_unrelated_run(self) -> None:
+        """A second, wholly independent Activation/Run for the Task-083
+        static-binding-proof tests: real and current, but never the Runtime
+        authority for the first Activation/Run above.
+        """
+
+        with self.store.transaction() as connection:
+            connection.execute(
+                """
+                INSERT INTO module_instance_revisions VALUES (
+                    ?, ?, 'budget-other', 'test.budget', '1', 'config:budget@1',
+                    'sha256:budget', '{}', '{}', '["root"]', ?
+                )
+                """,
+                (MODULE2, GRAPH, CHILD_SCOPE),
+            )
+            connection.execute(
+                """
+                INSERT INTO execution_admissions VALUES
+                ('admission:budget/2', ?, ?, 'policy:budget@1', 2, 'ADMITTED')
+                """,
+                (EXECUTION2, GRAPH),
+            )
+            connection.execute(
+                """
+                INSERT INTO workflow_executions VALUES
+                (?, ?, 'admission:budget/2', 'policy:budget@1', 'ADMITTED')
+                """,
+                (EXECUTION2, GRAPH),
+            )
+            connection.execute(
+                """
+                INSERT INTO activations VALUES
+                (?, ?, ?, ?, 'delivery:budget-trigger-2', '[]', ?, 'event:budget-activation-2')
+                """,
+                (ACTIVATION2, EXECUTION2, GRAPH, MODULE2, CHILD_SCOPE),
+            )
+            connection.execute(
+                """
+                INSERT INTO activation_created_events VALUES
+                ('event:budget-activation-2', ?, 'ActivationCreated')
+                """,
+                (ACTIVATION2,),
+            )
+        RunRepository(self.store).create_initial(
+            run_ref=RUN2, activation_ref=ACTIVATION2, execution_ref=EXECUTION2
+        )
+
     def _rule(
         self,
         rule_ref: str,
@@ -180,9 +247,11 @@ class BudgetReservationFoundationTest(unittest.TestCase):
         self,
         request_ref: str,
         *,
-        accounting_scope_ref: str = GRANDCHILD_SCOPE,
+        activation_ref: str = ACTIVATION,
+        run_ref: str = RUN,
+        accounting_scope_ref: str = CHILD_SCOPE,
         graph_revision_ref: str = GRAPH,
-        definition_anchor_ref: str = "port:budget/text@1",
+        definition_anchor_ref: str = MODULE,
         estimate_ref: str = "estimate:1",
         amount: int = 10,
         dimension: str = "tokens",
@@ -192,8 +261,8 @@ class BudgetReservationFoundationTest(unittest.TestCase):
     ) -> BudgetReservationRequest:
         return BudgetReservationRequest(
             request_ref=request_ref,
-            activation_ref=ACTIVATION,
-            run_ref=RUN,
+            activation_ref=activation_ref,
+            run_ref=run_ref,
             attempt_seq=attempt_seq,
             accounting_scope_ref=accounting_scope_ref,
             graph_revision_ref=graph_revision_ref,
@@ -388,12 +457,16 @@ class BudgetReservationFoundationTest(unittest.TestCase):
         second = self.authority.reserve(request)
 
         self.assertEqual(first, second)
-        self.assertEqual((30, 0), self.authority.exposure(GRANDCHILD_SCOPE, "tokens"))
+        self.assertEqual((30, 0), self.authority.exposure(CHILD_SCOPE, "tokens"))
         self.assertEqual((30, 0), self.authority.exposure(ROOT_SCOPE, "tokens"))
 
     # ------------------------------------------------------------------
-    # 4. Changed estimate/scope/subject binding is rejected as identity
-    # conflict; old row/counters remain unchanged.
+    # 4. Changed estimate/subject binding is rejected as identity conflict;
+    # old row/counters remain unchanged. (Changed accounting_scope_ref /
+    # graph_revision_ref / definition_anchor_ref are covered separately below
+    # by the Task-083 static-binding-proof tests: those fields are now pinned
+    # to the Activation's own canonical values, so any deviation is caught by
+    # the binding proof before ever reaching this identity-conflict check.)
     # ------------------------------------------------------------------
 
     def test_changed_request_is_identity_conflict_and_leaves_state_unchanged(
@@ -401,11 +474,10 @@ class BudgetReservationFoundationTest(unittest.TestCase):
     ) -> None:
         self._publish_policy(ROOT_SCOPE, (self._rule("rule:1", "tokens", 1000),))
         original = self.authority.reserve(self._request("req:conflict", amount=30))
-        before_exposure = self.authority.exposure(GRANDCHILD_SCOPE, "tokens")
+        before_exposure = self.authority.exposure(CHILD_SCOPE, "tokens")
 
         variants = (
             self._request("req:conflict", amount=99),
-            self._request("req:conflict", accounting_scope_ref=CHILD_SCOPE, definition_anchor_ref="module-instance:budget@1", amount=30),
             self._request("req:conflict", subject_refs=("subject:other",), amount=30),
             self._request("req:conflict", estimate_ref="estimate:other", amount=30),
         )
@@ -417,23 +489,27 @@ class BudgetReservationFoundationTest(unittest.TestCase):
 
         self.assertEqual(original, self.authority.resolve(original.reservation_ref))
         self.assertEqual(
-            before_exposure, self.authority.exposure(GRANDCHILD_SCOPE, "tokens")
+            before_exposure, self.authority.exposure(CHILD_SCOPE, "tokens")
         )
 
     # ------------------------------------------------------------------
-    # 074-F-001 correction: static-binding (graph_revision_ref /
-    # definition_anchor_ref) must independently participate in same-
-    # request_ref replay-identity comparison. Each probe below changes
-    # EXACTLY ONE static-binding field and holds accounting_scope_ref (and
-    # every other compared field) fixed, so the scope-mismatch path can
-    # never be what raises the conflict.
+    # 074-F-001 correction, updated by 077-F-001/Task-083: a replay whose
+    # graph_revision_ref/definition_anchor_ref no longer matches the request's
+    # own original values must still fail closed and leave prior state
+    # untouched. Since Task-083 now proves graph_revision_ref/
+    # definition_anchor_ref against the real Activation on every call
+    # (including replay) *before* same-request_ref identity comparison ever
+    # runs, changing either field trips RESERVATION_STATIC_BINDING_MISMATCH
+    # rather than RESERVATION_REQUEST_CONFLICT -- a strictly earlier and
+    # stronger fail-closed gate than the original identity-conflict check,
+    # not a regression of it.
     # ------------------------------------------------------------------
 
     def test_graph_revision_only_replay_conflict_after_reserved(self) -> None:
         self._publish_policy(ROOT_SCOPE, (self._rule("rule:1", "tokens", 1000),))
         original = self.authority.reserve(self._request("req:graph-reserved", amount=15))
         self.assertEqual("RESERVED", original.state)
-        before_exposure = self.authority.exposure(GRANDCHILD_SCOPE, "tokens")
+        before_exposure = self.authority.exposure(CHILD_SCOPE, "tokens")
 
         variant = self._request(
             "req:graph-reserved", amount=15, graph_revision_ref="graph:different@1"
@@ -445,11 +521,11 @@ class BudgetReservationFoundationTest(unittest.TestCase):
 
         with self.assertRaises(BudgetAuthorityError) as raised:
             self.authority.reserve(variant)
-        self.assertEqual("RESERVATION_REQUEST_CONFLICT", raised.exception.code)
+        self.assertEqual("RESERVATION_STATIC_BINDING_MISMATCH", raised.exception.code)
 
         self.assertEqual(original, self.authority.resolve(original.reservation_ref))
         self.assertEqual(
-            before_exposure, self.authority.exposure(GRANDCHILD_SCOPE, "tokens")
+            before_exposure, self.authority.exposure(CHILD_SCOPE, "tokens")
         )
 
     def test_definition_anchor_only_replay_conflict_after_reserved(self) -> None:
@@ -458,7 +534,7 @@ class BudgetReservationFoundationTest(unittest.TestCase):
             self._request("req:anchor-reserved", amount=15)
         )
         self.assertEqual("RESERVED", original.state)
-        before_exposure = self.authority.exposure(GRANDCHILD_SCOPE, "tokens")
+        before_exposure = self.authority.exposure(CHILD_SCOPE, "tokens")
 
         variant = self._request(
             "req:anchor-reserved",
@@ -470,11 +546,11 @@ class BudgetReservationFoundationTest(unittest.TestCase):
 
         with self.assertRaises(BudgetAuthorityError) as raised:
             self.authority.reserve(variant)
-        self.assertEqual("RESERVATION_REQUEST_CONFLICT", raised.exception.code)
+        self.assertEqual("RESERVATION_STATIC_BINDING_MISMATCH", raised.exception.code)
 
         self.assertEqual(original, self.authority.resolve(original.reservation_ref))
         self.assertEqual(
-            before_exposure, self.authority.exposure(GRANDCHILD_SCOPE, "tokens")
+            before_exposure, self.authority.exposure(CHILD_SCOPE, "tokens")
         )
 
     def test_graph_revision_only_replay_conflict_after_denied(self) -> None:
@@ -493,7 +569,7 @@ class BudgetReservationFoundationTest(unittest.TestCase):
 
         with self.assertRaises(BudgetAuthorityError) as raised:
             self.authority.reserve(variant)
-        self.assertEqual("RESERVATION_REQUEST_CONFLICT", raised.exception.code)
+        self.assertEqual("RESERVATION_STATIC_BINDING_MISMATCH", raised.exception.code)
 
         self.assertEqual(original, self.authority.resolve(original.reservation_ref))
         self.assertEqual(
@@ -518,7 +594,7 @@ class BudgetReservationFoundationTest(unittest.TestCase):
 
         with self.assertRaises(BudgetAuthorityError) as raised:
             self.authority.reserve(variant)
-        self.assertEqual("RESERVATION_REQUEST_CONFLICT", raised.exception.code)
+        self.assertEqual("RESERVATION_STATIC_BINDING_MISMATCH", raised.exception.code)
 
         self.assertEqual(original, self.authority.resolve(original.reservation_ref))
         self.assertEqual(
@@ -539,7 +615,7 @@ class BudgetReservationFoundationTest(unittest.TestCase):
 
         self.assertEqual(first, second)
         self.assertEqual(first, third)
-        self.assertEqual((25, 0), self.authority.exposure(GRANDCHILD_SCOPE, "tokens"))
+        self.assertEqual((25, 0), self.authority.exposure(CHILD_SCOPE, "tokens"))
 
     # ------------------------------------------------------------------
     # 5. Full root->leaf ancestry is pinned from AccountingScopeResolver.
@@ -549,9 +625,7 @@ class BudgetReservationFoundationTest(unittest.TestCase):
         self._publish_policy(ROOT_SCOPE, (self._rule("rule:1", "tokens", 1000),))
         reservation = self.authority.reserve(self._request("req:ancestry"))
 
-        self.assertEqual(
-            (ROOT_SCOPE, CHILD_SCOPE, GRANDCHILD_SCOPE), reservation.ancestry_snapshot
-        )
+        self.assertEqual((ROOT_SCOPE, CHILD_SCOPE), reservation.ancestry_snapshot)
 
     # ------------------------------------------------------------------
     # 6/7/8. Hard ancestor limit denies a child even with local capacity;
@@ -565,7 +639,7 @@ class BudgetReservationFoundationTest(unittest.TestCase):
         # Root is tight (limit 50); leaf-local policy would allow far more.
         self._publish_policy(ROOT_SCOPE, (self._rule("rule:root", "tokens", 50),))
         self._publish_policy(
-            GRANDCHILD_SCOPE, (self._rule("rule:leaf", "tokens", 10_000),)
+            CHILD_SCOPE, (self._rule("rule:leaf", "tokens", 10_000),)
         )
 
         denied = self.authority.reserve(self._request("req:ancestor-deny", amount=60))
@@ -573,7 +647,7 @@ class BudgetReservationFoundationTest(unittest.TestCase):
         self.assertEqual("DENIED", denied.state)
         self.assertEqual("ANCESTOR_LIMIT_EXCEEDED", denied.deny_reason_code)
         self.assertEqual((), denied.reserved_dimensions)
-        for scope_ref in (ROOT_SCOPE, CHILD_SCOPE, GRANDCHILD_SCOPE):
+        for scope_ref in (ROOT_SCOPE, CHILD_SCOPE):
             with self.subTest(scope=scope_ref):
                 self.assertEqual((0, 0), self.authority.exposure(scope_ref, "tokens"))
 
@@ -582,7 +656,7 @@ class BudgetReservationFoundationTest(unittest.TestCase):
 
         self.authority.reserve(self._request("req:atomic", amount=42))
 
-        for scope_ref in (ROOT_SCOPE, CHILD_SCOPE, GRANDCHILD_SCOPE):
+        for scope_ref in (ROOT_SCOPE, CHILD_SCOPE):
             with self.subTest(scope=scope_ref):
                 self.assertEqual((42, 0), self.authority.exposure(scope_ref, "tokens"))
 
@@ -602,7 +676,7 @@ class BudgetReservationFoundationTest(unittest.TestCase):
         self.assertEqual((60, 0), self.authority.exposure(ROOT_SCOPE, "tokens"))
 
     def test_local_scope_hard_limit_reports_hard_limit_exceeded(self) -> None:
-        self._publish_policy(GRANDCHILD_SCOPE, (self._rule("rule:leaf", "tokens", 50),))
+        self._publish_policy(CHILD_SCOPE, (self._rule("rule:leaf", "tokens", 50),))
 
         denied = self.authority.reserve(self._request("req:local-deny", amount=60))
 
@@ -746,7 +820,7 @@ class BudgetReservationFoundationTest(unittest.TestCase):
         with self.assertRaises(InjectedCrash):
             crashing_authority.reserve(self._request("req:crash", amount=77))
 
-        for scope_ref in (ROOT_SCOPE, CHILD_SCOPE, GRANDCHILD_SCOPE):
+        for scope_ref in (ROOT_SCOPE, CHILD_SCOPE):
             with self.subTest(scope=scope_ref):
                 self.assertEqual((0, 0), self.authority.exposure(scope_ref, "tokens"))
         self.assertIsNone(self.authority.resolve_by_request("req:crash"))
@@ -758,7 +832,13 @@ class BudgetReservationFoundationTest(unittest.TestCase):
         self.assertEqual((77, 0), self.authority.exposure(ROOT_SCOPE, "tokens"))
 
     # ------------------------------------------------------------------
-    # 16. No raw cross-owner canonical mutation path is added.
+    # 16. No raw cross-owner canonical mutation path is added. Updated by
+    # 077-F-001/Task-083: importing the accepted Runtime read boundaries
+    # (ActivationRepository.resolve, RuntimeAuthorityResolver.resolve_current)
+    # for the fail-closed binding proof is authorized and expected -- what
+    # remains forbidden is a write-capable owner import, or Accounting issuing
+    # raw SQL against Runtime-owned tables as a substitute for those
+    # boundaries.
     # ------------------------------------------------------------------
 
     def test_no_raw_cross_owner_mutation_imports(self) -> None:
@@ -767,9 +847,41 @@ class BudgetReservationFoundationTest(unittest.TestCase):
             "from nyron_kernel.effect",
             "from nyron_kernel.resource",
             "from nyron_kernel.capability",
-            "from nyron_kernel.execution",
         ):
             self.assertNotIn(forbidden_import, source)
+
+        execution_import = re.search(
+            r"from nyron_kernel\.execution import \(([^)]+)\)", source
+        )
+        self.assertIsNotNone(
+            execution_import, "expected exactly one accepted execution-boundary import"
+        )
+        imported_names = {
+            name.strip().rstrip(",")
+            for name in execution_import.group(1).split()
+            if name.strip().rstrip(",")
+        }
+        self.assertEqual(
+            {"Activation", "ActivationRepository", "RuntimeAuthorityResolver"},
+            imported_names,
+        )
+
+    def test_no_raw_runtime_table_sql_introduced(self) -> None:
+        source = inspect.getsource(budget_authority_module)
+        for forbidden_table_access in (
+            "FROM activations",
+            "FROM runs",
+            "FROM run_attempts",
+            "FROM workflow_executions",
+            "FROM module_instance_revisions",
+            "FROM deliveries",
+            "FROM delivery_bindings",
+            "JOIN activations",
+            "JOIN runs",
+            "JOIN run_attempts",
+            "JOIN workflow_executions",
+        ):
+            self.assertNotIn(forbidden_table_access, source)
 
     # ------------------------------------------------------------------
     # Additional: unsupported dimension request amount / shape validation,
@@ -783,16 +895,127 @@ class BudgetReservationFoundationTest(unittest.TestCase):
         reservation = self.authority.reserve(self._request("req:soft", amount=999))
         self.assertEqual("RESERVED", reservation.state)
 
-    def test_unresolved_accounting_scope_fails_closed(self) -> None:
+    # ------------------------------------------------------------------
+    # 077-F-001 correction (Task-083): fail-closed Runtime/Activation/Run/
+    # Attempt binding proof, consuming only the existing accepted read
+    # boundaries (ActivationRepository.resolve,
+    # RuntimeAuthorityResolver.resolve_current). Before any policy
+    # evaluation, exposure mutation, RESERVED/DENIED insert, or
+    # existing-request replay return, the request must prove: (1) its
+    # activation_ref resolves to a real Activation; (2)-(4) its
+    # graph_revision_ref / accounting_scope_ref / definition_anchor_ref
+    # exactly equal that Activation's own canonical values; (5)-(7) its
+    # run_ref resolves through current Runtime authority to that same
+    # Activation/execution, with a matching current attempt_seq.
+    # ------------------------------------------------------------------
+
+    def test_fabricated_activation_rejected_no_mutation(self) -> None:
+        self._publish_policy(ROOT_SCOPE, (self._rule("rule:1", "tokens", 1000),))
+        request = self._request(
+            "req:fabricated-activation", activation_ref="activation:does-not-exist"
+        )
+
         with self.assertRaises(BudgetAuthorityError) as raised:
-            self.authority.reserve(
-                self._request(
-                    "req:missing-scope",
-                    accounting_scope_ref="accounting:missing",
-                    definition_anchor_ref="does-not-exist",
-                )
-            )
-        self.assertEqual("ACCOUNTING_SCOPE_INVALID", raised.exception.code)
+            self.authority.reserve(request)
+        self.assertEqual("RESERVATION_ACTIVATION_UNRESOLVED", raised.exception.code)
+
+        self.assertIsNone(self.authority.resolve_by_request("req:fabricated-activation"))
+        self.assertEqual((0, 0), self.authority.exposure(CHILD_SCOPE, "tokens"))
+
+    def test_unrelated_run_rejected_no_mutation(self) -> None:
+        self._publish_policy(ROOT_SCOPE, (self._rule("rule:1", "tokens", 1000),))
+        # RUN2 is a real, current Run -- just not the Run of ACTIVATION.
+        request = self._request("req:unrelated-run", run_ref=RUN2)
+
+        with self.assertRaises(BudgetAuthorityError) as raised:
+            self.authority.reserve(request)
+        self.assertEqual("RESERVATION_RUNTIME_AUTHORITY_MISMATCH", raised.exception.code)
+
+        self.assertIsNone(self.authority.resolve_by_request("req:unrelated-run"))
+        self.assertEqual((0, 0), self.authority.exposure(CHILD_SCOPE, "tokens"))
+
+    def test_wrong_graph_revision_rejected_no_mutation(self) -> None:
+        self._publish_policy(ROOT_SCOPE, (self._rule("rule:1", "tokens", 1000),))
+        request = self._request(
+            "req:wrong-graph", graph_revision_ref="graph:different@1"
+        )
+
+        with self.assertRaises(BudgetAuthorityError) as raised:
+            self.authority.reserve(request)
+        self.assertEqual("RESERVATION_STATIC_BINDING_MISMATCH", raised.exception.code)
+
+        self.assertIsNone(self.authority.resolve_by_request("req:wrong-graph"))
+        self.assertEqual((0, 0), self.authority.exposure(CHILD_SCOPE, "tokens"))
+
+    def test_wrong_static_accounting_scope_rejected_no_mutation(self) -> None:
+        self._publish_policy(ROOT_SCOPE, (self._rule("rule:1", "tokens", 1000),))
+        # GRANDCHILD_SCOPE is a real, published scope -- just not ACTIVATION's
+        # own static_accounting_scope_ref (CHILD_SCOPE).
+        request = self._request("req:wrong-scope", accounting_scope_ref=GRANDCHILD_SCOPE)
+
+        with self.assertRaises(BudgetAuthorityError) as raised:
+            self.authority.reserve(request)
+        self.assertEqual("RESERVATION_STATIC_BINDING_MISMATCH", raised.exception.code)
+
+        self.assertIsNone(self.authority.resolve_by_request("req:wrong-scope"))
+        self.assertEqual((0, 0), self.authority.exposure(CHILD_SCOPE, "tokens"))
+
+    def test_wrong_definition_anchor_rejected_no_mutation(self) -> None:
+        self._publish_policy(ROOT_SCOPE, (self._rule("rule:1", "tokens", 1000),))
+        request = self._request(
+            "req:wrong-anchor", definition_anchor_ref="module-instance:other@1"
+        )
+
+        with self.assertRaises(BudgetAuthorityError) as raised:
+            self.authority.reserve(request)
+        self.assertEqual("RESERVATION_STATIC_BINDING_MISMATCH", raised.exception.code)
+
+        self.assertIsNone(self.authority.resolve_by_request("req:wrong-anchor"))
+        self.assertEqual((0, 0), self.authority.exposure(CHILD_SCOPE, "tokens"))
+
+    def test_stale_attempt_seq_rejected_before_mutation(self) -> None:
+        self._publish_policy(ROOT_SCOPE, (self._rule("rule:1", "tokens", 1000),))
+        # RUN's current attempt_seq is 1; 2 does not exist yet.
+        request = self._request("req:stale-attempt", attempt_seq=2)
+
+        with self.assertRaises(BudgetAuthorityError) as raised:
+            self.authority.reserve(request)
+        self.assertEqual("RESERVATION_RUNTIME_AUTHORITY_MISMATCH", raised.exception.code)
+
+        self.assertIsNone(self.authority.resolve_by_request("req:stale-attempt"))
+        self.assertEqual((0, 0), self.authority.exposure(CHILD_SCOPE, "tokens"))
+
+    def test_exact_canonical_binding_reservation_succeeds(self) -> None:
+        self._publish_policy(ROOT_SCOPE, (self._rule("rule:1", "tokens", 1000),))
+
+        reservation = self.authority.reserve(self._request("req:canonical-ok", amount=7))
+
+        self.assertEqual("RESERVED", reservation.state)
+        self.assertEqual((7, 0), self.authority.exposure(CHILD_SCOPE, "tokens"))
+
+    def test_existing_replay_cannot_bypass_runtime_binding_after_attempt_advances(
+        self,
+    ) -> None:
+        self._publish_policy(ROOT_SCOPE, (self._rule("rule:1", "tokens", 1000),))
+        request = self._request("req:replay-after-advance", amount=9)
+        original = self.authority.reserve(request)
+        self.assertEqual("RESERVED", original.state)
+
+        # The Run's current Attempt advances; the stored request's attempt_seq
+        # (1) is no longer current. A literal replay of the same request must
+        # NOT just find the matching stored row and hand it back -- it must
+        # re-prove Runtime binding against present truth and fail closed.
+        RunRepository(self.store).replace_attempt(
+            run_ref=RUN, expected_attempt_seq=1, expected_fencing_generation=1
+        )
+
+        with self.assertRaises(BudgetAuthorityError) as raised:
+            self.authority.reserve(request)
+        self.assertEqual("RESERVATION_RUNTIME_AUTHORITY_MISMATCH", raised.exception.code)
+
+        # The original canonical reservation and its exposure are untouched.
+        self.assertEqual(original, self.authority.resolve(original.reservation_ref))
+        self.assertEqual((9, 0), self.authority.exposure(CHILD_SCOPE, "tokens"))
 
     def test_malformed_reservation_request_rejected(self) -> None:
         with self.assertRaises(BudgetAuthorityError) as raised:
