@@ -252,6 +252,18 @@ class EffectAuthority:
             )
             target = Path(operation.target_ref)
             target_evidence = self._target_evidence(operation)
+            conflicting_operation = connection.execute(
+                """
+                SELECT 1 FROM effect_operations
+                WHERE resource_ref = ?
+                  AND operation_ref != ?
+                  AND state IN (
+                      'PREPARED', 'ACTIVE', 'REVOKE_REQUESTED', 'UNKNOWN'
+                  )
+                LIMIT 1
+                """,
+                (operation.resource_ref, operation.operation_ref),
+            ).fetchone()
             valid = (
                 self._runtime_authority.is_current_with(connection, authority)
                 and self._capability_authority._is_effect_dispatch_admissible_with(
@@ -265,6 +277,7 @@ class EffectAuthority:
                 and target.parent == resource_directory
                 and target.name == self._target_name(operation.operation_ref)
                 and target_evidence == "ABSENT"
+                and conflicting_operation is None
             )
             if not valid:
                 rejected_state = (
