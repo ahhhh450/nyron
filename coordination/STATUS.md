@@ -2,39 +2,44 @@
 
 > 本文件是 Nyron 项目级协调状态的唯一事实源，由 Active Orchestrator 裁决。Execution Agent 默认只读。
 >
-> Status compacted at Revision 71. Historical detail remains canonical in prior STATUS revisions and `coordination/tasks/`, `coordination/results/`, `coordination/checkpoints/`.
+> Status compacted at Revision 72. Historical detail remains canonical in prior STATUS revisions and `coordination/tasks/`, `coordination/results/`, `coordination/checkpoints/`.
 
 ## Coordination
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `1`
-- Coordination Revision: `71`
+- Coordination Revision: `72`
 - Last Accepted Commit: `e410ca50a27fcb3273848000ef3846279ebda00d`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Project Phase: `SYSTEM FOUNDATION IMPLEMENTATION`
 - First Slice Closure: `PASS / CLOSED`
-- Current Frozen Implementation Gate: `ARE-GATE-5 — Module Host trust boundary / LIVE-BROKER IMPLEMENTATION`
+- Current Frozen Implementation Gate: `ARE-GATE-5 — Module Host trust boundary / LIVE-BROKER IMPLEMENTATION REVIEW`
 
 ## Active Tasks
 
 | Task | Type | Agent | State | Depends On |
 |---|---|---|---|---|
-| `NYRON-T-20260826-070` | Gate-5 live Module broker implementation | Codex | `READY` | frozen Clarification 005 |
+| `NYRON-T-20260826-070` | Gate-5 live Module broker implementation | Codex | `IN_REVIEW` | frozen Clarification 005 |
+| `NYRON-T-20260826-071` | independent HIGH-risk implementation review | Claude Code | `READY` | Task 070 clean delivery |
 
-## Revision 71 Decision
+## Revision 72 Decision
 
-- `NYRON-T-20260826-069` — targeted independent re-review of Task 068 — `PASS_WITH_FINDINGS / REVIEW RESULT ACCEPTED`.
-- Reviewed content: `3fca2acade5bd46ff93bdeb657b4c01070572fb0`.
-- Task-069 canonical Result is recorded at `coordination/results/NYRON-T-20260826-069.md`; record commit `4126343583efde92f26921c295b695f660fadddd`.
-- Reviewer independently reproduced the six-state identity-conflict matrix (`PREPARED`, `ACTIVE`, `REVOKE_REQUESTED`, `FENCED`, `COMPLETED`, `UNKNOWN`), confirmed conflicting requests leave the pre-existing canonical row unchanged, and confirmed alternate valid Grant and Lease selections can also produce the same operation identity with `EFFECT_OPERATION_IDENTITY_CONFLICT`.
-- `NYRON-T-20260826-067-F-001` is `CLOSED`.
-- `NYRON-T-20260826-069-F-001` was NON_BLOCKING explanatory overstatement only: payload mismatch is not the only possible identity-conflict source. Design Authority corrected the frozen wording so implementation/tests must treat identity conflict source-agnostically, including payload, Grant, Resource, Lease, or other immutable request-identity mismatch. `069-F-001` is `CLOSED` by the freeze clarification.
-- Lead Design Authority explicitly accepts the reviewed v0.3 semantic design and freezes `design/clarifications/NYRON-D-004_Lead_Integration_Clarification_005.md` as the normative Gate-5 live-broker ABI. Freeze commit: `7c4482f9ff0a77b107064e1d99826f6eac12420c`.
-- `NYRON-T-20260826-062-F-001` is `CLOSED`: the previously missing Module-callable live-broker ABI is now explicitly frozen.
-- Task-061 remains `NOT ACCEPTED / NOT INTEGRATED` and is not revived. Its branch is not the implementation basis.
-- New clean HIGH-risk implementation Task `NYRON-T-20260826-070` is opened on this frozen clarification. Assigned Agent: `Codex`; planned independent Reviewer: `Claude Code`; Stale Policy: `FAIL_CLOSED`.
-- Task 070 must implement exactly one brokered effect class (`nyron.kernel.managed-resource-bounded-write@1`), exact RuntimeContext/handle fields, source-agnostic identity-conflict precedence, truthful UNKNOWN mapping, `Activation.trigger_delivery_ref` causal binding, and existing Effect Authority admission/linearization.
-- No Gate-6 work is authorized. ARE-GATE-5 remains OPEN until Task 070 independently reviews and integrates.
+- `NYRON-T-20260826-070` returned clean `SUCCESS` on exact Epoch 1 / Revision 71 basis after correcting an earlier unauthorized checkpoint in branch history.
+- Final reviewable content commit: `56721d760727e11ddb95d752f1df1fe424e66320`.
+- Exact merge base with Revision-71 main `a60e5b3c7fd4f906cd45784737546f1430f89a5f`; compare is `ahead 3 / behind 0` because the branch history contains the earlier checkpoint add/remove cleanup sequence.
+- Final tree delta contains only authorized files:
+  - `src/nyron_kernel/host/__init__.py`
+  - `src/nyron_kernel/host/runtime_context.py`
+  - `src/nyron_kernel/host/trusted_host.py`
+  - `tests/kernel/test_gate5_live_broker.py`
+- No coordination file remains in the final reviewable delta. The corrective history is not treated as coordination authorization.
+- Task-070 canonical Result is recorded at `coordination/results/NYRON-T-20260826-070.md`; record commit `b07c42a7fb47a4de13ba141cb5edbbede1c14b27`.
+- Executor validation: focused Gate-5 `11 passed`; complete `tests/kernel` `212 passed, 2 skipped, 74 subtests passed`; `git diff --check` PASS.
+- Preliminary Orchestrator inspection confirms the intended four-way broker result algebra, source-agnostic identity-conflict precedence, canonical `Activation.trigger_delivery_ref` causal binding, original captured Attempt authority, and real `EffectAuthority.execute()` path are present.
+- A new HIGH-risk independent Review Task `NYRON-T-20260826-071` is opened and assigned to Claude Code on exact content `56721d760727e11ddb95d752f1df1fe424e66320`; Stale Policy: FAIL_CLOSED; READ_ONLY.
+- Task 071 must include reviewer-originated robustness validation, including exact RuntimeContext field-smuggling checks because Python dataclass type annotations do not enforce runtime field types and `TrustedModuleHost` currently checks the outer RuntimeContext type exactly.
+- Task 071 must also independently reproduce identity-conflict storage invariants, same-identity UNKNOWN truth, stale-R1 rejection, causal binding, and standing interlocks.
+- Task 070 is NOT accepted or integrated yet. ARE-GATE-5 remains OPEN. No Gate-6 work is authorized.
 
 ## Accepted Production Baseline
 
@@ -43,7 +48,7 @@
 - `ARE-GATE-2 — Resource foundation` — `PASS / CLOSED`.
 - `ARE-GATE-3 — EffectOperation foundation` — `PASS / CLOSED`.
 - `ARE-GATE-4 — Replacement Fencing` — `PASS / CLOSED`; accepted production integration tip `e410ca50a27fcb3273848000ef3846279ebda00d`.
-- `ARE-GATE-5 — Module Host trust boundary` — `OPEN / IMPLEMENTATION AUTHORIZED via Task 070`.
+- `ARE-GATE-5 — Module Host trust boundary` — `OPEN / IMPLEMENTATION REVIEW via Task 071`.
 - `ARE-GATE-6 — Accounting/Recovery integration` — future / not open.
 
 ## Frozen Gate-5 ABI
@@ -51,7 +56,6 @@
 - `design/clarifications/NYRON-D-004_Lead_Integration_Clarification_005.md`
 - Status: `FROZEN NORMATIVE CLARIFICATION`
 - Freeze Commit: `7c4482f9ff0a77b107064e1d99826f6eac12420c`
-- Review Basis: Task 069 `PASS_WITH_FINDINGS`
 
 Load-bearing semantics:
 
@@ -59,23 +63,12 @@ Load-bearing semantics:
 - RuntimeContext exposes inert Capability/Resource selectors plus optional single bounded-write broker.
 - Module-visible public attempt/fencing fields are descriptive only.
 - Module does not choose raw AttemptAuthority/currentness, operation_ref, effect_class, caused_by_ref, or raw target path.
-- `caused_by_ref = Activation.trigger_delivery_ref` from existing canonical Activation; no invented causal namespace.
+- `caused_by_ref = Activation.trigger_delivery_ref` from existing canonical Activation.
 - Every real mutation crosses accepted `EffectAuthority.execute()` dispatch-admission/linearization.
-- Identity conflict has precedence over same-identity state mapping.
-- Identity conflict is source-agnostic: payload, Grant, Resource, Lease, or any other immutable EffectRequest identity mismatch uses `BoundedWriteIdentityConflict`.
+- Identity conflict has precedence over same-identity state mapping and is source-agnostic.
 - Pre-existing operation state remains visible only as `existing_state` under an identity conflict.
-- Same-identity UNKNOWN remains `BoundedWriteUnknown`, never ordinary rejection/success/retry clearance.
+- Same-identity UNKNOWN remains `BoundedWriteUnknown`.
 - FENCED/COMPLETED do not themselves grant semantic retry clearance.
-
-## Closed Findings
-
-- `NYRON-T-20260826-062-F-001` — CLOSED by Clarification 005 freeze.
-- `NYRON-T-20260826-067-F-001` — CLOSED after Task 069 PASS_WITH_FINDINGS and Clarification 005 freeze.
-- `NYRON-T-20260826-069-F-001` — CLOSED by Design Authority wording correction in Clarification 005; no semantic/identity-formula change required.
-- `NYRON-T-20260826-065-F-001` — CLOSED by Task 067.
-- `NYRON-T-20260826-065-F-002` — CLOSED by Task 067.
-- `NYRON-T-20260826-065-F-003` — CLOSED by Task 067.
-- `NYRON-T-20260826-065-F-004` — CLOSED by Task 067.
 
 ## Open Findings
 
@@ -83,6 +76,13 @@ Load-bearing semantics:
 - `NYRON-T-20260826-043-F-001` — `ARCHITECTURE / NON_BLOCKING / OPEN` — authority-consumption linearization depends on canonical SQLite single-writer transaction discipline; genuine concurrency/pools/raw writers/process-distributed authority activate mandatory revalidation.
 - `NYRON-T-20260826-048-F-001` — `IMPLEMENTATION / NON_BLOCKING / OPEN` — Effect recovery caller ergonomics debt only.
 - `NYRON-T-20260826-056-F-001` — `IMPLEMENTATION / NON_BLOCKING / OPEN` — cross-version schema migration/rebuild debt.
+
+## Closed Gate-5 Design Findings
+
+- `NYRON-T-20260826-062-F-001` — CLOSED by Clarification 005 freeze.
+- `NYRON-T-20260826-067-F-001` — CLOSED after Task 069 PASS_WITH_FINDINGS and Clarification 005 freeze.
+- `NYRON-T-20260826-069-F-001` — CLOSED by Design Authority wording correction in Clarification 005.
+- `NYRON-T-20260826-065-F-001` through `065-F-004` — CLOSED by Task 067.
 
 ## Stable Baseline
 
@@ -107,7 +107,7 @@ Frozen D-004 §26 route:
 - `ARE-GATE-2` — PASS / CLOSED;
 - `ARE-GATE-3` — PASS / CLOSED;
 - `ARE-GATE-4` — PASS / CLOSED;
-- `ARE-GATE-5` — `OPEN / LIVE-BROKER IMPLEMENTATION via Task 070`;
+- `ARE-GATE-5` — `OPEN / IMPLEMENTATION REVIEW via Task 071`;
 - `ARE-GATE-6` — future / not open.
 
 ## Final Result SHA Rule
