@@ -6,7 +6,7 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `2`
-- Coordination Revision: `89`
+- Coordination Revision: `90`
 - Last Accepted Production Commit: `84156a5be8d77dc69fd21b02ffa2cf49f5154a8b`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Current Gate: `ARE-GATE-6 — Accounting / Recovery integration`
@@ -18,8 +18,13 @@
 
 | Task | Agent | State | Track / Purpose |
 |---|---|---|---|
-| `NYRON-T-20260826-101` | Claude Code | `READY / R88 TRACK-B RE-REVIEW` | Track B — targeted exact-SHA Recovery re-review of `365f8c3f...` |
-| `NYRON-T-20260826-102` | Claude Code | `READY / R89` | Settlement — known-actual commit/release/overrun foundation on exact Track-A candidate `e5acf1ab...` |
+| `NYRON-T-20260826-102` | Codex | `READY / R90` | Settlement — known-actual commit/release/overrun foundation on exact Track-A candidate `e5acf1ab...` |
+
+## Waiting / Review Capacity
+
+| Task | Agent | State | Reason |
+|---|---|---|---|
+| `NYRON-T-20260826-101` | Claude Code | `WAITING / R90` | Track B exact-SHA Recovery re-review; operator reports Claude unavailable until Friday 15:00 local. Do not substitute the Task-100 Codex implementer as independent reviewer. |
 
 ## Stable Component Candidates
 
@@ -36,18 +41,17 @@
 ## Track B — Recovery / ReconciliationCase
 
 - Task 100 fix result: `SUCCESS`; exact correction candidate `365f8c3f270ee0d428b95d73ccbf34bc178b979f`.
-- Task 101 targeted independent re-review is the current Track-B acceptance action.
-- Track B is not yet a stable component candidate until Task 101 passes exact SHA.
+- Task 101 targeted independent re-review is required before Track B can become a stable component candidate.
+- Task 101 is temporarily waiting only because the independent Claude reviewer is unavailable; Recovery semantics and exact review target are unchanged.
 
-## Revision 89 Decision
+## Revision 90 Decision
 
-- Track A stable handoff was verified from Repository and its prior blocking DELETE-immutability defect is closed by Task 095 + Task 099.
-- Track A therefore releases one of the two authorized parallel development slots.
-- The released slot is assigned to the previously queued Settlement component; this does not increase the parallel-capacity ceiling.
-- Task 102 opens the bounded Accounting Settlement / Overrun foundation from exact reviewed Track-A candidate `e5acf1abb9a03667315a364ba7e1a8b002ed31cd`.
-- Task 102 may consume Track-A Usage/Ledger semantics but must not reinterpret them, modify Recovery production, or perform global Accounting <-> Recovery integration.
-- Track A stable-candidate status does not itself change `Last Accepted Production Commit`; global exact-SHA integration remains pending.
-- Track B and Settlement are now the two active development tracks.
+- Claude execution/review capacity is temporarily unavailable per operator report.
+- Task 102 Settlement implementation is reassigned from Claude Code to Codex. Exact basis, scope, risk, frozen semantics, validation, and acceptance boundary are unchanged.
+- Task 101 remains assigned to the independent Claude reviewer and is moved to `WAITING / REVIEWER CAPACITY` rather than weakening review independence.
+- The Codex implementer of Task 100 must not be used as the independent reviewer for Task 101.
+- Revision 90 does not change any Accounting / Recovery frozen Contract, Track-A stable candidate, Track-B exact review target, or Last Accepted Production Commit.
+- Settlement may continue immediately under Codex; Track B stable-candidate classification waits for independent review availability.
 
 ## Gate-6A Closure
 
