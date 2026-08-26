@@ -133,7 +133,9 @@ Core ``_create_schema``
   CHECK state IN ('REQUESTED','RESERVED','DENIED','RECONCILING','COMMITTED','RELEASED');
   CHECK (state = 'DENIED' AND deny_reason_code IS NOT NULL)
         OR (state != 'DENIED' AND deny_reason_code IS NULL);
-  FK accounting_scope_ref -> accounting_scopes; FK (run_ref, attempt_seq) -> run_attempts.
+  FK accounting_scope_ref -> accounting_scopes;
+  activation_ref/run_ref/attempt_seq remain stable cross-owner identity fields,
+  not required local Runtime FKs.
 - TRIGGER budget_reservation_identity_immutable (committed/released dims + updated_at mutable).
 - TRIGGER budget_reservation_state_transition:
   REQUESTED -> RESERVED/DENIED; RESERVED -> COMMITTED/RELEASED/RECONCILING;
@@ -1698,7 +1700,7 @@ class SQLiteStoreSchemaGuardTest(unittest.TestCase):
             " WHERE budget_policy_revision_ref = 'budget-policy:probe@1'"
         )
 
-    def test_budget_reservations_checks_unique_and_fk(self) -> None:
+    def test_budget_reservations_checks_unique_and_accounting_owned_fk(self) -> None:
         self._insert_budget_reservation()
         self._insert_budget_reservation(
             ref="reservation:probe@2", request="request:probe@2", state="RESERVED"
@@ -1786,20 +1788,6 @@ class SQLiteStoreSchemaGuardTest(unittest.TestCase):
             " '[]', 1, 1, 'c')",
             (ACTIVATION, RUN, GRAPH),
         )
-        self._expect_integrity(
-            "INSERT INTO budget_reservations(reservation_ref, request_ref,"
-            " activation_ref, run_ref, attempt_seq, accounting_scope_ref,"
-            " graph_revision_ref, definition_anchor_ref, ancestry_snapshot_json,"
-            " policy_revision_refs_json, estimate_ref, requested_dimensions_json,"
-            " reserved_dimensions_json, committed_dimensions_json,"
-            " released_dimensions_json, state, deny_reason_code, subject_refs_json,"
-            " created_at, updated_at, caused_by_ref)"
-            " VALUES ('res:bad@7', 'req:bad@7', ?, 'run:missing', 1, ?, ?, 'a',"
-            " '[]', '[]', 'e', '[]', '[]', '[]', '[]', 'REQUESTED', NULL, '[]',"
-            " 1, 1, 'c')",
-            (ACTIVATION, SCOPE, GRAPH),
-        )
-
     def test_budget_reservation_identity_immutable_trigger(self) -> None:
         self._insert_budget_reservation()
         immutable_changes = [
