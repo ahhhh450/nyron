@@ -97,8 +97,17 @@ class SettlementAuthority:
                         reservation_ref=request.reservation_ref,
                     )
 
+                if not usage_rows:
+                    raise SettlementAuthorityError(
+                        "SETTLEMENT_EVIDENCE_REQUIRED",
+                        reservation_ref=request.reservation_ref,
+                    )
+
                 actual = self._actual_dimensions(
-                    reservation, usage_rows, adjustment_rows
+                    reservation,
+                    usage_rows,
+                    adjustment_rows,
+                    self._canonical_dimensions(connection, reservation),
                 )
                 reserved = dict(json.loads(reservation["reserved_dimensions_json"]))
                 dimensions = sorted(set(reserved) | set(actual))
@@ -251,16 +260,61 @@ class SettlementAuthority:
         return usage_rows, adjustment_rows
 
     @staticmethod
+    def _canonical_dimensions(
+        connection: sqlite3.Connection,
+        reservation: sqlite3.Row,
+    ) -> dict[str, tuple[str, str]]:
+        canonical: dict[str, tuple[str, str]] = {}
+        for revision_ref in json.loads(reservation["policy_revision_refs_json"]):
+            revision = connection.execute(
+                "SELECT dimensions_json FROM budget_policy_revisions "
+                "WHERE budget_policy_revision_ref = ?",
+                (revision_ref,),
+            ).fetchone()
+            if revision is None:
+                raise SettlementAuthorityError(
+                    "SETTLEMENT_DIMENSION_UNRESOLVED",
+                    dimension_ref=None,
+                    budget_policy_revision_ref=revision_ref,
+                )
+            for dimension in json.loads(revision["dimensions_json"]):
+                dimension_ref = dimension["dimension_ref"]
+                binding = (
+                    dimension["unit"],
+                    dimension["measurement_semantics_ref"],
+                )
+                existing = canonical.get(dimension_ref)
+                if existing is not None and existing != binding:
+                    raise SettlementAuthorityError(
+                        "SETTLEMENT_DIMENSION_BINDING_CONFLICT",
+                        dimension_ref=dimension_ref,
+                    )
+                canonical[dimension_ref] = binding
+        return canonical
+
+    @staticmethod
     def _actual_dimensions(
         reservation: sqlite3.Row,
         usage_rows: tuple[sqlite3.Row, ...],
         adjustment_rows: tuple[sqlite3.Row, ...],
+        canonical_dimensions: dict[str, tuple[str, str]],
     ) -> dict[str, int]:
         actual: dict[str, int] = {}
         usage_by_ref = {row["usage_fact_ref"]: row for row in usage_rows}
         for row in usage_rows:
             if row["accounting_scope_ref"] != reservation["accounting_scope_ref"]:
                 raise SettlementAuthorityError("SETTLEMENT_FACT_BINDING_CONFLICT")
+            binding = canonical_dimensions.get(row["dimension_ref"])
+            if binding is None:
+                raise SettlementAuthorityError(
+                    "SETTLEMENT_DIMENSION_UNRESOLVED",
+                    dimension_ref=row["dimension_ref"],
+                )
+            if row["unit"] != binding[0]:
+                raise SettlementAuthorityError(
+                    "SETTLEMENT_FACT_BINDING_CONFLICT",
+                    dimension_ref=row["dimension_ref"],
+                )
             actual[row["dimension_ref"]] = (
                 actual.get(row["dimension_ref"], 0) + row["quantity"]
             )

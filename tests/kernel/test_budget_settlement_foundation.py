@@ -65,6 +65,7 @@ class BudgetSettlementFoundationTest(unittest.TestCase):
             self.runtime_authority,
             lambda: self.now,
         )
+        self._publish_limit(1000)
         self.ledger = UsageLedger(self.store, lambda: self.now)
         self.settlement = SettlementAuthority(self.store, lambda: self.now)
 
@@ -140,7 +141,10 @@ class BudgetSettlementFoundationTest(unittest.TestCase):
                 ROOT_SCOPE,
                 0,
                 None,
-                (BudgetDimension("tokens", "TOKEN", "sem:tokens@1"),),
+                (
+                    BudgetDimension("tokens", "TOKEN", "sem:tokens@1"),
+                    BudgetDimension("requests", "REQUEST", "sem:requests@1"),
+                ),
                 (BudgetRule("rule:tokens", "tokens", amount, "LIFETIME_LIMIT", "HARD"),),
                 "admin:test",
                 None,
@@ -210,7 +214,6 @@ class BudgetSettlementFoundationTest(unittest.TestCase):
         self.assertEqual((0, 100), self.budget.exposure(ROOT_SCOPE, "tokens"))
 
     def test_overrun_commits_full_actual_and_blocks_future_reserve(self) -> None:
-        self._publish_limit(120)
         reservation = self._reserve("reserve:overrun")
         self._usage(reservation.reservation_ref, 135)
 
@@ -220,7 +223,7 @@ class BudgetSettlementFoundationTest(unittest.TestCase):
         self.assertEqual((('tokens', 35),), result.overrun_dimensions)
         for scope_ref in (ROOT_SCOPE, CHILD_SCOPE):
             self.assertEqual((0, 135), self.budget.exposure(scope_ref, "tokens"))
-        denied = self._reserve("reserve:after-overrun", amount=1)
+        denied = self._reserve("reserve:after-overrun", amount=866)
         self.assertEqual("DENIED", denied.state)
         self.assertEqual("ANCESTOR_LIMIT_EXCEEDED", denied.deny_reason_code)
 
@@ -354,6 +357,137 @@ class BudgetSettlementFoundationTest(unittest.TestCase):
         self.assertEqual("SETTLEMENT_FACT_BINDING_CONFLICT", raised.exception.code)
         self.assertEqual((100, 0), self.budget.exposure(ROOT_SCOPE, "tokens"))
         self.assertEqual("RESERVED", self.budget.resolve(reservation.reservation_ref).state)
+
+    def test_empty_evidence_fails_closed_without_mutation(self) -> None:
+        reservation = self._reserve("reserve:empty-evidence")
+
+        with self.assertRaises(SettlementAuthorityError) as raised:
+            self.settlement.settle(self._request(reservation.reservation_ref))
+
+        self.assertEqual("SETTLEMENT_EVIDENCE_REQUIRED", raised.exception.code)
+        for scope_ref in (ROOT_SCOPE, CHILD_SCOPE):
+            self.assertEqual((100, 0), self.budget.exposure(scope_ref, "tokens"))
+        self.assertEqual("RESERVED", self.budget.resolve(reservation.reservation_ref).state)
+        count = self.store.connection.execute(
+            "SELECT COUNT(*) AS n FROM budget_settlements"
+        ).fetchone()["n"]
+        self.assertEqual(0, count)
+
+    def test_explicit_zero_fact_is_valid_evidence(self) -> None:
+        reservation = self._reserve("reserve:zero-evidence")
+        self._usage(reservation.reservation_ref, 0, "line:zero")
+
+        result = self.settlement.settle(self._request(reservation.reservation_ref))
+
+        self.assertEqual("RELEASED", result.resulting_state)
+        self.assertEqual(1, len(result.usage_fact_refs))
+        self.assertEqual((), result.actual_dimensions)
+        for scope_ref in (ROOT_SCOPE, CHILD_SCOPE):
+            self.assertEqual((0, 0), self.budget.exposure(scope_ref, "tokens"))
+
+    def test_wrong_unit_fails_closed_without_mutation(self) -> None:
+        reservation = self._reserve("reserve:wrong-unit")
+        self._record_usage(reservation.reservation_ref, 9, "USD", "line:wrong-unit")
+
+        with self.assertRaises(SettlementAuthorityError) as raised:
+            self.settlement.settle(self._request(reservation.reservation_ref))
+
+        self.assertEqual("SETTLEMENT_FACT_BINDING_CONFLICT", raised.exception.code)
+        self._assert_unsettled(reservation.reservation_ref)
+
+    def test_mixed_units_for_one_dimension_fail_closed(self) -> None:
+        reservation = self._reserve("reserve:mixed-unit")
+        self._record_usage(reservation.reservation_ref, 6, "TOKEN", "line:mixed-token")
+        self._record_usage(reservation.reservation_ref, 4, "USD", "line:mixed-usd")
+
+        with self.assertRaises(SettlementAuthorityError) as raised:
+            self.settlement.settle(self._request(reservation.reservation_ref))
+
+        self.assertEqual("SETTLEMENT_FACT_BINDING_CONFLICT", raised.exception.code)
+        self._assert_unsettled(reservation.reservation_ref)
+
+    def test_unresolved_dimension_fails_closed(self) -> None:
+        reservation = self._reserve("reserve:unresolved-dimension")
+        self._record_usage(
+            reservation.reservation_ref,
+            4,
+            "UNKNOWN",
+            "line:unresolved-dimension",
+            dimension_ref="unresolved",
+        )
+
+        with self.assertRaises(SettlementAuthorityError) as raised:
+            self.settlement.settle(self._request(reservation.reservation_ref))
+
+        self.assertEqual("SETTLEMENT_DIMENSION_UNRESOLVED", raised.exception.code)
+        self._assert_unsettled(reservation.reservation_ref)
+
+    def test_conflicting_measurement_semantics_fail_closed(self) -> None:
+        self.budget.publish_policy_revision(
+            BudgetPolicyRevision(
+                "policy:child@1",
+                CHILD_SCOPE,
+                0,
+                None,
+                (BudgetDimension("tokens", "TOKEN", "sem:tokens@2"),),
+                (),
+                "admin:test",
+                None,
+            )
+        )
+        reservation = self._reserve("reserve:semantics-conflict")
+        self._usage(reservation.reservation_ref, 5, "line:semantics-conflict")
+
+        with self.assertRaises(SettlementAuthorityError) as raised:
+            self.settlement.settle(self._request(reservation.reservation_ref))
+
+        self.assertEqual(
+            "SETTLEMENT_DIMENSION_BINDING_CONFLICT", raised.exception.code
+        )
+        self._assert_unsettled(reservation.reservation_ref)
+
+    def test_valid_same_unit_facts_aggregate(self) -> None:
+        reservation = self._reserve("reserve:same-unit")
+        self._record_usage(reservation.reservation_ref, 35, "TOKEN", "line:same-a")
+        self._record_usage(reservation.reservation_ref, 45, "TOKEN", "line:same-b")
+
+        result = self.settlement.settle(self._request(reservation.reservation_ref))
+
+        self.assertEqual((('tokens', 80),), result.actual_dimensions)
+        for scope_ref in (ROOT_SCOPE, CHILD_SCOPE):
+            self.assertEqual((0, 80), self.budget.exposure(scope_ref, "tokens"))
+
+    def _record_usage(
+        self,
+        reservation_ref: str,
+        quantity: int,
+        unit: str,
+        source_id: str,
+        dimension_ref: str = "tokens",
+    ) -> None:
+        self.ledger.record_usage(
+            UsageFactRequest(
+                source_authority_ref="provider:test",
+                source_fact_id=source_id,
+                fact_kind="METERED_USAGE",
+                dimension_ref=dimension_ref,
+                accounting_scope_ref=CHILD_SCOPE,
+                quantity=quantity,
+                unit=unit,
+                external_evidence_ref=f"evidence:{source_id}",
+                caused_by_ref=f"event:{source_id}",
+                reservation_ref=reservation_ref,
+            )
+        )
+
+    def _assert_unsettled(self, reservation_ref: str) -> None:
+        for scope_ref in (ROOT_SCOPE, CHILD_SCOPE):
+            self.assertEqual((100, 0), self.budget.exposure(scope_ref, "tokens"))
+        self.assertEqual("RESERVED", self.budget.resolve(reservation_ref).state)
+        count = self.store.connection.execute(
+            "SELECT COUNT(*) AS n FROM budget_settlements"
+        ).fetchone()["n"]
+        self.assertEqual(0, count)
 
     def test_raw_exposure_invariant_failure_rolls_back_ancestor_conversion(self) -> None:
         reservation = self._reserve("reserve:raw-invariant")
