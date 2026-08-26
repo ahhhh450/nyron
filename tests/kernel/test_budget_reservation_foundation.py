@@ -232,6 +232,119 @@ class BudgetReservationFoundationTest(unittest.TestCase):
             )
         self.assertEqual("BUDGET_POLICY_REVISION_INVALID", raised.exception.code)
 
+    # ------------------------------------------------------------------
+    # 1b. Task-080 correction (077-F-003): dimensions/enforcement_rules
+    # must be exact immutable tuples, dimension_ref/rule_ref must be
+    # unique within one revision, and every rule must reference exactly
+    # one dimension declared in that same revision.
+    # ------------------------------------------------------------------
+
+    def _unpublished_revision(
+        self,
+        accounting_scope_ref: str,
+        dimensions,
+        rules,
+        *,
+        ref: str,
+    ) -> BudgetPolicyRevision:
+        return BudgetPolicyRevision(
+            budget_policy_revision_ref=ref,
+            accounting_scope_ref=accounting_scope_ref,
+            effective_from=0,
+            effective_until=None,
+            dimensions=dimensions,
+            enforcement_rules=rules,
+            created_by_ref="admin:test",
+            supersedes_ref=None,
+        )
+
+    def test_list_shaped_dimensions_rejected(self) -> None:
+        revision = self._unpublished_revision(
+            ROOT_SCOPE,
+            [BudgetDimension("tokens", "count", "sem:tokens@1")],
+            (self._rule("rule:1", "tokens", 100),),
+            ref="policy:list-dims@1",
+        )
+        with self.assertRaises(BudgetAuthorityError) as raised:
+            self.authority.publish_policy_revision(revision)
+        self.assertEqual("BUDGET_POLICY_REVISION_INVALID", raised.exception.code)
+
+    def test_list_shaped_enforcement_rules_rejected(self) -> None:
+        revision = self._unpublished_revision(
+            ROOT_SCOPE,
+            (BudgetDimension("tokens", "count", "sem:tokens@1"),),
+            [self._rule("rule:1", "tokens", 100)],
+            ref="policy:list-rules@1",
+        )
+        with self.assertRaises(BudgetAuthorityError) as raised:
+            self.authority.publish_policy_revision(revision)
+        self.assertEqual("BUDGET_POLICY_REVISION_INVALID", raised.exception.code)
+
+    def test_duplicate_dimension_ref_rejected(self) -> None:
+        revision = self._unpublished_revision(
+            ROOT_SCOPE,
+            (
+                BudgetDimension("tokens", "count", "sem:tokens@1"),
+                BudgetDimension("tokens", "count", "sem:tokens@2"),
+            ),
+            (self._rule("rule:1", "tokens", 100),),
+            ref="policy:dup-dim@1",
+        )
+        with self.assertRaises(BudgetAuthorityError) as raised:
+            self.authority.publish_policy_revision(revision)
+        self.assertEqual(
+            "BUDGET_POLICY_REVISION_DIMENSION_DUPLICATE", raised.exception.code
+        )
+
+    def test_duplicate_rule_ref_rejected(self) -> None:
+        revision = self._unpublished_revision(
+            ROOT_SCOPE,
+            (
+                BudgetDimension("tokens", "count", "sem:tokens@1"),
+                BudgetDimension("requests", "count", "sem:requests@1"),
+            ),
+            (
+                self._rule("rule:1", "tokens", 100),
+                self._rule("rule:1", "requests", 5),
+            ),
+            ref="policy:dup-rule@1",
+        )
+        with self.assertRaises(BudgetAuthorityError) as raised:
+            self.authority.publish_policy_revision(revision)
+        self.assertEqual(
+            "BUDGET_POLICY_REVISION_RULE_DUPLICATE", raised.exception.code
+        )
+
+    def test_rule_referring_to_undeclared_dimension_rejected(self) -> None:
+        revision = self._unpublished_revision(
+            ROOT_SCOPE,
+            (BudgetDimension("tokens", "count", "sem:tokens@1"),),
+            (self._rule("rule:1", "requests", 5),),
+            ref="policy:orphan-rule@1",
+        )
+        with self.assertRaises(BudgetAuthorityError) as raised:
+            self.authority.publish_policy_revision(revision)
+        self.assertEqual(
+            "BUDGET_POLICY_REVISION_RULE_DIMENSION_UNDECLARED", raised.exception.code
+        )
+
+    def test_valid_tuple_shaped_policy_still_publishes_and_round_trips(self) -> None:
+        revision = self._unpublished_revision(
+            ROOT_SCOPE,
+            (
+                BudgetDimension("tokens", "count", "sem:tokens@1"),
+                BudgetDimension("requests", "count", "sem:requests@1"),
+            ),
+            (
+                self._rule("rule:tokens", "tokens", 100),
+                self._rule("rule:requests", "requests", 5),
+            ),
+            ref="policy:valid-multi@1",
+        )
+        published = self.authority.publish_policy_revision(revision)
+        self.assertEqual(revision, published)
+        self.assertEqual(published, self.authority.publish_policy_revision(revision))
+
     def test_policy_revision_publish_is_idempotent_else_conflict(self) -> None:
         revision = self._publish_policy(ROOT_SCOPE, (self._rule("rule:1", "tokens", 100),))
 

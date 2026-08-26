@@ -599,6 +599,11 @@ class BudgetAuthority:
             or revision.effective_until <= revision.effective_from
         ):
             raise BudgetAuthorityError("BUDGET_POLICY_REVISION_INVALID")
+        if type(revision.dimensions) is not tuple:
+            raise BudgetAuthorityError("BUDGET_POLICY_REVISION_INVALID")
+        if type(revision.enforcement_rules) is not tuple:
+            raise BudgetAuthorityError("BUDGET_POLICY_REVISION_INVALID")
+        declared_dimension_refs: set[str] = set()
         for dimension in revision.dimensions:
             if not isinstance(dimension, BudgetDimension) or any(
                 not cls._is_nonempty(value)
@@ -609,6 +614,13 @@ class BudgetAuthority:
                 )
             ):
                 raise BudgetAuthorityError("BUDGET_POLICY_REVISION_INVALID")
+            if dimension.dimension_ref in declared_dimension_refs:
+                raise BudgetAuthorityError(
+                    "BUDGET_POLICY_REVISION_DIMENSION_DUPLICATE",
+                    dimension_ref=dimension.dimension_ref,
+                )
+            declared_dimension_refs.add(dimension.dimension_ref)
+        seen_rule_refs: set[str] = set()
         for rule in revision.enforcement_rules:
             if not isinstance(rule, BudgetRule):
                 raise BudgetAuthorityError("BUDGET_POLICY_REVISION_INVALID")
@@ -625,6 +637,18 @@ class BudgetAuthority:
                 )
             if rule.enforcement not in _SUPPORTED_ENFORCEMENTS:
                 raise BudgetAuthorityError("BUDGET_POLICY_REVISION_INVALID")
+            if rule.rule_ref in seen_rule_refs:
+                raise BudgetAuthorityError(
+                    "BUDGET_POLICY_REVISION_RULE_DUPLICATE",
+                    rule_ref=rule.rule_ref,
+                )
+            seen_rule_refs.add(rule.rule_ref)
+            if rule.dimension_ref not in declared_dimension_refs:
+                raise BudgetAuthorityError(
+                    "BUDGET_POLICY_REVISION_RULE_DIMENSION_UNDECLARED",
+                    rule_ref=rule.rule_ref,
+                    dimension_ref=rule.dimension_ref,
+                )
 
     @classmethod
     def _validate_request(cls, request: BudgetReservationRequest) -> None:
