@@ -6,7 +6,7 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `2`
-- Coordination Revision: `92`
+- Coordination Revision: `93`
 - Last Accepted Production Commit: `84156a5be8d77dc69fd21b02ffa2cf49f5154a8b`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Current Gate: `ARE-GATE-6 — Accounting / Recovery integration`
@@ -18,9 +18,9 @@
 
 | Task | Agent | State | Track / Purpose |
 |---|---|---|---|
-| `NYRON-T-20260826-102` | Codex | `READY / R92` | Settlement — known-actual commit/release/overrun foundation on exact Track-A candidate `e5acf1ab...` |
+| `NYRON-T-20260826-104` | Codex — new independent review session | `READY / R93` | Settlement — independent exact-SHA review of `a708986c...` |
 
-No second active development task is currently routed. Track B has completed its stable-candidate review chain and released its slot.
+Task 102 implementation is complete and no longer occupies an implementation slot. Operator-local DeepSeek Track C is running separately as bounded Integrity / Regression work and must remain write-isolated from Settlement acceptance/integration.
 
 ## Stable Component Candidates
 
@@ -31,7 +31,6 @@ No second active development task is currently routed. Track B has completed its
 - Stable checkpoint: `coordination/checkpoints/ARE-GATE-6_Track-A_Usage_Ledger_Stable_Candidate.md`
 - Review chain: Task 090 implementation -> 093 mechanical audit -> 094 semantic review -> 095 fix -> 099 exact-SHA re-review PASS.
 - Open blocking findings: `NONE`.
-- Final validation at exact candidate: focused Usage/Ledger `21 passed`; full kernel `284 passed, 2 skipped, 96 subtests passed`; `git diff --check` clean.
 - Global acceptance/integration: `PENDING`.
 
 ### Track B — Recovery / ReconciliationCase
@@ -40,21 +39,31 @@ No second active development task is currently routed. Track B has completed its
 - Exact reviewed production candidate: `365f8c3f270ee0d428b95d73ccbf34bc178b979f`
 - Stable checkpoint: `coordination/checkpoints/ARE-GATE-6_Track-B_Recovery_Stable_Candidate.md`
 - Review chain: Task 092 implementation -> 096 semantic review -> 097 mechanical audit -> 098 code review -> 100 fix -> 101 targeted exact-SHA re-review PASS.
-- Task 101 result: `PASS / ALL TARGETED FINDINGS CLOSED`.
 - Open blocking findings: `NONE`.
-- Final independent validation at exact candidate: focused Recovery `12 passed, 5 subtests passed`; full kernel `275 passed, 2 skipped, 101 subtests passed`; `git diff --check` clean; independent retry/restart, divergent-binding, race, and raw-DELETE probes PASS.
 - Backup Task 103: `VOID / BACKUP NOT NEEDED / DO NOT EXECUTE`.
 - Global acceptance/integration: `PENDING`.
 
-## Revision 92 Decision
+## Settlement Candidate
 
-- Task 101 Repository Result was verified as `PASS / ALL TARGETED FINDINGS CLOSED` against exact SHA `365f8c3f270ee0d428b95d73ccbf34bc178b979f` with required review independence satisfied.
-- Track B is therefore classified as a stable component candidate ready for global integration.
-- Track B releases its active development slot; this does not automatically create a new task or increase the operator's parallel-capacity ceiling.
-- Task 103 remains void because the primary independent review route completed successfully.
-- Settlement Task 102 remains the only currently routed implementation task and is mechanically re-anchored to Revision 92; its exact Track-A basis, semantics, scope, and acceptance boundary are unchanged.
-- Track A and Track B stable-candidate classifications do not change `Last Accepted Production Commit`; global exact-SHA integration remains separate.
-- The prior Task-092 session-name/process mismatch remains a NON_BLOCKING process record and does not prevent Track-B stable-candidate classification.
+- Task 102 executor result: `SUCCESS`.
+- Exact basis: `e5acf1abb9a03667315a364ba7e1a8b002ed31cd`.
+- Exact production candidate: `a708986c11f1b153ea8002803c00f886b3a5b1c5`.
+- Focused settlement tests: `10 passed`.
+- Track-A Usage/Ledger + BudgetReservation focused validation: `71 passed, 12 subtests passed`.
+- Complete `tests/kernel`: `294 passed, 2 skipped, 96 subtests passed`.
+- Executor Findings / Blockers: `NONE / NONE`.
+- State: `PENDING_INDEPENDENT_REVIEW`.
+- Independent review route: `NYRON-T-20260826-104`.
+- Settlement is not yet a stable component candidate and must not be globally integrated before independent review disposition.
+
+## Revision 93 Decision
+
+- Task 102 Repository Result was verified as `SUCCESS` at exact production SHA `a708986c11f1b153ea8002803c00f886b3a5b1c5` with no executor finding/blocker.
+- Because Settlement contains high-risk Accounting correctness / replay / crash-consistency behavior, executor SUCCESS is not sufficient for stable-candidate classification.
+- Claude capacity is temporarily constrained; Repository Review Protocol permits selecting Codex for complex code review provided the Independent Reviewer is a distinct Agent. Task 104 therefore requires a brand-new Codex reviewer session, isolated from the Task-102 implementation session and worktree.
+- Task 104 is read-only for production/tests and reviews the exact SHA only.
+- DeepSeek continues operator-local Track C Integrity / Regression work; it is not used as the final high-risk Settlement release reviewer and must not overlap Settlement production writes.
+- Track A and Track B remain stable candidates. `Last Accepted Production Commit` remains unchanged until explicit global integration.
 
 ## Gate-6A Closure
 
