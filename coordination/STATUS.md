@@ -6,11 +6,11 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Coordination Epoch: `2`
-- Coordination Revision: `97`
+- Coordination Revision: `98`
 - Last Accepted Production Commit: `84156a5be8d77dc69fd21b02ffa2cf49f5154a8b`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Current Gate: `ARE-GATE-6 — Accounting / Recovery integration`
-- Current Mode: `CROSS-OWNER WIRING / E2E IMPLEMENTATION / MAX 2 ACTIVE DEVELOPMENT TRACKS`
+- Current Mode: `ARCHITECTURE ESCALATION + PARALLEL TRACK-C PARENT REVIEW`
 - Orchestration Plan: `coordination/plans/ARE-GATE-6_Parallel_Development_Plan_v0.1.md`
 - Parallelism Policy: `DEFAULT_PARALLEL_UNLESS_WRITE_OR_UNSETTLED_CONTRACT_DEPENDENCY_CONFLICTS`
 
@@ -18,9 +18,9 @@
 
 | Task | Agent | State | Track / Purpose |
 |---|---|---|---|
-| `NYRON-T-20260827-108` | Codex | `READY / R97` | Global Integration — bounded cross-owner wiring + crash/replay E2E from exact integrated component SHA `9f217faf...` |
+| `NYRON-T-20260827-109` | Codex — fresh independent review session | `READY / R98` | Track C Parent Review — exact test-only delivery review + compatibility validation against integrated checkpoint `9f217faf...` |
 
-Operator-local DeepSeek Track C continues separately as bounded Integrity / Regression work and must remain isolated from global integration production decisions.
+Global cross-owner implementation is paused after Task 108 correctly returned `ESCALATION_REQUIRED`. No further production wiring Task may be routed until the Lead Design Authority resolves the Runtime ↔ Accounting persistence/identity boundary finding.
 
 ## Stable Component Candidates
 
@@ -29,7 +29,6 @@ Operator-local DeepSeek Track C continues separately as bounded Integrity / Regr
 - State: `COMPLETED / STABLE CANDIDATE READY FOR INTEGRATION`
 - Exact reviewed production candidate: `e5acf1abb9a03667315a364ba7e1a8b002ed31cd`
 - Stable checkpoint: `coordination/checkpoints/ARE-GATE-6_Track-A_Usage_Ledger_Stable_Candidate.md`
-- Review chain: Task 090 implementation -> 093 mechanical audit -> 094 semantic review -> 095 fix -> 099 exact-SHA re-review PASS.
 - Open blocking findings: `NONE`.
 
 ### Track B — Recovery / ReconciliationCase
@@ -37,7 +36,6 @@ Operator-local DeepSeek Track C continues separately as bounded Integrity / Regr
 - State: `COMPLETED / STABLE CANDIDATE READY FOR INTEGRATION`
 - Exact reviewed production candidate: `365f8c3f270ee0d428b95d73ccbf34bc178b979f`
 - Stable checkpoint: `coordination/checkpoints/ARE-GATE-6_Track-B_Recovery_Stable_Candidate.md`
-- Review chain: Task 092 implementation -> 096 semantic review -> 097 mechanical audit -> 098 code review -> 100 fix -> 101 targeted exact-SHA re-review PASS.
 - Open blocking findings: `NONE`.
 - Backup Task 103: `VOID / BACKUP NOT NEEDED / DO NOT EXECUTE`.
 
@@ -46,7 +44,7 @@ Operator-local DeepSeek Track C continues separately as bounded Integrity / Regr
 - State: `COMPLETED / STABLE CANDIDATE READY FOR INTEGRATION`
 - Exact reviewed production candidate: `c324f837fca86e1b0a3b1cbba1196c68654aa30a`
 - Stable checkpoint: `coordination/checkpoints/ARE-GATE-6_Settlement_Stable_Candidate.md`
-- Review chain: Task 102 implementation -> 104 independent review FAIL -> 105 targeted fix -> 106 targeted exact-SHA re-review PASS.
+- Review chain: Task 102 -> 104 FAIL -> 105 fix -> 106 PASS.
 - `F-104-001`: `CLOSED`.
 - `F-104-002`: `CLOSED`.
 - Open blocking findings: `NONE`.
@@ -54,27 +52,42 @@ Operator-local DeepSeek Track C continues separately as bounded Integrity / Regr
 ## Integrated Component Checkpoint
 
 - Task 107 result: `SUCCESS / INTEGRATED COMPONENT CHECKPOINT CANDIDATE`.
-- Exact Accounting / Usage / Settlement input: `c324f837fca86e1b0a3b1cbba1196c68654aa30a`.
-- Exact Recovery input: `365f8c3f270ee0d428b95d73ccbf34bc178b979f`.
 - Exact integrated production/content SHA: `9f217faf56149862455aa1be74659c79c884c373`.
 - Stable checkpoint: `coordination/checkpoints/ARE-GATE-6_Integrated_Component_Checkpoint_107.md`.
 - Integration conflicts: `NONE`.
 - Reviewed component content dropped: `NONE`.
-- Focused component validation: `100 passed, 17 subtests passed`.
 - Complete `tests/kernel`: `313 passed, 2 skipped, 101 subtests passed`.
-- Fresh detached checkout complete `tests/kernel`: `313 passed, 2 skipped, 101 subtests passed`.
-- Blocking findings / Contract ambiguity during assembly: `NONE / NONE`.
-- State: `ASSEMBLED / FURTHER CROSS-OWNER WIRING + E2E REQUIRED`.
+- State: `ASSEMBLED / CROSS-OWNER IMPLEMENTATION BLOCKED BY ARCHITECTURE FINDING`.
 
-## Revision 97 Decision
+## Task 108 — Cross-Owner Wiring / E2E
 
-- Task 107 Repository Result was verified as `SUCCESS / INTEGRATED COMPONENT CHECKPOINT CANDIDATE` at exact SHA `9f217faf56149862455aa1be74659c79c884c373`.
-- Task 107 preserved both reviewed component lineages through normal Git ancestry with no merge conflict or manual behavior reconstruction.
-- Component assembly alone does not satisfy final ARE-GATE-6 integration. Task 107 explicitly requires a further bounded cross-owner wiring / crash-replay E2E implementation slice.
-- Task 108 is therefore opened from the exact integrated SHA. It must use only already-frozen and already-implemented Runtime / Effect / Resource / Accounting / Recovery boundaries.
-- Task 108 must prove no global transaction assumption, stable cross-owner delivery identity/dedupe, Owner-local mutation authority, Accounting denial scoped to budget authority, and preserved Effect/Resource conflict ownership.
-- If a required cross-owner or Human Interaction semantic is not already concretely frozen/implemented, Task 108 must fail closed and return `ESCALATION_REQUIRED` rather than inventing behavior.
-- Task 108 remains HIGH risk and requires independent exact-SHA integrated review after implementation before ARE-GATE-6 acceptance.
+- Result: `ESCALATION_REQUIRED`.
+- Exact execution basis: `9f217faf56149862455aa1be74659c79c884c373`.
+- Production/test delivery created: `NONE`.
+- Blocking finding: `CROSS_OWNER_RUNTIME_ACCOUNTING_STORAGE_BOUNDARY_UNFROZEN`.
+- Finding summary: Accounting validates Runtime identity through injected Runtime repositories, but `budget_reservations` also has a direct SQLite FK to Runtime-owned `run_attempts`. With physically separate owner-local stores, canonical Runtime proof succeeds but Accounting commit fails because the Runtime row is absent from the Accounting database.
+- Frozen design explicitly does not require one physical database and forbids silently inventing a new cross-owner persistence/evidence contract.
+- Required next authority: `Lead Design Authority`.
+- Until resolved: no implementation agent may choose shared physical DB, Runtime projection/evidence replication, or another storage boundary on its own.
+
+## Operator-local Track C — Integrity / Regression Hardening
+
+- State: `REMOTE DELIVERY AVAILABLE / PARENT REVIEW ROUTED`.
+- Remote branch: `track-c/integrity-regression-hardening`.
+- Exact remote HEAD: `55a9d089d09f6e501c867e3c65f36c0561ab33a6`.
+- Parent base: `84156a5be8d77dc69fd21b02ffa2cf49f5154a8b`.
+- Branch relationship: exactly `5` commits ahead, `0` behind.
+- Changed surface: exactly five new `tests/kernel/test_track_c_*.py` files; production `src/` changes `NONE`.
+- Parent review route: `NYRON-T-20260827-109`.
+- Task 109 must also overlay these tests onto exact integrated checkpoint `9f217faf...` and run normal kernel validation to clear/confirm DeepSeek sandbox environment debt.
+
+## Revision 98 Decision
+
+- Task 108 Repository Result was verified as `ESCALATION_REQUIRED`; the finding is accepted as a real architecture/contract boundary and implementation remains fail-closed.
+- The Accounting / Recovery frozen candidate states that one physical database is out of scope, so the Development Orchestrator will not select a physical-storage interpretation.
+- The finding is escalated to the Lead Design Authority for the smallest explicit clarification/amendment needed to unblock cross-owner Runtime ↔ Accounting wiring.
+- No Task-108 production code was created, so exact integrated checkpoint `9f217faf...` remains the current system integration basis.
+- Track C remote delivery is independently reviewable and write-disjoint from the blocked production wiring; Task 109 is therefore routed in parallel.
 - `Last Accepted Production Commit` remains unchanged.
 
 ## Gate-6A Closure
