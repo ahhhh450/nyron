@@ -57,6 +57,7 @@ class EffectOperation:
     dispatch_admission_ref: str | None
     dispatch_admitted_at: int | None
     completion_evidence: dict[str, object] | None
+    fence_evidence: dict[str, object] | None
 
 
 class EffectAuthority:
@@ -184,6 +185,39 @@ class EffectAuthority:
             self._mark_unknown(operation_ref)
         return self._require_operation(operation_ref)
 
+    def request_revoke(self, operation_ref: str) -> EffectOperation:
+        """Durably stop future dispatch/continuation for this exact operation."""
+
+        operation = self._require_operation(operation_ref)
+        if operation.state == "PREPARED":
+            evidence = self._target_evidence(operation)
+            if evidence == "ABSENT":
+                self._commit_fenced(operation, "PREPARED_NEVER_ACTIVE")
+            else:
+                self._mark_unknown(operation_ref)
+        elif operation.state == "ACTIVE":
+            with self._store.transaction() as connection:
+                connection.execute(
+                    "UPDATE effect_operations SET state = 'REVOKE_REQUESTED' WHERE operation_ref = ? AND state = 'ACTIVE'",
+                    (operation_ref,),
+                )
+        return self._require_operation(operation_ref)
+
+    def resolve_revoke(self, operation_ref: str) -> EffectOperation:
+        """Resolve revoke only from concrete completion or cessation evidence."""
+
+        operation = self._require_operation(operation_ref)
+        if operation.state != "REVOKE_REQUESTED":
+            return operation
+        evidence = self._target_evidence(operation)
+        if evidence == "EXACT":
+            self._commit_completed(operation)
+        elif evidence == "ABSENT":
+            self._mark_unknown(operation_ref)
+        else:
+            self._mark_unknown(operation_ref)
+        return self._require_operation(operation_ref)
+
     def resolve(self, operation_ref: str) -> EffectOperation | None:
         row = self._store.connection.execute(
             "SELECT * FROM effect_operations WHERE operation_ref = ?",
@@ -236,10 +270,23 @@ class EffectAuthority:
                 rejected_state = (
                     "UNKNOWN" if target_evidence != "ABSENT" else "FENCED"
                 )
-                connection.execute(
-                    "UPDATE effect_operations SET state = ? WHERE operation_ref = ?",
-                    (rejected_state, operation.operation_ref),
-                )
+                if rejected_state == "FENCED":
+                    fence_evidence = self._fence_evidence(
+                        operation, "DISPATCH_REJECTED_BEFORE_ACTIVE"
+                    )
+                    connection.execute(
+                        "UPDATE effect_operations SET state = ?, fence_evidence_json = ? WHERE operation_ref = ?",
+                        (
+                            rejected_state,
+                            self._canonical_json(fence_evidence),
+                            operation.operation_ref,
+                        ),
+                    )
+                else:
+                    connection.execute(
+                        "UPDATE effect_operations SET state = ? WHERE operation_ref = ?",
+                        (rejected_state, operation.operation_ref),
+                    )
                 rejected = True
             else:
                 admission_ref = self._admission_ref(operation.operation_ref)
@@ -281,6 +328,14 @@ class EffectAuthority:
     def _mutate_and_complete(self, operation: EffectOperation) -> EffectOperation:
         evidence = self._target_evidence(operation)
         if evidence == "ABSENT":
+            current = self._require_operation(operation.operation_ref)
+            if current.state == "REVOKE_REQUESTED":
+                self._commit_fenced(
+                    current, "EXECUTOR_STOPPED_BEFORE_FIRST_MUTATION"
+                )
+                return self._require_operation(operation.operation_ref)
+            if current.state != "ACTIVE":
+                raise EffectError("EFFECT_OPERATION_NOT_MUTABLE")
             target = Path(operation.target_ref)
             data = operation.payload.encode("utf-8")
             try:
@@ -314,7 +369,10 @@ class EffectAuthority:
                 raise EffectError("UNRESOLVED_EFFECT_OPERATION")
             if row["state"] == "COMPLETED":
                 return
-            if row["state"] != "ACTIVE" or row["dispatch_admission_ref"] is None:
+            if (
+                row["state"] not in {"ACTIVE", "REVOKE_REQUESTED"}
+                or row["dispatch_admission_ref"] is None
+            ):
                 raise EffectError("EFFECT_COMPLETION_NOT_ALLOWED")
             connection.execute(
                 """
@@ -322,6 +380,24 @@ class EffectAuthority:
                 SET state = 'COMPLETED', completion_evidence_json = ?
                 WHERE operation_ref = ?
                 """,
+                (evidence_json, operation.operation_ref),
+            )
+
+    def _commit_fenced(self, operation: EffectOperation, basis: str) -> None:
+        evidence_json = self._canonical_json(self._fence_evidence(operation, basis))
+        with self._store.transaction() as connection:
+            row = connection.execute(
+                "SELECT state FROM effect_operations WHERE operation_ref = ?",
+                (operation.operation_ref,),
+            ).fetchone()
+            if row is None:
+                raise EffectError("UNRESOLVED_EFFECT_OPERATION")
+            if row["state"] == "FENCED":
+                return
+            if row["state"] not in {"PREPARED", "REVOKE_REQUESTED"}:
+                raise EffectError("EFFECT_FENCE_NOT_ALLOWED")
+            connection.execute(
+                "UPDATE effect_operations SET state = 'FENCED', fence_evidence_json = ? WHERE operation_ref = ?",
                 (evidence_json, operation.operation_ref),
             )
 
@@ -333,7 +409,7 @@ class EffectAuthority:
             ).fetchone()
             if row is None:
                 raise EffectError("UNRESOLVED_EFFECT_OPERATION")
-            if row["state"] in {"PREPARED", "ACTIVE"}:
+            if row["state"] in {"PREPARED", "ACTIVE", "REVOKE_REQUESTED"}:
                 connection.execute(
                     "UPDATE effect_operations SET state = 'UNKNOWN' WHERE operation_ref = ?",
                     (operation_ref,),
@@ -355,6 +431,18 @@ class EffectAuthority:
             and data == operation.payload.encode("utf-8")
             else "MISMATCH"
         )
+
+    @staticmethod
+    def _fence_evidence(
+        operation: EffectOperation, basis: str
+    ) -> dict[str, object]:
+        return {
+            "schema": 1,
+            "operation_ref": operation.operation_ref,
+            "basis": basis,
+            "continuation": "STOPPED",
+            "target_observation": "ABSENT",
+        }
 
     @classmethod
     def _validate_request(cls, request: EffectRequest) -> None:
@@ -453,6 +541,11 @@ class EffectAuthority:
             completion_evidence=(
                 json.loads(row["completion_evidence_json"])
                 if row["completion_evidence_json"] is not None
+                else None
+            ),
+            fence_evidence=(
+                json.loads(row["fence_evidence_json"])
+                if row["fence_evidence_json"] is not None
                 else None
             ),
         )

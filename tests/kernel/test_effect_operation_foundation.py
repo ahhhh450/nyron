@@ -220,6 +220,20 @@ class EffectOperationFoundationTest(unittest.TestCase):
         assert operation is not None
         return Path(operation.target_ref)
 
+    def _leave_active(self, operation_ref: str = OPERATION):
+        def crash(stage, _operation):
+            if stage == "AFTER_ACTIVE_COMMIT":
+                raise InjectedCrash
+
+        with self.assertRaises(InjectedCrash):
+            self._effect_authority(crash).execute(
+                self._request(operation_ref=operation_ref)
+            )
+        operation = self.effect.resolve(operation_ref)
+        assert operation is not None
+        self.assertEqual("ACTIVE", operation.state)
+        return operation
+
     def test_prepared_commits_before_mutation_and_contains_no_admission_claim(self):
         observed = []
 
@@ -264,6 +278,8 @@ class EffectOperationFoundationTest(unittest.TestCase):
             operation = self.effect.resolve(operation_ref)
             if operation is not None:
                 self.assertEqual("FENCED", operation.state)
+                self.assertIsNotNone(operation.fence_evidence)
+                self.assertIsNone(operation.completion_evidence)
                 self.assertFalse(Path(operation.target_ref).exists())
 
     def test_attempt_becoming_stale_after_prepared_prevents_dispatch(self):
@@ -507,6 +523,176 @@ class EffectOperationFoundationTest(unittest.TestCase):
         self.assertIsNone(recovered.completion_evidence)
         self.assertEqual("foreign", (target / "foreign.txt").read_text())
 
+    def test_active_revoke_request_is_durable_and_idempotent(self):
+        self._leave_active()
+        revoked = self.effect.request_revoke(OPERATION)
+        self.assertEqual("REVOKE_REQUESTED", revoked.state)
+        self.assertIsNone(revoked.completion_evidence)
+        self.assertIsNone(revoked.fence_evidence)
+        self.assertEqual(revoked, self.effect.request_revoke(OPERATION))
+
+    def test_prepared_revoke_fences_only_exact_non_dispatch(self):
+        prepared = self.effect.prepare(self._request())
+        fenced = self.effect.request_revoke(OPERATION)
+        self.assertEqual("FENCED", fenced.state)
+        self.assertIsNone(fenced.completion_evidence)
+        self.assertEqual("PREPARED_NEVER_ACTIVE", fenced.fence_evidence["basis"])
+        self.assertEqual("STOPPED", fenced.fence_evidence["continuation"])
+        self.assertNotIn("safe_to_retry", fenced.fence_evidence)
+        self.assertNotIn("no_effect", fenced.fence_evidence)
+        self.assertFalse(Path(prepared.target_ref).exists())
+
+    def test_prepared_revoke_with_external_evidence_fails_closed_unknown(self):
+        prepared = self.effect.prepare(self._request())
+        Path(prepared.target_ref).write_text(prepared.payload)
+        resolved = self.effect.request_revoke(OPERATION)
+        self.assertEqual("UNKNOWN", resolved.state)
+        self.assertIsNone(resolved.fence_evidence)
+        self.assertIsNone(resolved.completion_evidence)
+
+    def test_revoke_resolution_prefers_exact_completion_evidence(self):
+        def crash(stage, _operation):
+            if stage == "AFTER_EXTERNAL_MUTATION":
+                raise InjectedCrash
+
+        with self.assertRaises(InjectedCrash):
+            self._effect_authority(crash).execute(self._request())
+        self.assertEqual(
+            "REVOKE_REQUESTED", self.effect.request_revoke(OPERATION).state
+        )
+        completed = self.effect.resolve_revoke(OPERATION)
+        self.assertEqual("COMPLETED", completed.state)
+        self.assertIsNotNone(completed.completion_evidence)
+        self.assertIsNone(completed.fence_evidence)
+
+    def test_resolver_absence_cannot_claim_executor_cessation(self):
+        self._leave_active()
+        self.effect.request_revoke(OPERATION)
+        resolved = self.effect.resolve_revoke(OPERATION)
+        self.assertEqual("UNKNOWN", resolved.state)
+        self.assertIsNone(resolved.completion_evidence)
+        self.assertIsNone(resolved.fence_evidence)
+
+    def test_executor_observes_revoke_and_fences_before_first_mutation(self):
+        def revoke_after_active(stage, operation):
+            if stage == "AFTER_ACTIVE_COMMIT":
+                self.effect.request_revoke(operation.operation_ref)
+
+        fenced = self._effect_authority(revoke_after_active).execute(self._request())
+        self.assertEqual("FENCED", fenced.state)
+        self.assertFalse(Path(fenced.target_ref).exists())
+        self.assertIsNone(fenced.completion_evidence)
+        self.assertEqual(
+            "EXECUTOR_STOPPED_BEFORE_FIRST_MUTATION",
+            fenced.fence_evidence["basis"],
+        )
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.store.connection.execute(
+                "UPDATE effect_operations SET fence_evidence_json = '{}' WHERE operation_ref = ?",
+                (OPERATION,),
+            )
+
+    def test_reviewer_race_resolver_unknown_prevents_original_mutation(self):
+        observed = []
+
+        def revoke_and_resolve(stage, operation):
+            if stage == "AFTER_ACTIVE_COMMIT":
+                self.effect.request_revoke(operation.operation_ref)
+                observed.append(self.effect.resolve_revoke(operation.operation_ref))
+
+        with self.assertRaises(EffectError) as raised:
+            self._effect_authority(revoke_and_resolve).execute(self._request())
+        self.assertEqual("EFFECT_OPERATION_NOT_MUTABLE", raised.exception.code)
+        self.assertEqual("UNKNOWN", observed[0].state)
+        final = self.effect.resolve(OPERATION)
+        assert final is not None
+        self.assertEqual("UNKNOWN", final.state)
+        self.assertIsNone(final.fence_evidence)
+        self.assertFalse(Path(final.target_ref).exists())
+
+    def test_revoke_resolution_mismatch_or_substitution_is_unknown(self):
+        for index, substitute in enumerate((False, True)):
+            operation_ref = f"effect-operation:revoke-ambiguous/{index}"
+            self._leave_active(operation_ref)
+            self.effect.request_revoke(operation_ref)
+            target = self._target(operation_ref)
+            if substitute:
+                target.mkdir()
+                (target / "foreign.txt").write_text("foreign")
+            else:
+                target.write_text("mismatch")
+            resolved = self.effect.resolve_revoke(operation_ref)
+            self.assertEqual("UNKNOWN", resolved.state)
+            self.assertIsNone(resolved.completion_evidence)
+            self.assertIsNone(resolved.fence_evidence)
+
+    def test_capability_or_lease_end_alone_never_manufactures_fence(self):
+        active = self._leave_active()
+        self.capability.revoke(GRANT)
+        self.resource.revoke_lease(LEASE)
+        current = self.effect.resolve(OPERATION)
+        assert current is not None
+        self.assertEqual(active, current)
+        self.assertEqual("ACTIVE", current.state)
+        self.assertIsNone(current.fence_evidence)
+
+    def test_capability_and_lease_expiry_alone_never_manufactures_fence(self):
+        active = self._leave_active()
+        self.now = 200
+        self.capability.validate_advisory(
+            GRANT,
+            self.attempt,
+            {"effect_class": EffectAuthority.EFFECT_CLASS, "resource_ref": RESOURCE},
+        )
+        self.resource.validate_lease_advisory(
+            LEASE, RESOURCE, "holder:trusted-effect", self.attempt
+        )
+        self.assertEqual("EXPIRED", self.capability.resolve(GRANT).state)
+        self.assertEqual("EXPIRED", self.resource.resolve_lease(LEASE).state)
+        current = self.effect.resolve(OPERATION)
+        assert current is not None
+        self.assertEqual(active, current)
+        self.assertEqual("ACTIVE", current.state)
+        self.assertIsNone(current.fence_evidence)
+
+    def test_fenced_never_retries_or_creates_replacement(self):
+        self.effect.prepare(self._request())
+        fenced = self.effect.request_revoke(OPERATION)
+        before_count = self.store.connection.execute(
+            "SELECT COUNT(*) FROM effect_operations"
+        ).fetchone()[0]
+        with self.assertRaises(EffectError):
+            self.effect.execute(self._request())
+        self.assertEqual(fenced, self.effect.resolve(OPERATION))
+        self.assertEqual(
+            before_count,
+            self.store.connection.execute(
+                "SELECT COUNT(*) FROM effect_operations"
+            ).fetchone()[0],
+        )
+
+    def test_terminal_and_unknown_states_cannot_reactivate_by_code_or_sql(self):
+        completed_ref = "effect-operation:terminal/completed"
+        fenced_ref = "effect-operation:terminal/fenced"
+        unknown_ref = "effect-operation:terminal/unknown"
+        completed = self.effect.execute(self._request(operation_ref=completed_ref))
+        self.effect.prepare(self._request(operation_ref=fenced_ref))
+        fenced = self.effect.request_revoke(fenced_ref)
+        unknown = self.effect.prepare(self._request(operation_ref=unknown_ref))
+        Path(unknown.target_ref).write_text("foreign")
+        unknown = self.effect.recover(unknown_ref)
+        for operation in (completed, fenced, unknown):
+            with self.subTest(state=operation.state), self.assertRaises(EffectError):
+                self.effect._activate(operation)
+            for target_state in ("ACTIVE", "PREPARED"):
+                with self.subTest(
+                    state=operation.state, target_state=target_state
+                ), self.assertRaises(sqlite3.IntegrityError):
+                    self.store.connection.execute(
+                        "UPDATE effect_operations SET state = ? WHERE operation_ref = ?",
+                        (target_state, operation.operation_ref),
+                    )
+
     def test_unadmitted_preexisting_target_is_unknown_not_admitted_or_completed(self):
         prepared = self.effect.prepare(self._request())
         Path(prepared.target_ref).write_text(prepared.payload)
@@ -579,6 +765,16 @@ class EffectOperationFoundationTest(unittest.TestCase):
             )
         with self.assertRaises(sqlite3.IntegrityError):
             self.store.connection.execute(
+                "UPDATE effect_operations SET state = 'FENCED' WHERE operation_ref = ?",
+                (OPERATION,),
+            )
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.store.connection.execute(
+                "UPDATE effect_operations SET fence_evidence_json = '{}' WHERE operation_ref = ?",
+                (OPERATION,),
+            )
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.store.connection.execute(
                 """
                 UPDATE effect_operations
                 SET state = 'COMPLETED', completion_evidence_json = '{}'
@@ -614,7 +810,13 @@ class EffectOperationFoundationTest(unittest.TestCase):
                 EffectAuthority, predicate=inspect.isfunction
             ) if not name.startswith("_")
         }
-        self.assertEqual({"execute", "prepare", "recover", "resolve"}, public)
+        self.assertEqual(
+            {
+                "execute", "prepare", "recover", "resolve",
+                "request_revoke", "resolve_revoke",
+            },
+            public,
+        )
         self.assertFalse(hasattr(self.effect, "module"))
         self.assertFalse(hasattr(self.effect, "managed_root"))
         self.assertNotIn("ResourceManager", inspect.signature(EffectRequest).parameters)
