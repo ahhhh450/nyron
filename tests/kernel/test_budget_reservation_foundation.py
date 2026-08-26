@@ -181,6 +181,7 @@ class BudgetReservationFoundationTest(unittest.TestCase):
         request_ref: str,
         *,
         accounting_scope_ref: str = GRANDCHILD_SCOPE,
+        graph_revision_ref: str = GRAPH,
         definition_anchor_ref: str = "port:budget/text@1",
         estimate_ref: str = "estimate:1",
         amount: int = 10,
@@ -195,7 +196,7 @@ class BudgetReservationFoundationTest(unittest.TestCase):
             run_ref=RUN,
             attempt_seq=attempt_seq,
             accounting_scope_ref=accounting_scope_ref,
-            graph_revision_ref=GRAPH,
+            graph_revision_ref=graph_revision_ref,
             definition_anchor_ref=definition_anchor_ref,
             estimate_ref=estimate_ref,
             reserved_dimensions=((dimension, amount),),
@@ -305,6 +306,127 @@ class BudgetReservationFoundationTest(unittest.TestCase):
         self.assertEqual(
             before_exposure, self.authority.exposure(GRANDCHILD_SCOPE, "tokens")
         )
+
+    # ------------------------------------------------------------------
+    # 074-F-001 correction: static-binding (graph_revision_ref /
+    # definition_anchor_ref) must independently participate in same-
+    # request_ref replay-identity comparison. Each probe below changes
+    # EXACTLY ONE static-binding field and holds accounting_scope_ref (and
+    # every other compared field) fixed, so the scope-mismatch path can
+    # never be what raises the conflict.
+    # ------------------------------------------------------------------
+
+    def test_graph_revision_only_replay_conflict_after_reserved(self) -> None:
+        self._publish_policy(ROOT_SCOPE, (self._rule("rule:1", "tokens", 1000),))
+        original = self.authority.reserve(self._request("req:graph-reserved", amount=15))
+        self.assertEqual("RESERVED", original.state)
+        before_exposure = self.authority.exposure(GRANDCHILD_SCOPE, "tokens")
+
+        variant = self._request(
+            "req:graph-reserved", amount=15, graph_revision_ref="graph:different@1"
+        )
+        self.assertEqual(variant.accounting_scope_ref, original.accounting_scope_ref)
+        self.assertEqual(
+            variant.definition_anchor_ref, original.definition_anchor_ref
+        )
+
+        with self.assertRaises(BudgetAuthorityError) as raised:
+            self.authority.reserve(variant)
+        self.assertEqual("RESERVATION_REQUEST_CONFLICT", raised.exception.code)
+
+        self.assertEqual(original, self.authority.resolve(original.reservation_ref))
+        self.assertEqual(
+            before_exposure, self.authority.exposure(GRANDCHILD_SCOPE, "tokens")
+        )
+
+    def test_definition_anchor_only_replay_conflict_after_reserved(self) -> None:
+        self._publish_policy(ROOT_SCOPE, (self._rule("rule:1", "tokens", 1000),))
+        original = self.authority.reserve(
+            self._request("req:anchor-reserved", amount=15)
+        )
+        self.assertEqual("RESERVED", original.state)
+        before_exposure = self.authority.exposure(GRANDCHILD_SCOPE, "tokens")
+
+        variant = self._request(
+            "req:anchor-reserved",
+            amount=15,
+            definition_anchor_ref="port:budget/other@1",
+        )
+        self.assertEqual(variant.accounting_scope_ref, original.accounting_scope_ref)
+        self.assertEqual(variant.graph_revision_ref, original.graph_revision_ref)
+
+        with self.assertRaises(BudgetAuthorityError) as raised:
+            self.authority.reserve(variant)
+        self.assertEqual("RESERVATION_REQUEST_CONFLICT", raised.exception.code)
+
+        self.assertEqual(original, self.authority.resolve(original.reservation_ref))
+        self.assertEqual(
+            before_exposure, self.authority.exposure(GRANDCHILD_SCOPE, "tokens")
+        )
+
+    def test_graph_revision_only_replay_conflict_after_denied(self) -> None:
+        self._publish_policy(ROOT_SCOPE, (self._rule("rule:1", "tokens", 10),))
+        original = self.authority.reserve(self._request("req:graph-denied", amount=50))
+        self.assertEqual("DENIED", original.state)
+        before_root_exposure = self.authority.exposure(ROOT_SCOPE, "tokens")
+
+        variant = self._request(
+            "req:graph-denied", amount=50, graph_revision_ref="graph:different@1"
+        )
+        self.assertEqual(variant.accounting_scope_ref, original.accounting_scope_ref)
+        self.assertEqual(
+            variant.definition_anchor_ref, original.definition_anchor_ref
+        )
+
+        with self.assertRaises(BudgetAuthorityError) as raised:
+            self.authority.reserve(variant)
+        self.assertEqual("RESERVATION_REQUEST_CONFLICT", raised.exception.code)
+
+        self.assertEqual(original, self.authority.resolve(original.reservation_ref))
+        self.assertEqual(
+            before_root_exposure, self.authority.exposure(ROOT_SCOPE, "tokens")
+        )
+
+    def test_definition_anchor_only_replay_conflict_after_denied(self) -> None:
+        self._publish_policy(ROOT_SCOPE, (self._rule("rule:1", "tokens", 10),))
+        original = self.authority.reserve(
+            self._request("req:anchor-denied", amount=50)
+        )
+        self.assertEqual("DENIED", original.state)
+        before_root_exposure = self.authority.exposure(ROOT_SCOPE, "tokens")
+
+        variant = self._request(
+            "req:anchor-denied",
+            amount=50,
+            definition_anchor_ref="port:budget/other@1",
+        )
+        self.assertEqual(variant.accounting_scope_ref, original.accounting_scope_ref)
+        self.assertEqual(variant.graph_revision_ref, original.graph_revision_ref)
+
+        with self.assertRaises(BudgetAuthorityError) as raised:
+            self.authority.reserve(variant)
+        self.assertEqual("RESERVATION_REQUEST_CONFLICT", raised.exception.code)
+
+        self.assertEqual(original, self.authority.resolve(original.reservation_ref))
+        self.assertEqual(
+            before_root_exposure, self.authority.exposure(ROOT_SCOPE, "tokens")
+        )
+
+    def test_truly_identical_replay_still_idempotent_after_static_binding_fix(
+        self,
+    ) -> None:
+        self._publish_policy(ROOT_SCOPE, (self._rule("rule:1", "tokens", 1000),))
+        request = self._request("req:still-idempotent", amount=25)
+
+        first = self.authority.reserve(request)
+        second = self.authority.reserve(request)
+        third = self.authority.reserve(
+            self._request("req:still-idempotent", amount=25)
+        )
+
+        self.assertEqual(first, second)
+        self.assertEqual(first, third)
+        self.assertEqual((25, 0), self.authority.exposure(GRANDCHILD_SCOPE, "tokens"))
 
     # ------------------------------------------------------------------
     # 5. Full root->leaf ancestry is pinned from AccountingScopeResolver.

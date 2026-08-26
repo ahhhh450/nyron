@@ -104,6 +104,8 @@ class BudgetReservation:
     run_ref: str
     attempt_seq: int
     accounting_scope_ref: str
+    graph_revision_ref: str
+    definition_anchor_ref: str
     ancestry_snapshot: tuple[str, ...]
     policy_revision_refs: tuple[str, ...]
     estimate_ref: str
@@ -477,6 +479,8 @@ class BudgetAuthority:
             run_ref=row["run_ref"],
             attempt_seq=row["attempt_seq"],
             accounting_scope_ref=row["accounting_scope_ref"],
+            graph_revision_ref=row["graph_revision_ref"],
+            definition_anchor_ref=row["definition_anchor_ref"],
             ancestry_snapshot=tuple(json.loads(row["ancestry_snapshot_json"])),
             policy_revision_refs=tuple(
                 json.loads(row["policy_revision_refs_json"])
@@ -511,6 +515,8 @@ class BudgetAuthority:
             or existing.run_ref != request.run_ref
             or existing.attempt_seq != request.attempt_seq
             or existing.accounting_scope_ref != request.accounting_scope_ref
+            or existing.graph_revision_ref != request.graph_revision_ref
+            or existing.definition_anchor_ref != request.definition_anchor_ref
             or existing.estimate_ref != request.estimate_ref
             or existing.requested_dimensions != request.reserved_dimensions
             or existing.subject_refs != request.subject_refs
