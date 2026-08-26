@@ -1,19 +1,19 @@
 # Nyron Project Coordination Status
 
 > 本文件是 Nyron 项目级协调状态的唯一事实源，由 Active Orchestrator 裁决。Execution Agent 默认只读。
->
-> Status compacted at Revision 75. Historical detail remains canonical in prior STATUS revisions and `coordination/tasks/`, `coordination/results/`, `coordination/checkpoints/`.
+> Historical detail remains canonical in prior STATUS revisions and `coordination/tasks/`, `coordination/results/`, `coordination/checkpoints/`.
 
 ## Coordination
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
-- Coordination Epoch: `1`
-- Coordination Revision: `75`
+- Coordination Epoch: `2`
+- Coordination Revision: `76`
 - Last Accepted Commit: `d9ec1474df6ad5bf4f7406713918be5f1481983d`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Project Phase: `SYSTEM FOUNDATION IMPLEMENTATION`
 - First Slice Closure: `PASS / CLOSED`
 - Current Frozen Implementation Gate: `ARE-GATE-6 — Accounting / Recovery integration / ARE-GATE-6A BudgetReservation foundation`
+- Handoff Checkpoint: `coordination/checkpoints/ORCHESTRATOR-HANDOFF-E1-R75-TO-E2-R76.md`
 
 ## Active Tasks
 
@@ -21,30 +21,26 @@
 |---|---|---|---|---|
 | `NYRON-T-20260826-074` | ARE-GATE-6A BudgetReservation foundation | Claude Code | `READY` | Gate-5 CLOSED + frozen D-005 baseline |
 
-## Revision 75 Decision
+## Revision 76 / Epoch 2 Handoff Decision
 
-- `NYRON-T-20260826-073` — targeted independent HIGH-risk re-review of Task 072 — `PASS / REVIEW RESULT ACCEPTED`.
-- Reviewed exact content: `1529bc9e24a88c147f5bfddfb8f830ec24c0603f`.
-- Task-073 canonical Result is recorded at `coordination/results/NYRON-T-20260826-073.md`; record commit `e395db2f95da4eb1f0a0e8df230041adc7e3b329`.
-- Reviewer independently reproduced 31 malformed exact-type RuntimeContext/Handle cases. Every invalid value failed with `INVALID_RUNTIME_CONTEXT` before Module implementation execution; valid Host-built and hand-built structurally conforming contexts remained forwardable.
-- `NYRON-T-20260826-071-F-001` is `CLOSED`.
-- No regression was found in original Attempt preservation, stale-R1 rejection, real EffectAuthority admission, canonical `Activation.trigger_delivery_ref` causal binding, source-agnostic identity conflict, UNKNOWN truth, PURE trusted-host behavior, or raw-path exclusion.
-- Task 072 exact reviewed content was integrated through PR `#26` with expected head `1529bc9e24a88c147f5bfddfb8f830ec24c0603f`.
-- Gate-5 integration commit: `d9ec1474df6ad5bf4f7406713918be5f1481983d`.
-- Main-side integration verification from pre-merge main `e395db2f95da4eb1f0a0e8df230041adc7e3b329` to integration tip shows exactly the four reviewed Host/Gate-5 files and no additional production delta.
-- `NYRON-T-20260826-072` is `ACCEPTED / INTEGRATED`.
-- `ARE-GATE-5 — Module Host trust boundary` is `PASS / CLOSED`.
-- New HIGH-risk Task `NYRON-T-20260826-074` opens `ARE-GATE-6A — BudgetReservation foundation`, assigned to Claude Code with planned independent Codex review.
-- Task 074 establishes the Accounting Owner reservation joint only: immutable policy/revision vocabulary, canonical BudgetReservation identity, static AccountingScope ancestry, idempotent request identity, and owner-local atomic full-ancestry hard-limit reserve/deny. UsageFact settlement and Recovery remain later Gate-6 slices.
+- Orchestrator session handoff completed from Epoch 1 / Revision 75 to Epoch 2 / Revision 76.
+- `NYRON-T-20260826-074` was not yet executed at handoff time. Because it is `FAIL_CLOSED`, its coordination basis was explicitly re-anchored to Epoch 2 / Revision 76 before execution; task scope, semantics, risk, Agent, frozen basis, accepted production basis, and review route are unchanged.
+- Handoff detail is recorded at `coordination/checkpoints/ORCHESTRATOR-HANDOFF-E1-R75-TO-E2-R76.md`.
+- Immediate next action: send canonical Task 074 to Claude Code. On result, first fetch this STATUS and verify the Task ran on the current canonical basis before adjudication.
+- No additional Gate-6 slice is open. UsageFact settlement, ReconciliationCase/Recovery, UNKNOWN handoff, and Gate-6 final closure remain future work.
 
-## Accepted Production Baseline
+## Gate-5 Closure / Accepted Production Baseline
 
-- First Slice Closure — `PASS / CLOSED`.
+- First Slice — `PASS / CLOSED`.
 - `ARE-GATE-1 — Capability foundation` — `PASS / CLOSED`.
 - `ARE-GATE-2 — Resource foundation` — `PASS / CLOSED`.
 - `ARE-GATE-3 — EffectOperation foundation` — `PASS / CLOSED`.
 - `ARE-GATE-4 — Replacement Fencing` — `PASS / CLOSED`.
-- `ARE-GATE-5 — Module Host trust boundary` — `PASS / CLOSED`; accepted integration tip `d9ec1474df6ad5bf4f7406713918be5f1481983d`.
+- `ARE-GATE-5 — Module Host trust boundary` — `PASS / CLOSED`.
+- Gate-5 accepted integration tip: `d9ec1474df6ad5bf4f7406713918be5f1481983d`.
+- Task 072 reviewed content: `1529bc9e24a88c147f5bfddfb8f830ec24c0603f`.
+- Task 073: `PASS / REVIEW RESULT ACCEPTED`.
+- `NYRON-T-20260826-071-F-001`: CLOSED.
 - `ARE-GATE-6 — Accounting / Recovery integration` — `OPEN / GATE-6A BUDGETRESERVATION FOUNDATION`.
 
 ## Frozen Gate-5 ABI
@@ -64,13 +60,29 @@
 Gate-6 load-bearing semantics:
 
 - Accounting Owner and Recovery Owner remain separate canonical Owners.
-- Static accounting membership is derived from immutable definition containment, not dynamic Packet/PWP/current state.
-- Full hard-limit ancestry reservation is atomic inside one logical Accounting Owner transaction domain.
+- Static accounting membership derives from immutable definition containment, not dynamic Packet/PWP/current state.
+- Full governing ancestry HARD-limit reservation is atomic inside one logical Accounting Owner transaction domain.
 - `EffectOperation != BudgetReservation != ResourceLease != CapabilityGrant`.
 - Estimate and actual usage remain distinct.
-- UNKNOWN is not converted to zero/success/failure.
+- UNKNOWN is not zero, success, or failure.
+- No global cross-owner transaction is assumed.
 - ReconciliationCase is bounded investigation, not a second workflow engine or subject Owner.
 - Recovery disposition is not universal Effect/Resource/Capability clearance.
+
+## Current Task 074 Guardrails
+
+- HIGH-risk implementation; Agent: Claude Code; independent Reviewer: Codex.
+- Implements only BudgetPolicyRevision/BudgetReservation foundation, static AccountingScope ancestry, stable request identity, and atomic full-ancestry reserve/deny.
+- Must not implement UsageFact settlement, final COMMITTED/RELEASED settlement, ReconciliationCase/Recovery, provider billing, async/workers/threads/pools, or Gate-6 closure.
+- Coordination writes in the Task branch are forbidden.
+- Executor SUCCESS is not acceptance. Independent Codex review must include reviewer-originated atomic ancestry/idempotency validation beyond rerunning executor tests.
+
+## Open Findings / Standing Interlocks
+
+- `NYRON-T-20260825-038-F-001` — `SECURITY / NARROWED / OPEN` — less-trusted filesystem/managed-root namespace mutation activates blocking review.
+- `NYRON-T-20260826-043-F-001` — `ARCHITECTURE / NON_BLOCKING / OPEN` — current authority/accounting linearization relies on synchronous SQLite single-writer discipline; genuine concurrency/pools/raw writers/process-distributed authority activates mandatory revalidation.
+- `NYRON-T-20260826-048-F-001` — `IMPLEMENTATION / NON_BLOCKING / OPEN` — Effect recovery caller ergonomics debt.
+- `NYRON-T-20260826-056-F-001` — `IMPLEMENTATION / NON_BLOCKING / OPEN` — cross-version schema migration/rebuild debt.
 
 ## Closed Gate-5 Findings
 
@@ -79,13 +91,6 @@ Gate-6 load-bearing semantics:
 - `NYRON-T-20260826-067-F-001` — CLOSED after Task 069 + Clarification 005 freeze.
 - `NYRON-T-20260826-069-F-001` — CLOSED by Design Authority wording correction in Clarification 005.
 - `NYRON-T-20260826-065-F-001` through `065-F-004` — CLOSED by Task 067.
-
-## Open Findings
-
-- `NYRON-T-20260825-038-F-001` — `SECURITY / NARROWED / OPEN` — Resource provenance residual namespace race; less-trusted filesystem/managed-root namespace mutation activates it as blocking.
-- `NYRON-T-20260826-043-F-001` — `ARCHITECTURE / NON_BLOCKING / OPEN` — authority/accounting linearization currently relies on synchronous SQLite single-writer discipline; genuine concurrency/pools/raw writers/process-distributed authority activates mandatory revalidation.
-- `NYRON-T-20260826-048-F-001` — `IMPLEMENTATION / NON_BLOCKING / OPEN` — Effect recovery caller ergonomics debt.
-- `NYRON-T-20260826-056-F-001` — `IMPLEMENTATION / NON_BLOCKING / OPEN` — cross-version schema migration/rebuild debt.
 
 ## Stable Baseline
 
