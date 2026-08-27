@@ -26,7 +26,7 @@ class DistributionAuthority:
     """Sole application-level writer for this Distribution identity slice."""
 
     _FLOATING_VERSION_WORDS = frozenset({"latest", "current", "next", "stable"})
-    _RANGE_CHARACTERS = frozenset("*^~<>=,|")
+    _RANGE_PREFIXES = ("^", "~", ">=", "<=", ">", "<", "=")
 
     def __init__(self, store: SQLiteStore) -> None:
         self._store = store
@@ -314,8 +314,20 @@ class DistributionAuthority:
             and not any(character.isspace() for character in value)
             and "@" not in value
             and value.casefold() not in cls._FLOATING_VERSION_WORDS
-            and not any(character in cls._RANGE_CHARACTERS for character in value)
+            and not cls._is_range_selector(value)
         )
+
+    @classmethod
+    def _is_range_selector(cls, value: str) -> bool:
+        if "*" in value or value.startswith(cls._RANGE_PREFIXES) or "||" in value:
+            return True
+        if "," in value:
+            clauses = value.split(",")
+            return any(
+                not clause or clause.startswith(cls._RANGE_PREFIXES)
+                for clause in clauses
+            )
+        return False
 
     @staticmethod
     def _require_identity_ref(value: str, field: str) -> None:
