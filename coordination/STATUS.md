@@ -5,23 +5,37 @@
 ## Coordination
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
+- Development Director: `ACTIVE — Global Development Coordination Authority`
 - Coordination Epoch: `2`
-- Coordination Revision: `108`
+- Coordination Revision: `109`
 - Last Accepted Production Commit: `e47511aef987cd9fa5c171e319971f90ab549bd2`
 - Canonical Repository Finalization Merge: `8962743bfbc6385bf58ebb31a63f5e5442c5f391`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
 - Current Gate: `FOUNDATION WAVE 2 — PWP BACKBONE`
 - Current Mode: `SINGLE FOUNDATIONAL PRODUCTION TRACK / PWP CORE`
 - Orchestration Plan: `coordination/plans/FOUNDATION_WAVE_2_Plan_v0.1.md`
+- Track Board: `coordination/plans/FOUNDATION_WAVE_2_Track_Board_v0.1.md`
 - Parallelism Limit: `MAX 2 ACTIVE PRODUCTION TRACKS; CURRENTLY 1`
+
+## Foundation Wave 2 Track Board
+
+| Track | State | Track Orchestrator | Current Dependency / Gate |
+|---|---|---|---|
+| `Track A — PWP / Context Backbone` | `ACTIVE` | `Web GPT — Track A PWP / Context Backbone Orchestrator / WINDOW REQUIRED` | Task 116 → implementation → independent exact-SHA review → stable candidate |
+| `Track B — Distribution / Module Ecosystem` | `STAGED / BLOCKED` | `UNASSIGNED UNTIL READY` | reviewed Director-accepted PWP Core + no unresolved Contract dependency + no write-surface overlap |
+| `Track C — Human Interaction / Approval` | `STAGED / BLOCKED` | `UNASSIGNED UNTIL READY` | reviewed Director-accepted PWP Core + no unresolved Contract dependency + no write-surface overlap |
+| `Track D — External Interfaces / Workspace Boundary` | `DEFERRED / BLOCKED` | `UNASSIGNED` | stable required PWP context and later B/C checkpoint readiness |
+| `Track E — Product / Visual Workflow` | `DEFERRED` | `UNASSIGNED` | System Foundation readiness |
+
+Track-level execution details remain in Track-local Task / Result / Checkpoint records. Global STATUS records only Gate, accepted candidate, blocker, architecture escalation, integration state and active Track facts.
 
 ## Active / Routed Tasks
 
-| Task | Agent | State | Track / Purpose |
+| Task | Route | State | Track / Purpose |
 |---|---|---|---|
-| `NYRON-T-20260827-116` | `Claude — NEW implementation session preferred` | `READY / R108` | Foundation Wave 2 — PWP Core identity / immutable revision / historical resolution foundation |
+| `NYRON-T-20260827-116` | `Track A Orchestrator → Claude implementation` | `READY / R109` | Track A — PWP Core identity / immutable revision / historical resolution foundation |
 
-No Distribution, Human Interaction, External Interfaces, or Product production task is authorized until the PWP Core candidate has completed its required independent exact-SHA review.
+No Distribution, Human Interaction, External Interfaces, or Product production task is authorized until the PWP Core candidate has completed its required independent exact-SHA review and is accepted by the Development Director as a stable dependency candidate.
 
 ## ARE-GATE-6 Final Acceptance
 
@@ -47,6 +61,7 @@ No Distribution, Human Interaction, External Interfaces, or Product production t
 ## Foundation Wave 2
 
 Plan: `coordination/plans/FOUNDATION_WAVE_2_Plan_v0.1.md`.
+Track Board: `coordination/plans/FOUNDATION_WAVE_2_Track_Board_v0.1.md`.
 
 ### Phase 1 — PWP Backbone
 
@@ -65,6 +80,27 @@ Task 116 implements only the bounded PWP-owned core:
 Runtime admission wiring and IngressRoute are intentionally deferred from the first slice unless frozen semantics make them unavoidable. Any unresolved semantic dependency must fail closed and escalate.
 
 Task 116 is HIGH risk. Executor SUCCESS is not acceptance; an independent exact-SHA review is mandatory before other Wave-2 production tracks depend on the PWP candidate.
+
+### Track B Dependency-Ready Criteria
+
+Track B may activate only after all are true:
+
+- Track A PWP Core is independently reviewed and accepted by the Development Director as a stable candidate;
+- D-007 remains the frozen Distribution authority;
+- exact Project / Workspace / config / policy context required by Distribution is available without new unfrozen cross-owner semantics;
+- no overlapping production write surface exists with another active production track;
+- `Import != Trust`, `Resolve != Enable`, exact `module_ref@version` identity, and CapabilityGrant non-ownership remain preserved.
+
+### Track C Dependency-Ready Criteria
+
+Track C may activate only after all are true:
+
+- Track A PWP Core is independently reviewed and accepted by the Development Director as a stable candidate;
+- D-009 remains the frozen Human Interaction / Approval authority;
+- required Project / Workspace / policy context references are available without new unfrozen admission/foreign-owner semantics;
+- no overlapping production write surface exists with another active production track;
+- HumanRequest / HumanResponse / HumanDecisionEvidence ownership remains separate from Runtime canonical execution truth;
+- suspension/resume integration waits for its concrete frozen cross-owner dependency surface.
 
 ### Planned Later Phases
 
@@ -93,6 +129,18 @@ This ordering is orchestration only and does not amend frozen architecture.
 - Task 116 is deliberately bounded to PWP-owned identity and immutable historical revision truth; it does not pre-authorize Runtime admission wiring, IngressRoute, external adapters, policy evaluation or foreign-owner state.
 - Only one production track is active until PWP Core receives independent exact-SHA review.
 - `Last Accepted Production Commit` remains unchanged until a reviewed later candidate is explicitly accepted.
+
+## Revision 109 Decision
+
+- Development Director / Global Development Coordination Authority operating model is active while preserving the existing single Active Orchestrator authority and Coordination Epoch 2.
+- Foundation Wave 2 Track Board v0.1 is established.
+- Task 116 is assigned to `Track A — PWP / Context Backbone`; it was not recreated.
+- Track A Orchestrator is assigned as `Web GPT — Track A PWP / Context Backbone Orchestrator`; its dedicated window is required before Track-local routing begins.
+- Task 116 metadata is ratified at Revision 109 and its stale policy is aligned to the protocol enum `RECHECK_AND_CONTINUE_IF_UNAFFECTED`.
+- Track B and Track C are staged only; their dependency-ready criteria are recorded and they are not authorized for production yet.
+- Track D remains deferred/high-risk and Track E remains deferred.
+- Parallelism remains `MAX 2 ACTIVE PRODUCTION TRACKS`, with only Track A active now.
+- `Last Accepted Production Commit` remains `e47511aef987cd9fa5c171e319971f90ab549bd2`.
 
 ## Gate-6A Closure
 
