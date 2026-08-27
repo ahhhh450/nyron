@@ -7,12 +7,12 @@
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Development Director: `ACTIVE — Global Development Coordination Authority`
 - Coordination Epoch: `2`
-- Coordination Revision: `114`
+- Coordination Revision: `115`
 - Last Accepted Production Commit: `e47511aef987cd9fa5c171e319971f90ab549bd2`
 - Canonical Repository Finalization Merge: `8962743bfbc6385bf58ebb31a63f5e5442c5f391`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
-- Current Gate: `FOUNDATION WAVE 2 — PHASE 3 / TRACK D READINESS + SECURITY CONTRACT AUDIT`
-- Current Mode: `TRACK A + B + C STABLE / TRACK D NON-PRODUCTION AUDIT ACTIVE`
+- Current Gate: `FOUNDATION WAVE 2 — PHASE 3 / TRACK D BOUNDED CONTRACT TRACE`
+- Current Mode: `TRACK A + B + C STABLE / TRACK D NON-PRODUCTION CONTRACT TRACE ACTIVE`
 - Orchestration Plan: `coordination/plans/FOUNDATION_WAVE_2_Plan_v0.1.md`
 - Track Board: `coordination/plans/FOUNDATION_WAVE_2_Track_Board_v0.1.md`
 - Track Orchestrator Protocol: `coordination/TRACK_ORCHESTRATOR_PROTOCOL.md`
@@ -24,7 +24,7 @@
 
 - `Claude`: `UNAVAILABLE`.
 - `Codex`: `CONSTRAINED / NO NEW TRACK WORK`; current capacity is near exhaustion and is not to be consumed by new Track assignments until explicitly restored.
-- `DeepSeek`: `AVAILABLE`; preferred current lane for non-production readiness/contract/security audit, low-risk bounded implementation, mechanical/regression and targeted verification where risk permits.
+- `DeepSeek`: `AVAILABLE`; preferred current lane for bounded non-production contract tracing, repository-surface inventory, low-risk implementation, mechanical/regression and targeted verification where risk permits.
 - `GPT / Web GPT`: `AVAILABLE FOR ORCHESTRATION`; not default Production implementation.
 
 High-risk `Implementation Agent != Independent Reviewer` remains mandatory. Capacity constraints never authorize weakening review, architecture, security or Owner-boundary requirements.
@@ -36,7 +36,7 @@ High-risk `Implementation Agent != Independent Reviewer` remains mandatory. Capa
 | `Track A — PWP / Context Backbone` | `STABLE / IDLE` | `Dedicated Orchestrator used for Foundation slice` | PWP Core accepted for downstream dependency use at `f3b6b0d022111dfc854f537c361ca5eb46516584` |
 | `Track B — Distribution / Module Ecosystem` | `STABLE / IDLE` | `Dedicated Orchestrator used for Foundation slice` | Distribution identity / exact-resolution Foundation accepted for downstream dependency use at `b2ec8e2e79745fee75a9dfdde7d6ab4cebe5f863`; later Distribution stages require new Tasks |
 | `Track C — Human Interaction / Approval` | `STABLE / IDLE` | `Dedicated Orchestrator used for Foundation slice` | Human Interaction Owner Core accepted for downstream dependency use at `a85507b9b74e0f6b68a65460d9e5a4f19aa79f93`; Runtime resume/ingress deferred |
-| `Track D — External Interfaces / Workspace Boundary` | `READINESS / SECURITY AUDIT ACTIVE` | `Development Director direct scheduling` | Task `NYRON-T-20260827-131` assigned to DeepSeek; Production mutation denied pending Director readiness decision |
+| `Track D — External Interfaces / Workspace Boundary` | `CONTRACT TRACE / INVENTORY ACTIVE` | `Development Director direct scheduling` | Task `NYRON-T-20260827-132` assigned to DeepSeek for bounded factual audit; Task 131 produced no accepted technical blocker evidence and is superseded for audit execution |
 | `Track E — Product / Visual Workflow` | `DEFERRED` | `UNASSIGNED` | Foundation readiness |
 
 ## Mandatory File-Based Coordination Protocol
@@ -96,12 +96,17 @@ A dedicated Track Orchestrator is not mandatory for every Track. Small bounded T
 ### Track D — External Interfaces / Workspace Boundary
 
 - Frozen authority: `NYRON-D-008` Frozen Baseline + named Lead clarifications.
-- Current formal Task: `NYRON-T-20260827-131`.
-- Assigned Agent: `DeepSeek — Independent Audit Session / TRACK_D_TASK_001`.
-- Type: `READINESS / SECURITY CONTRACT AUDIT`.
+- Task 131 was originally assigned as a HIGH/security-sensitive readiness/security audit to DeepSeek.
+- The assigned session returned `TASK BLOCKED`, but no remotely readable Task-131 Result or blocker checkpoint was present when the Development Director verified Repository Truth.
+- Director disposition checkpoint: `coordination/checkpoints/NYRON-T-20260827-131-DIRECTOR-DISPOSITION.md`.
+- No technical, architecture, dependency or security blocker is accepted from Task 131.
+- Task 131 is superseded for audit execution because its scope combined DeepSeek-suitable mechanical evidence collection with final high-risk readiness/security judgment.
+- Current formal Task: `NYRON-T-20260827-132`.
+- Assigned Agent: `DeepSeek — Bounded Audit Session / TRACK_D_TASK_002`.
+- Type: `CONTRACT TRACE / REPOSITORY SURFACE INVENTORY`.
 - Production Mutation Authorization: `DENIED`.
-- Objective: determine bounded implementation readiness, map security/external-effect dependencies, classify future slices by Agent suitability, and identify blockers or architecture escalation before any Track D Production implementation begins.
-- Development Director will read Task 131 Result directly and decide `GO_BOUNDED | BLOCKED | ESCALATION_REQUIRED`.
+- Task 132 is limited to factual frozen-contract tracing, exact repository-surface inventory, dependency/evidence-gap mapping, candidate-slice classification by observable risk signals, and adversarial/security test enumeration.
+- Development Director retains the final Track D `GO_BOUNDED | BLOCKED | ESCALATION_REQUIRED` decision.
 
 ## Director-Accepted Foundation Dependencies
 
@@ -161,8 +166,18 @@ These are accepted for downstream dependency use only. `Last Accepted Production
 - Track B moves to `STABLE / IDLE` for the current Foundation slice.
 - Codex capacity is now `CONSTRAINED / NO NEW TRACK WORK`; Claude remains unavailable.
 - Track D begins a non-production readiness/security contract audit through Task `NYRON-T-20260827-131`, directly scheduled by the Development Director to DeepSeek.
-- Track D Production remains unopened until Task 131 Result is reviewed and the Director explicitly authorizes a bounded implementation slice.
+- Track D Production remains unopened until audit evidence is reviewed and the Director explicitly authorizes a bounded implementation slice.
 - `Last Accepted Production Commit` remains `e47511aef987cd9fa5c171e319971f90ab549bd2`; Revision 114 does not declare `GLOBAL ACCEPTED`.
+
+### Revision 115
+
+- Task 131 chat returned `TASK BLOCKED`, but no durable Task-scoped blocker Result/checkpoint was available in Repository Truth; therefore no substantive Track-D blocker is accepted from that signal.
+- Director records the event as a task-scoping/process correction rather than a technical Track-D failure.
+- Task 131 is superseded for audit execution because it combined a HIGH/security-sensitive final readiness judgment with mechanical evidence collection that is appropriate for DeepSeek.
+- Task `NYRON-T-20260827-132` is created and assigned to DeepSeek as a bounded non-production frozen-contract trace / repository-surface inventory.
+- DeepSeek is not asked to make the final Track-D security/readiness decision; the Development Director retains that authority and will decide from Task-132 evidence.
+- Track D Production remains unopened.
+- `Last Accepted Production Commit` remains unchanged; Revision 115 does not declare `GLOBAL ACCEPTED`.
 
 ## Gate-6A Closure
 
