@@ -14,8 +14,15 @@ class PackageVersion:
     namespace: str
     content_digest: str
     manifest_digest: str
-    source_registry_ref: str
     provenance_ref: str
+
+
+@dataclass(frozen=True)
+class PackageSourceEvidence:
+    package_ref: str
+    package_version: str
+    source_registry_ref: str
+    source_evidence_ref: str
 
 
 @dataclass(frozen=True)
@@ -41,5 +48,5 @@ class ResolvedModule:
     namespace: str
     content_digest: str
     manifest_digest: str
-    source_registry_ref: str
     provenance_ref: str
+    source_evidence: tuple[PackageSourceEvidence, ...]
