@@ -119,7 +119,23 @@ Every Track-local formal Task must comply with `coordination/TASK_PROTOCOL.md` a
 
 Unlisted Scope is unauthorized by default.
 
-## 6. Routing Is Part of Orchestration Work
+## 6. Agent Availability Is a Live Coordination Constraint
+
+Track Orchestrators MUST read current Agent availability from `coordination/STATUS.md` before assigning implementation, fix, review or re-review work.
+
+Current availability declarations in STATUS override default model preferences in older prompts or generic orchestration guidance.
+
+If an Agent is marked unavailable:
+
+- do not create a new assignment to that Agent;
+- do not instruct the Operator to open a new window for that Agent;
+- do not wait for that Agent if another authorized available Agent can safely perform the work;
+- re-route according to risk, independence and capability requirements;
+- if no available Agent can satisfy a mandatory independent-review or specialist requirement, record a blocker rather than weakening the requirement.
+
+Availability is operational state, not an architecture rule. It may be changed by a later Development Director coordination revision.
+
+## 7. Routing Is Part of Orchestration Work
 
 Creating a Task file without assigning / routing it is not sufficient when the directive requires production to begin.
 
@@ -133,23 +149,66 @@ Dependency basis
 Expected Repository result path
 ```
 
-If the Operator must open a new Execution Agent window, the Track Orchestrator must explicitly return:
+### 7.1 Mandatory Dispatch Reply Format
+
+When a Track Orchestrator gives the Operator a copyable instruction for an Execution Agent, reviewer or other Track-scoped Agent window, the reply MUST use a Track dispatch block beginning with a human-facing dispatch label:
 
 ```text
-【新开窗口｜模型｜用途】
+[TRACK_A_TASK_001]
+Repository:
+
+`https://github.com/ahhhh450/nyron`
+
+你的上级是：
+
+`Development Director / Global Development Coordination Authority`
+
+你不是 Development Director，也不是默认 Implementation Agent。
+
+## Repository Truth
+...
 ```
 
-with one complete copyable instruction.
-
-If an existing window should be reused:
+Use the actual Track letter and a Track-local monotonically increasing dispatch sequence, for example:
 
 ```text
-【发给已有窗口｜模型｜用途】
+[TRACK_A_TASK_001]
+[TRACK_A_TASK_002]
+[TRACK_B_TASK_001]
+[TRACK_C_TASK_001]
 ```
 
-with one complete copyable instruction.
+The dispatch label is **chat/routing metadata only**. It is NOT the formal Repository Task ID and MUST NOT replace or alias the canonical `NYRON-T-...` Task ID.
 
-## 7. Chat Completion Semantics
+Every dispatch block must include the formal Repository Task ID explicitly when one exists.
+
+The dispatch sequence is Track-local and does not participate in the global `NYRON-T-*` namespace, so Track A/B/C may each have their own `_001`, `_002`, etc.
+
+### 7.2 Required Dispatch Block Content
+
+A production/review dispatch block must be self-contained and normally include, in this order:
+
+1. `[TRACK_<LETTER>_TASK_<NNN>]`
+2. `Repository:` and canonical repository URL
+3. superior authority: `Development Director / Global Development Coordination Authority`
+4. role boundary: recipient is not Development Director and not automatically an Orchestrator unless explicitly assigned that role
+5. `## Repository Truth`
+6. exact formal Task ID and Task file path
+7. Required Reading
+8. exact Coordination Epoch / Revision or instruction to re-read current STATUS under the Task stale policy
+9. exact dependency / reviewed SHA basis where applicable
+10. objective and authorized scope
+11. explicit Out of Scope / authority boundaries
+12. validation requirements
+13. Result / Review output path and format
+14. remote-delivery / exact-SHA evidence requirements when applicable
+15. completion chat behavior (`TASK DONE` / `TASK BLOCKED`) after Repository evidence is written
+
+Do not require the Operator to reconstruct missing Task context from previous chat messages.
+
+A dispatch block may state whether the Operator should use a new or existing window, but the copyable block itself remains the authoritative chat instruction format.
+
+## 8. Chat Completion Semantics
 
 `TASK DONE` is reserved for a directive whose required durable Repository artifacts and routing actions are actually complete.
 
@@ -180,7 +239,7 @@ Blockers:
 Next Milestone:
 ```
 
-## 8. Review Chain
+## 9. Review Chain
 
 For high-risk production:
 
@@ -201,7 +260,7 @@ Implementation
 
 Reviewer output does not automatically create global acceptance.
 
-## 9. Authority Boundary
+## 10. Authority Boundary
 
 Track Orchestrators may create Track-local implementation / fix / review / re-review Tasks and manage Track-local stable candidates.
 
