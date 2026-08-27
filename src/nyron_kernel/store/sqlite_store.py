@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sqlite3
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -483,6 +484,40 @@ class SQLiteStore:
 
         self.create_capability_schema()
         self.create_resource_schema()
+        existing_effect_table = self.connection.execute(
+            """
+            SELECT 1 FROM sqlite_master
+            WHERE type = 'table' AND name = 'effect_operations'
+            """
+        ).fetchone()
+        migrated_historical_outcome = False
+        if existing_effect_table is not None:
+            columns = {
+                row["name"]
+                for row in self.connection.execute(
+                    "PRAGMA table_info(effect_operations)"
+                ).fetchall()
+            }
+            with self.transaction() as connection:
+                if "historical_outcome" not in columns:
+                    connection.execute(
+                        """
+                        ALTER TABLE effect_operations
+                        ADD COLUMN historical_outcome TEXT NOT NULL DEFAULT 'UNKNOWN'
+                            CHECK (historical_outcome IN (
+                                'UNKNOWN', 'PARTIAL', 'KNOWN'
+                            ))
+                        """
+                    )
+                    migrated_historical_outcome = True
+                if "historical_outcome_evidence_json" not in columns:
+                    connection.execute(
+                        """
+                        ALTER TABLE effect_operations
+                        ADD COLUMN historical_outcome_evidence_json TEXT
+                        """
+                    )
+                    migrated_historical_outcome = True
         self.connection.executescript(
             """
             CREATE TABLE IF NOT EXISTS effect_operations (
@@ -511,6 +546,10 @@ class SQLiteStore:
                 dispatch_admitted_at INTEGER,
                 completion_evidence_json TEXT,
                 fence_evidence_json TEXT,
+                historical_outcome TEXT NOT NULL DEFAULT 'UNKNOWN' CHECK (
+                    historical_outcome IN ('UNKNOWN', 'PARTIAL', 'KNOWN')
+                ),
+                historical_outcome_evidence_json TEXT,
                 FOREIGN KEY (capability_grant_ref)
                     REFERENCES capability_grants(grant_ref),
                 FOREIGN KEY (resource_ref) REFERENCES resources(resource_ref),
@@ -541,6 +580,10 @@ class SQLiteStore:
                     (state = 'FENCED' AND fence_evidence_json IS NOT NULL)
                     OR
                     (state != 'FENCED' AND fence_evidence_json IS NULL)
+                ),
+                CHECK (
+                    historical_outcome = 'UNKNOWN'
+                    OR historical_outcome_evidence_json IS NOT NULL
                 )
             );
 
@@ -620,6 +663,42 @@ class SQLiteStore:
                 SELECT RAISE(ABORT, 'invalid effect operation state transition');
             END;
 
+            CREATE TRIGGER IF NOT EXISTS effect_historical_outcome_transition
+            BEFORE UPDATE OF historical_outcome, historical_outcome_evidence_json
+            ON effect_operations
+            WHEN NOT (
+                (NEW.historical_outcome = OLD.historical_outcome
+                 AND NEW.historical_outcome_evidence_json
+                     IS OLD.historical_outcome_evidence_json)
+                OR (OLD.historical_outcome = 'UNKNOWN'
+                    AND NEW.historical_outcome IN ('PARTIAL', 'KNOWN')
+                    AND NEW.historical_outcome_evidence_json IS NOT NULL)
+                OR (OLD.historical_outcome = 'PARTIAL'
+                    AND NEW.historical_outcome = 'KNOWN'
+                    AND NEW.historical_outcome_evidence_json IS NOT NULL)
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'invalid effect historical outcome transition');
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS effect_historical_outcome_insert_guard
+            BEFORE INSERT ON effect_operations
+            WHEN NEW.historical_outcome NOT IN ('UNKNOWN', 'PARTIAL', 'KNOWN')
+              OR (NEW.historical_outcome != 'UNKNOWN'
+                  AND NEW.historical_outcome_evidence_json IS NULL)
+            BEGIN
+                SELECT RAISE(ABORT, 'invalid effect historical outcome');
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS effect_historical_outcome_update_guard
+            BEFORE UPDATE ON effect_operations
+            WHEN NEW.historical_outcome NOT IN ('UNKNOWN', 'PARTIAL', 'KNOWN')
+              OR (NEW.historical_outcome != 'UNKNOWN'
+                  AND NEW.historical_outcome_evidence_json IS NULL)
+            BEGIN
+                SELECT RAISE(ABORT, 'invalid effect historical outcome');
+            END;
+
             CREATE TRIGGER IF NOT EXISTS effect_active_requires_admission
             BEFORE UPDATE OF state ON effect_operations
             WHEN NEW.state = 'ACTIVE'
@@ -629,6 +708,37 @@ class SQLiteStore:
             END;
             """
         )
+        if migrated_historical_outcome:
+            rows = self.connection.execute(
+                """
+                SELECT operation_ref, state
+                FROM effect_operations
+                WHERE state IN ('COMPLETED', 'FENCED')
+                  AND historical_outcome = 'UNKNOWN'
+                  AND historical_outcome_evidence_json IS NULL
+                """
+            ).fetchall()
+            with self.transaction() as connection:
+                for row in rows:
+                    evidence_json = json.dumps(
+                        {
+                            "basis": "LEGACY_BOUNDED_EFFECT_TERMINAL_EVIDENCE",
+                            "operation_ref": row["operation_ref"],
+                            "schema": 1,
+                            "terminal_state": row["state"],
+                        },
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    )
+                    connection.execute(
+                        """
+                        UPDATE effect_operations
+                        SET historical_outcome = 'KNOWN',
+                            historical_outcome_evidence_json = ?
+                        WHERE operation_ref = ?
+                        """,
+                        (evidence_json, row["operation_ref"]),
+                    )
 
     def create_budget_schema(self) -> None:
         """Install ARE-GATE-6A BudgetPolicyRevision / BudgetReservation tables."""

@@ -17,7 +17,12 @@ from nyron_kernel.capability import (
     CapabilityTypeDefinition,
     CapabilityTypeRegistry,
 )
-from nyron_kernel.effect import EffectAuthority, EffectError, EffectRequest
+from nyron_kernel.effect import (
+    EffectAuthority,
+    EffectError,
+    EffectRequest,
+    HistoricalOutcome,
+)
 from nyron_kernel.execution import RunRepository, RuntimeAuthorityResolver
 from nyron_kernel.resource import ResourceError, ResourceManager, ResourceRequest
 from nyron_kernel.store import SQLiteStore
@@ -564,6 +569,11 @@ class EffectOperationFoundationTest(unittest.TestCase):
         prepared = self.effect.prepare(self._request())
         fenced = self.effect.request_revoke(OPERATION)
         self.assertEqual("FENCED", fenced.state)
+        self.assertEqual(HistoricalOutcome.KNOWN, fenced.historical_outcome)
+        self.assertEqual(
+            "NONE_PROVEN",
+            fenced.historical_outcome_evidence["evidence"]["consequence"],
+        )
         self.assertIsNone(fenced.completion_evidence)
         self.assertEqual("PREPARED_NEVER_ACTIVE", fenced.fence_evidence["basis"])
         self.assertEqual("STOPPED", fenced.fence_evidence["continuation"])
@@ -702,6 +712,162 @@ class EffectOperationFoundationTest(unittest.TestCase):
                 "SELECT COUNT(*) FROM effect_operations"
             ).fetchone()[0],
         )
+
+    def test_historical_outcome_is_deterministic_for_bounded_write(self):
+        prepared = self.effect.prepare(self._request())
+        self.assertEqual(HistoricalOutcome.UNKNOWN, prepared.historical_outcome)
+        self.assertIsNone(prepared.historical_outcome_evidence)
+
+        completed = self.effect.execute(self._request())
+        self.assertEqual(HistoricalOutcome.KNOWN, completed.historical_outcome)
+        self.assertEqual(
+            "EXACT_COMPLETION_EVIDENCE",
+            completed.historical_outcome_evidence["evidence"]["basis"],
+        )
+
+    def test_lifecycle_and_historical_outcome_refine_independently(self):
+        active = self._leave_active()
+        partial = self.effect.refine_historical_outcome(
+            active.operation_ref,
+            HistoricalOutcome.PARTIAL,
+            {"evidence_ref": "evidence:partial/1", "observed": "PREFIX"},
+        )
+        self.assertEqual("ACTIVE", partial.state)
+        self.assertEqual(HistoricalOutcome.PARTIAL, partial.historical_outcome)
+
+    def test_fenced_unknown_and_partial_survive_restart(self):
+        unknown_ref = "effect-operation:fenced-unknown/1"
+        partial_ref = "effect-operation:fenced-partial/1"
+        unknown = self.effect.prepare(self._request(operation_ref=unknown_ref))
+        partial = self.effect.prepare(self._request(operation_ref=partial_ref))
+        self.effect.refine_historical_outcome(
+            partial_ref,
+            HistoricalOutcome.PARTIAL,
+            {"evidence_ref": "evidence:partial/2", "observed": "PARTIAL"},
+        )
+        for operation in (unknown, partial):
+            fence_evidence = self.effect._canonical_json(
+                self.effect._fence_evidence(operation, "TEST_CONFIRMED_STOP")
+            )
+            with self.store.transaction() as connection:
+                connection.execute(
+                    """
+                    UPDATE effect_operations
+                    SET state = 'FENCED', fence_evidence_json = ?
+                    WHERE operation_ref = ?
+                    """,
+                    (fence_evidence, operation.operation_ref),
+                )
+
+        self.store.close()
+        with SQLiteStore(self.database) as reopened:
+            reopened.create_effect_schema()
+            rows = {
+                row["operation_ref"]: row
+                for row in reopened.connection.execute(
+                    """
+                    SELECT operation_ref, state, historical_outcome
+                    FROM effect_operations
+                    WHERE operation_ref IN (?, ?)
+                    """,
+                    (unknown_ref, partial_ref),
+                ).fetchall()
+            }
+            self.assertEqual("FENCED", rows[unknown_ref]["state"])
+            self.assertEqual("UNKNOWN", rows[unknown_ref]["historical_outcome"])
+            self.assertEqual("FENCED", rows[partial_ref]["state"])
+            self.assertEqual("PARTIAL", rows[partial_ref]["historical_outcome"])
+        self.store = SQLiteStore(self.database)
+
+    def test_historical_outcome_replay_is_idempotent_and_conflict_closed(self):
+        self.effect.prepare(self._request())
+        evidence = {"evidence_ref": "evidence:partial/3", "observed": "PARTIAL"}
+        first = self.effect.refine_historical_outcome(
+            OPERATION, HistoricalOutcome.PARTIAL, evidence
+        )
+        self.assertEqual(
+            first,
+            self.effect.refine_historical_outcome(
+                OPERATION, HistoricalOutcome.PARTIAL, evidence
+            ),
+        )
+        with self.assertRaises(EffectError) as conflicting:
+            self.effect.refine_historical_outcome(
+                OPERATION,
+                HistoricalOutcome.PARTIAL,
+                {"evidence_ref": "evidence:conflict", "observed": "OTHER"},
+            )
+        self.assertEqual(
+            "EFFECT_HISTORICAL_OUTCOME_REPLAY_CONFLICT",
+            conflicting.exception.code,
+        )
+        known = self.effect.refine_historical_outcome(
+            OPERATION,
+            HistoricalOutcome.KNOWN,
+            {"evidence_ref": "evidence:known/1", "observed": "TERMINAL"},
+        )
+        self.assertEqual(HistoricalOutcome.KNOWN, known.historical_outcome)
+        with self.assertRaises(EffectError) as downgrade:
+            self.effect.refine_historical_outcome(
+                OPERATION, HistoricalOutcome.PARTIAL, evidence
+            )
+        self.assertEqual(
+            "EFFECT_HISTORICAL_OUTCOME_DOWNGRADE", downgrade.exception.code
+        )
+        for invalid_outcome in ("PARTIAL", HistoricalOutcome.UNKNOWN):
+            with self.subTest(outcome=invalid_outcome), self.assertRaises(
+                EffectError
+            ) as invalid:
+                self.effect.refine_historical_outcome(
+                    OPERATION, invalid_outcome, evidence
+                )
+            self.assertEqual(
+                "EFFECT_HISTORICAL_OUTCOME_INVALID", invalid.exception.code
+            )
+
+    def test_persistence_rejects_raw_invalid_historical_transitions(self):
+        self.effect.prepare(self._request())
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.store.connection.execute(
+                """
+                UPDATE effect_operations
+                SET historical_outcome = 'PARTIAL'
+                WHERE operation_ref = ?
+                """,
+                (OPERATION,),
+            )
+        with self.store.transaction() as connection:
+            connection.execute(
+                """
+                UPDATE effect_operations
+                SET historical_outcome = 'PARTIAL',
+                    historical_outcome_evidence_json = '{}'
+                WHERE operation_ref = ?
+                """,
+                (OPERATION,),
+            )
+        for statement in (
+            """
+            UPDATE effect_operations
+            SET historical_outcome = 'UNKNOWN',
+                historical_outcome_evidence_json = NULL
+            WHERE operation_ref = ?
+            """,
+            """
+            UPDATE effect_operations
+            SET historical_outcome_evidence_json = '{"changed":true}'
+            WHERE operation_ref = ?
+            """,
+            """
+            UPDATE effect_operations
+            SET historical_outcome = 'INVALID'
+            WHERE operation_ref = ?
+            """,
+        ):
+            with self.subTest(statement=statement), self.assertRaises(
+                sqlite3.IntegrityError
+            ):
+                self.store.connection.execute(statement, (OPERATION,))
 
     def test_terminal_and_unknown_states_cannot_reactivate_by_code_or_sql(self):
         completed_ref = "effect-operation:terminal/completed"
@@ -845,7 +1011,7 @@ class EffectOperationFoundationTest(unittest.TestCase):
         self.assertEqual(
             {
                 "execute", "prepare", "recover", "resolve",
-                "request_revoke", "resolve_revoke",
+                "request_revoke", "resolve_revoke", "refine_historical_outcome",
             },
             public,
         )
