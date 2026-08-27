@@ -6,17 +6,36 @@ Date: `2026-08-27`
 
 ## 1. Purpose
 
-This file defines the mandatory behavior of Track Orchestrators under the three-level model:
+This file defines the behavior of Track Orchestrators under the coordination model:
 
 ```text
 Development Director
-→ Track Orchestrator
+→ [Track Orchestrator when warranted]
 → Execution Agent
 ```
 
-A Track Orchestrator is a persistent coordination role. It is not an Execution Agent and must not treat repository reading, readiness analysis, or planning alone as completion of a production-activation directive.
+A Track Orchestrator is a persistent coordination role when instantiated. It is not an Execution Agent and must not treat repository reading, readiness analysis, or planning alone as completion of a production-activation directive.
 
 Repository files are authoritative. Chat is trigger / notification / concise status only.
+
+### 1.1 Dedicated Track Orchestrator Is Complexity-Driven, Not Mandatory Per Track
+
+The Development Director does **not** have to create a dedicated Track Orchestrator session for every Track.
+
+For a bounded Track or Track slice expected to require only a small number of Tasks, with simple dependencies, isolated write surfaces and a short implementation/review chain, the Development Director may directly perform Track-level scheduling and route formal Tasks to Execution Agents / Reviewers.
+
+Use a dedicated Track Orchestrator when it materially reduces coordination load, including when one or more of the following are true:
+
+- the Track is expected to contain many Tasks or multiple sequential fix/re-review loops;
+- several Track-local Tasks may run concurrently;
+- dependency management inside the Track is non-trivial;
+- the Track needs persistent local checkpoints, triage or repeated agent routing;
+- the review/integration chain is complex enough that a persistent Track-local coordinator is useful;
+- the Development Director would otherwise become a manual message router for substantial Track-local work.
+
+When the Development Director directly schedules a small Track, all formal Task / Result / Review / Re-Review / Checkpoint, exact-SHA, independence, authority-boundary and Repository Truth requirements remain unchanged. The only omitted element is the unnecessary dedicated Track Orchestrator session.
+
+A Track may later be promoted to a dedicated Track Orchestrator if its actual complexity grows.
 
 ## 2. Mandatory Reading
 
@@ -33,6 +52,8 @@ Every Track Orchestrator must read at minimum:
 9. `coordination/AGENT_AVAILABILITY.md`
 10. the active Track Board / Plan
 11. the Track's frozen architecture authority
+
+When the Development Director directly schedules a small Track, the Director must apply the same current coordination protocol set and frozen Track authority before routing production or review work.
 
 ## 3. Track Activation Completion Rule
 
@@ -61,6 +82,8 @@ If the Track readiness check is `PASS`, the Track Orchestrator MUST, in the same
 
 For an activation directive whose objective is to start production, `TASK DONE` is invalid unless at least one formal production Task has actually been created and routed.
 
+When a small Track is scheduled directly by the Development Director, the Director performs the equivalent readiness, Task creation and routing steps directly; no separate Track Orchestrator activation step is required.
+
 ### 3.2 Readiness BLOCKED
 
 If readiness is not satisfied, the Track Orchestrator MUST NOT create speculative production work.
@@ -77,9 +100,9 @@ A blocked Track must never return `TASK DONE` merely because the readiness check
 
 ## 4. Task ID Allocation Under Parallel Tracks
 
-Track Orchestrators may allocate formal Task IDs only within their authorized Track scope.
+Track Orchestrators may allocate formal Task IDs only within their authorized Track scope. The Development Director may allocate IDs directly when directly scheduling a small Track.
 
-Because multiple Track Orchestrators may operate concurrently, allocation MUST be collision-safe:
+Because multiple coordinators may operate concurrently, allocation MUST be collision-safe:
 
 1. read the latest Repository task namespace immediately before allocation;
 2. choose the next available ID according to the current project convention;
@@ -101,7 +124,7 @@ Every Track-local formal Task must comply with `coordination/TASK_PROTOCOL.md` a
 - Status
 - Priority
 - Orchestrator
-- Track Orchestrator
+- Track Orchestrator or `Development Director — DIRECT SCHEDULING` when no dedicated Track Orchestrator is instantiated
 - Coordination Epoch
 - Based On Coordination Revision
 - Stale Policy
@@ -122,7 +145,7 @@ Unlisted Scope is unauthorized by default.
 
 ## 6. Agent Availability Is a Live Coordination Constraint
 
-Track Orchestrators MUST read current Agent availability from both `coordination/STATUS.md` and `coordination/AGENT_AVAILABILITY.md` before assigning implementation, fix, review or re-review work.
+Track Orchestrators and the Development Director when directly scheduling a Track MUST read current Agent availability from both `coordination/STATUS.md` and `coordination/AGENT_AVAILABILITY.md` before assigning implementation, fix, review or re-review work.
 
 Current availability declarations override default model preferences in older prompts or generic orchestration guidance.
 
@@ -140,7 +163,7 @@ Availability is operational state, not an architecture rule. It may be changed b
 
 Creating a Task file without assigning / routing it is not sufficient when the directive requires production to begin.
 
-The Track Orchestrator must identify:
+The Track Orchestrator, or the Development Director when directly scheduling, must identify:
 
 ```text
 Task ID
@@ -152,7 +175,7 @@ Expected Repository result path
 
 ### 7.1 Mandatory Dispatch Reply Format
 
-When a Track Orchestrator gives the Operator a copyable instruction for an Execution Agent, reviewer or other Track-scoped Agent window, the reply MUST use a Track dispatch block beginning with a human-facing dispatch label:
+When a Track Orchestrator or the Development Director gives the Operator a copyable instruction for an Execution Agent, reviewer or other Track-scoped Agent window, the reply MUST use a Track dispatch block beginning with a human-facing dispatch label:
 
 ```text
 [TRACK_A_TASK_001]
@@ -248,7 +271,7 @@ For high-risk production:
 Implementation Agent != Independent Reviewer
 ```
 
-Track Orchestrator is responsible for routing:
+Track Orchestrator, or Development Director under direct scheduling, is responsible for routing:
 
 ```text
 Implementation
@@ -263,9 +286,9 @@ Reviewer output does not automatically create global acceptance.
 
 ## 10. Authority Boundary
 
-Track Orchestrators may create Track-local implementation / fix / review / re-review Tasks and manage Track-local stable candidates.
+Track Orchestrators may create Track-local implementation / fix / review / re-review Tasks and manage Track-local stable candidates. The Development Director retains global coordination authority and may directly schedule small Tracks under Section 1.1.
 
-They may not:
+Track Orchestrators may not:
 
 - modify Frozen Architecture;
 - change Owner boundaries;
