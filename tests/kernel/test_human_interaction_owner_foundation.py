@@ -18,7 +18,7 @@ from nyron_kernel.human_interaction import (
 from nyron_kernel.store.sqlite_store import SQLiteStore
 
 
-def policy(ref: str = "policy:1", count: int = 2) -> ResponsePolicyRevision:
+def policy(ref: str = "policy:1", count: int = 1) -> ResponsePolicyRevision:
     return ResponsePolicyRevision(ref, "selector:external", count)
 
 
@@ -61,7 +61,7 @@ def candidate(
     )
 
 
-def authority_with_request(store: SQLiteStore, *, count: int = 2) -> HumanInteractionAuthority:
+def authority_with_request(store: SQLiteStore, *, count: int = 1) -> HumanInteractionAuthority:
     authority = HumanInteractionAuthority(store)
     authority.register_response_policy(policy(count=count))
     authority.create_request(request())
@@ -80,7 +80,7 @@ def test_request_and_policy_exact_replay_and_conflict_are_fail_closed() -> None:
         assert authority.register_response_policy(original_policy) == original_policy
         assert authority.register_response_policy(original_policy) == original_policy
         with pytest.raises(HumanInteractionConflict):
-            authority.register_response_policy(replace(original_policy, required_approval_count=3))
+            authority.register_response_policy(replace(original_policy, responder_selector_ref="selector:other"))
         assert authority.create_request(original_request) == original_request
         assert authority.create_request(original_request) == original_request
         with pytest.raises(HumanInteractionConflict):
@@ -93,6 +93,37 @@ def test_unsupported_aggregation_semantics_fail_closed() -> None:
         authority = HumanInteractionAuthority(store)
         with pytest.raises(UnsupportedResponsePolicy):
             authority.register_response_policy(replace(policy(), decision_rule="ROLE_WEIGHTED"))
+
+
+@pytest.mark.parametrize(
+    "order",
+    [
+        (ResponseDecision.APPROVE, ResponseDecision.DENY),
+        (ResponseDecision.DENY, ResponseDecision.APPROVE),
+    ],
+)
+def test_threshold_deny_veto_f001_policy_fails_before_any_truth(
+    order: tuple[ResponseDecision, ResponseDecision],
+) -> None:
+    with SQLiteStore() as store:
+        authority = HumanInteractionAuthority(store)
+        unsafe = replace(
+            policy(),
+            cardinality_rule="AT_LEAST",
+            decision_rule="APPROVAL_THRESHOLD",
+            conflict_rule="DENY_VETO",
+        )
+        with pytest.raises(UnsupportedResponsePolicy):
+            authority.register_response_policy(unsafe)
+        assert order in (
+            (ResponseDecision.APPROVE, ResponseDecision.DENY),
+            (ResponseDecision.DENY, ResponseDecision.APPROVE),
+        )
+        assert store.connection.execute(
+            "SELECT COUNT(*) FROM human_response_policy_revisions"
+        ).fetchone()[0] == 0
+        assert response_count(store) == 0
+        assert authority.get_decision_evidence("request:1") is None
 
 
 @pytest.mark.parametrize(
@@ -129,24 +160,24 @@ def test_response_replay_is_idempotent_and_conflict_preserves_original() -> None
         assert authority.get_response("response:1") == accepted
 
 
-def test_duplicate_principal_counts_once_and_deterministic_threshold_satisfies() -> None:
+def test_first_valid_is_explicitly_order_semantic_and_duplicate_principal_is_late() -> None:
     with SQLiteStore() as store:
-        authority = authority_with_request(store, count=2)
-        authority.accept_response(candidate("response:b", "principal:1"))
-        authority.accept_response(candidate("response:a", "principal:1"))
-        assert authority.get_request("request:1").state == RequestState.OPEN
-        authority.accept_response(candidate("response:c", "principal:2"))
+        authority = authority_with_request(store)
+        authority.accept_response(candidate("response:first", "principal:1"))
+        with pytest.raises(HumanInteractionRejected):
+            authority.accept_response(candidate("response:duplicate-principal", "principal:1"))
         current = authority.get_request("request:1")
         evidence = authority.get_decision_evidence("request:1")
         assert current.state == RequestState.SATISFIED
         assert current.terminal_ref == evidence.decision_evidence_ref
         assert evidence.outcome == "APPROVED"
-        assert evidence.accepted_response_refs == ("response:a", "response:b", "response:c")
+        assert evidence.accepted_response_refs == ("response:first",)
+        assert response_count(store) == 1
 
 
-def test_deny_veto_satisfies_with_denied_evidence() -> None:
+def test_first_valid_deny_satisfies_with_denied_evidence() -> None:
     with SQLiteStore() as store:
-        authority = authority_with_request(store, count=3)
+        authority = authority_with_request(store)
         authority.accept_response(candidate("response:deny", "principal:1", ResponseDecision.DENY))
         evidence = authority.get_decision_evidence("request:1")
         assert evidence.outcome == "DENIED"
