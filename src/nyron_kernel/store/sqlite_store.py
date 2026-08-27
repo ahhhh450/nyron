@@ -864,6 +864,235 @@ class SQLiteStore:
             """
         )
 
+    def create_pwp_schema(self) -> None:
+        """Install only PWP-owned identity and immutable revision tables."""
+
+        self.connection.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS pwp_projects (
+                project_ref TEXT PRIMARY KEY,
+                state TEXT NOT NULL CHECK (state IN ('ACTIVE','DEPRECATED','ARCHIVED')),
+                created_at INTEGER NOT NULL,
+                archived_at INTEGER,
+                current_project_config_revision_ref TEXT,
+                current_policy_context_revision_ref TEXT,
+                CHECK ((state = 'ARCHIVED') = (archived_at IS NOT NULL)),
+                FOREIGN KEY (current_project_config_revision_ref)
+                    REFERENCES pwp_project_config_revisions(revision_ref),
+                FOREIGN KEY (current_policy_context_revision_ref)
+                    REFERENCES pwp_policy_context_revisions(revision_ref)
+            );
+
+            CREATE TABLE IF NOT EXISTS pwp_workspaces (
+                workspace_ref TEXT PRIMARY KEY,
+                project_ref TEXT NOT NULL,
+                parent_workspace_ref TEXT,
+                state TEXT NOT NULL CHECK (state IN ('ACTIVE','DEPRECATED','ARCHIVED')),
+                created_at INTEGER NOT NULL,
+                archived_at INTEGER,
+                current_workspace_config_revision_ref TEXT,
+                current_policy_context_revision_ref TEXT,
+                current_environment_binding_revision_ref TEXT,
+                CHECK ((state = 'ARCHIVED') = (archived_at IS NOT NULL)),
+                CHECK (parent_workspace_ref IS NULL OR parent_workspace_ref != workspace_ref),
+                FOREIGN KEY (project_ref) REFERENCES pwp_projects(project_ref),
+                FOREIGN KEY (parent_workspace_ref) REFERENCES pwp_workspaces(workspace_ref),
+                FOREIGN KEY (current_workspace_config_revision_ref)
+                    REFERENCES pwp_workspace_config_revisions(revision_ref),
+                FOREIGN KEY (current_policy_context_revision_ref)
+                    REFERENCES pwp_policy_context_revisions(revision_ref),
+                FOREIGN KEY (current_environment_binding_revision_ref)
+                    REFERENCES pwp_environment_binding_revisions(revision_ref)
+            );
+
+            CREATE TABLE IF NOT EXISTS pwp_project_config_revisions (
+                revision_ref TEXT PRIMARY KEY,
+                subject_ref TEXT NOT NULL,
+                revision_seq INTEGER NOT NULL CHECK (revision_seq > 0),
+                previous_revision_ref TEXT UNIQUE,
+                payload_json TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                caused_by_ref TEXT NOT NULL,
+                UNIQUE(subject_ref, revision_seq),
+                FOREIGN KEY (subject_ref) REFERENCES pwp_projects(project_ref),
+                FOREIGN KEY (previous_revision_ref)
+                    REFERENCES pwp_project_config_revisions(revision_ref)
+            );
+
+            CREATE TABLE IF NOT EXISTS pwp_workspace_config_revisions (
+                revision_ref TEXT PRIMARY KEY,
+                subject_ref TEXT NOT NULL,
+                revision_seq INTEGER NOT NULL CHECK (revision_seq > 0),
+                previous_revision_ref TEXT UNIQUE,
+                payload_json TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                caused_by_ref TEXT NOT NULL,
+                UNIQUE(subject_ref, revision_seq),
+                FOREIGN KEY (subject_ref) REFERENCES pwp_workspaces(workspace_ref),
+                FOREIGN KEY (previous_revision_ref)
+                    REFERENCES pwp_workspace_config_revisions(revision_ref)
+            );
+
+            CREATE TABLE IF NOT EXISTS pwp_policy_context_revisions (
+                revision_ref TEXT PRIMARY KEY,
+                subject_kind TEXT NOT NULL CHECK (subject_kind IN ('PROJECT','WORKSPACE')),
+                subject_ref TEXT NOT NULL,
+                revision_seq INTEGER NOT NULL CHECK (revision_seq > 0),
+                previous_revision_ref TEXT UNIQUE,
+                payload_json TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                caused_by_ref TEXT NOT NULL,
+                UNIQUE(subject_kind, subject_ref, revision_seq),
+                FOREIGN KEY (previous_revision_ref)
+                    REFERENCES pwp_policy_context_revisions(revision_ref)
+            );
+
+            CREATE TABLE IF NOT EXISTS pwp_environment_binding_revisions (
+                revision_ref TEXT PRIMARY KEY,
+                subject_ref TEXT NOT NULL,
+                revision_seq INTEGER NOT NULL CHECK (revision_seq > 0),
+                previous_revision_ref TEXT UNIQUE,
+                payload_json TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                caused_by_ref TEXT NOT NULL,
+                UNIQUE(subject_ref, revision_seq),
+                FOREIGN KEY (subject_ref) REFERENCES pwp_workspaces(workspace_ref),
+                FOREIGN KEY (previous_revision_ref)
+                    REFERENCES pwp_environment_binding_revisions(revision_ref)
+            );
+
+            CREATE TRIGGER IF NOT EXISTS pwp_project_identity_immutable
+            BEFORE UPDATE OF project_ref, created_at ON pwp_projects
+            BEGIN SELECT RAISE(ABORT, 'project identity immutable'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_project_no_delete
+            BEFORE DELETE ON pwp_projects
+            BEGIN SELECT RAISE(ABORT, 'project history retained'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_project_state_transition
+            BEFORE UPDATE OF state ON pwp_projects
+            WHEN NOT (
+                NEW.state = OLD.state
+                OR (OLD.state = 'ACTIVE' AND NEW.state IN ('DEPRECATED','ARCHIVED'))
+                OR (OLD.state = 'DEPRECATED' AND NEW.state = 'ARCHIVED')
+            )
+            BEGIN SELECT RAISE(ABORT, 'invalid project state transition'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_workspace_identity_immutable
+            BEFORE UPDATE OF workspace_ref, project_ref, parent_workspace_ref, created_at
+            ON pwp_workspaces
+            BEGIN SELECT RAISE(ABORT, 'workspace identity immutable'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_workspace_no_delete
+            BEFORE DELETE ON pwp_workspaces
+            BEGIN SELECT RAISE(ABORT, 'workspace history retained'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_workspace_parent_same_project
+            BEFORE INSERT ON pwp_workspaces
+            WHEN NEW.parent_workspace_ref IS NOT NULL AND NOT EXISTS (
+                SELECT 1 FROM pwp_workspaces parent
+                WHERE parent.workspace_ref = NEW.parent_workspace_ref
+                  AND parent.project_ref = NEW.project_ref
+            )
+            BEGIN SELECT RAISE(ABORT, 'workspace parent project mismatch'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_workspace_state_transition
+            BEFORE UPDATE OF state ON pwp_workspaces
+            WHEN NOT (
+                NEW.state = OLD.state
+                OR (OLD.state = 'ACTIVE' AND NEW.state IN ('DEPRECATED','ARCHIVED'))
+                OR (OLD.state = 'DEPRECATED' AND NEW.state = 'ARCHIVED')
+            )
+            BEGIN SELECT RAISE(ABORT, 'invalid workspace state transition'); END;
+
+            CREATE TRIGGER IF NOT EXISTS pwp_project_config_pointer_advance
+            BEFORE UPDATE OF current_project_config_revision_ref ON pwp_projects
+            WHEN NEW.current_project_config_revision_ref IS NOT OLD.current_project_config_revision_ref
+             AND NOT EXISTS (
+                SELECT 1 FROM pwp_project_config_revisions revision
+                WHERE revision.revision_ref = NEW.current_project_config_revision_ref
+                  AND revision.subject_ref = OLD.project_ref
+                  AND revision.previous_revision_ref IS OLD.current_project_config_revision_ref
+                  AND revision.revision_seq = CASE
+                      WHEN OLD.current_project_config_revision_ref IS NULL THEN 1
+                      ELSE (SELECT revision_seq + 1 FROM pwp_project_config_revisions
+                            WHERE revision_ref = OLD.current_project_config_revision_ref)
+                  END
+             )
+            BEGIN SELECT RAISE(ABORT, 'invalid project config pointer advance'); END;
+
+            CREATE TRIGGER IF NOT EXISTS pwp_workspace_config_pointer_advance
+            BEFORE UPDATE OF current_workspace_config_revision_ref ON pwp_workspaces
+            WHEN NEW.current_workspace_config_revision_ref IS NOT OLD.current_workspace_config_revision_ref
+             AND NOT EXISTS (
+                SELECT 1 FROM pwp_workspace_config_revisions revision
+                WHERE revision.revision_ref = NEW.current_workspace_config_revision_ref
+                  AND revision.subject_ref = OLD.workspace_ref
+                  AND revision.previous_revision_ref IS OLD.current_workspace_config_revision_ref
+                  AND revision.revision_seq = CASE
+                      WHEN OLD.current_workspace_config_revision_ref IS NULL THEN 1
+                      ELSE (SELECT revision_seq + 1 FROM pwp_workspace_config_revisions
+                            WHERE revision_ref = OLD.current_workspace_config_revision_ref)
+                  END
+             )
+            BEGIN SELECT RAISE(ABORT, 'invalid workspace config pointer advance'); END;
+
+            CREATE TRIGGER IF NOT EXISTS pwp_project_policy_pointer_advance
+            BEFORE UPDATE OF current_policy_context_revision_ref ON pwp_projects
+            WHEN NEW.current_policy_context_revision_ref IS NOT OLD.current_policy_context_revision_ref
+             AND NOT EXISTS (
+                SELECT 1 FROM pwp_policy_context_revisions revision
+                WHERE revision.revision_ref = NEW.current_policy_context_revision_ref
+                  AND revision.subject_kind = 'PROJECT'
+                  AND revision.subject_ref = OLD.project_ref
+                  AND revision.previous_revision_ref IS OLD.current_policy_context_revision_ref
+             )
+            BEGIN SELECT RAISE(ABORT, 'invalid project policy pointer advance'); END;
+
+            CREATE TRIGGER IF NOT EXISTS pwp_workspace_policy_pointer_advance
+            BEFORE UPDATE OF current_policy_context_revision_ref ON pwp_workspaces
+            WHEN NEW.current_policy_context_revision_ref IS NOT OLD.current_policy_context_revision_ref
+             AND NOT EXISTS (
+                SELECT 1 FROM pwp_policy_context_revisions revision
+                WHERE revision.revision_ref = NEW.current_policy_context_revision_ref
+                  AND revision.subject_kind = 'WORKSPACE'
+                  AND revision.subject_ref = OLD.workspace_ref
+                  AND revision.previous_revision_ref IS OLD.current_policy_context_revision_ref
+             )
+            BEGIN SELECT RAISE(ABORT, 'invalid workspace policy pointer advance'); END;
+
+            CREATE TRIGGER IF NOT EXISTS pwp_environment_pointer_advance
+            BEFORE UPDATE OF current_environment_binding_revision_ref ON pwp_workspaces
+            WHEN NEW.current_environment_binding_revision_ref IS NOT OLD.current_environment_binding_revision_ref
+             AND NOT EXISTS (
+                SELECT 1 FROM pwp_environment_binding_revisions revision
+                WHERE revision.revision_ref = NEW.current_environment_binding_revision_ref
+                  AND revision.subject_ref = OLD.workspace_ref
+                  AND revision.previous_revision_ref IS OLD.current_environment_binding_revision_ref
+             )
+            BEGIN SELECT RAISE(ABORT, 'invalid environment binding pointer advance'); END;
+
+            CREATE TRIGGER IF NOT EXISTS pwp_project_config_immutable
+            BEFORE UPDATE ON pwp_project_config_revisions
+            BEGIN SELECT RAISE(ABORT, 'PWP revision immutable'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_project_config_no_delete
+            BEFORE DELETE ON pwp_project_config_revisions
+            BEGIN SELECT RAISE(ABORT, 'PWP revision retained'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_workspace_config_immutable
+            BEFORE UPDATE ON pwp_workspace_config_revisions
+            BEGIN SELECT RAISE(ABORT, 'PWP revision immutable'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_workspace_config_no_delete
+            BEFORE DELETE ON pwp_workspace_config_revisions
+            BEGIN SELECT RAISE(ABORT, 'PWP revision retained'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_policy_context_immutable
+            BEFORE UPDATE ON pwp_policy_context_revisions
+            BEGIN SELECT RAISE(ABORT, 'PWP revision immutable'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_policy_context_no_delete
+            BEFORE DELETE ON pwp_policy_context_revisions
+            BEGIN SELECT RAISE(ABORT, 'PWP revision retained'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_environment_binding_immutable
+            BEFORE UPDATE ON pwp_environment_binding_revisions
+            BEGIN SELECT RAISE(ABORT, 'PWP revision immutable'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_environment_binding_no_delete
+            BEFORE DELETE ON pwp_environment_binding_revisions
+            BEGIN SELECT RAISE(ABORT, 'PWP revision retained'); END;
+            """
+        )
+
     @contextmanager
     def transaction(self) -> Iterator[sqlite3.Connection]:
         """Commit all writes together, or roll the entire transaction back."""
