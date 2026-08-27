@@ -10,6 +10,8 @@ from typing import Callable, TypeVar
 from nyron_kernel.pwp.models import (
     EnvironmentBindingEntry,
     EnvironmentBindingRevision,
+    IngressRoute,
+    IngressRouteRevision,
     PolicyContextRevision,
     Project,
     ProjectConfigRevision,
@@ -25,6 +27,7 @@ Revision = TypeVar(
     WorkspaceConfigRevision,
     PolicyContextRevision,
     EnvironmentBindingRevision,
+    IngressRouteRevision,
 )
 
 
@@ -135,6 +138,58 @@ class PWPAuthority:
             "SELECT * FROM pwp_workspaces WHERE workspace_ref = ?", (workspace_ref,)
         ).fetchone()
         return None if row is None else Workspace(**dict(row))
+
+    def create_ingress_route(
+        self,
+        ingress_route_ref: str,
+        project_ref: str,
+        workspace_ref: str | None = None,
+    ) -> IngressRoute:
+        self._require_ref(ingress_route_ref, "ingress_route_ref")
+        self._require_active_project(project_ref)
+        if workspace_ref is not None:
+            workspace = self._require_active_workspace(workspace_ref)
+            if workspace.project_ref != project_ref:
+                raise PWPError("INGRESS_ROUTE_WORKSPACE_PROJECT_MISMATCH")
+        existing = self.get_ingress_route(ingress_route_ref)
+        if existing is not None:
+            if existing.project_ref == project_ref and existing.workspace_ref == workspace_ref:
+                return existing
+            raise PWPError("INGRESS_ROUTE_IDENTITY_CONFLICT", ingress_route_ref=ingress_route_ref)
+        try:
+            with self._store.transaction() as connection:
+                connection.execute(
+                    "INSERT INTO pwp_ingress_routes(ingress_route_ref,project_ref,"
+                    "workspace_ref,state,created_at,archived_at)"
+                    " VALUES (?, ?, ?, 'ACTIVE', ?, NULL)",
+                    (ingress_route_ref, project_ref, workspace_ref, self._now()),
+                )
+        except sqlite3.IntegrityError as error:
+            raise PWPError(
+                "INGRESS_ROUTE_IDENTITY_CONFLICT", ingress_route_ref=ingress_route_ref
+            ) from error
+        result = self.get_ingress_route(ingress_route_ref)
+        assert result is not None
+        return result
+
+    def get_ingress_route(self, ingress_route_ref: str) -> IngressRoute | None:
+        row = self._store.connection.execute(
+            "SELECT * FROM pwp_ingress_routes WHERE ingress_route_ref=?",
+            (ingress_route_ref,),
+        ).fetchone()
+        return None if row is None else IngressRoute(**dict(row))
+
+    def archive_ingress_route(self, ingress_route_ref: str) -> IngressRoute:
+        route = self._require_ingress_route(ingress_route_ref)
+        if route.state == "ARCHIVED":
+            return route
+        with self._store.transaction() as connection:
+            connection.execute(
+                "UPDATE pwp_ingress_routes SET state='ARCHIVED', archived_at=?"
+                " WHERE ingress_route_ref=?",
+                (self._now(), ingress_route_ref),
+            )
+        return self._require_ingress_route(ingress_route_ref)
 
     def archive_workspace(self, workspace_ref: str) -> Workspace:
         workspace = self._require_workspace(workspace_ref)
@@ -305,6 +360,30 @@ class PWPAuthority:
         self._tuplify(payload, "portability_constraints")
         return EnvironmentBindingRevision(**payload)
 
+    def publish_ingress_route_revision(
+        self, revision: IngressRouteRevision
+    ) -> IngressRouteRevision:
+        route = self._require_active_ingress_route(revision.ingress_route_ref)
+        self._validate_ingress_route_revision(revision, route)
+        return self._publish_revision(
+            revision,
+            table="pwp_ingress_route_revisions",
+            revision_ref=revision.ingress_route_revision_ref,
+            subject_ref=revision.ingress_route_ref,
+            pointer_table="pwp_ingress_routes",
+            subject_column="ingress_route_ref",
+            pointer_column="current_ingress_route_revision_ref",
+            loader=self.get_ingress_route_revision,
+        )
+
+    def get_ingress_route_revision(
+        self, revision_ref: str
+    ) -> IngressRouteRevision | None:
+        row = self._revision_row("pwp_ingress_route_revisions", revision_ref)
+        if row is None:
+            return None
+        return IngressRouteRevision(**json.loads(row["payload_json"]))
+
     def _publish_revision(
         self,
         revision: Revision,
@@ -387,6 +466,66 @@ class PWPAuthority:
         if workspace is None:
             raise PWPError("WORKSPACE_NOT_FOUND", workspace_ref=workspace_ref)
         return workspace
+
+    def _require_ingress_route(self, ingress_route_ref: str) -> IngressRoute:
+        route = self.get_ingress_route(ingress_route_ref)
+        if route is None:
+            raise PWPError("INGRESS_ROUTE_NOT_FOUND", ingress_route_ref=ingress_route_ref)
+        return route
+
+    def _require_active_ingress_route(self, ingress_route_ref: str) -> IngressRoute:
+        route = self._require_ingress_route(ingress_route_ref)
+        if route.state != "ACTIVE":
+            raise PWPError("INGRESS_ROUTE_NOT_ACTIVE", ingress_route_ref=ingress_route_ref)
+        self._require_active_project(route.project_ref)
+        if route.workspace_ref is not None:
+            self._require_active_workspace(route.workspace_ref)
+        return route
+
+    def _validate_ingress_route_revision(
+        self, revision: IngressRouteRevision, route: IngressRoute
+    ) -> None:
+        for name in (
+            "source_adapter_profile_ref",
+            "source_auth_policy_ref",
+            "input_schema_ref",
+            "deduplication_contract_ref",
+            "canonical_target_owner_ref",
+            "canonical_event_type_ref",
+            "canonicalization_contract_ref",
+            "project_config_revision_ref",
+            "policy_context_revision_ref",
+            "caused_by_ref",
+        ):
+            self._require_ref(getattr(revision, name), name)
+        project_config = self.get_project_config_revision(revision.project_config_revision_ref)
+        if project_config is None or project_config.project_ref != route.project_ref:
+            raise PWPError("PROJECT_CONFIG_NOT_RESOLVABLE")
+        policy = self.get_policy_context_revision(revision.policy_context_revision_ref)
+        expected_policy_subject = route.workspace_ref or route.project_ref
+        expected_policy_kind = "WORKSPACE" if route.workspace_ref is not None else "PROJECT"
+        if (
+            policy is None
+            or policy.subject_kind != expected_policy_kind
+            or policy.subject_ref != expected_policy_subject
+        ):
+            raise PWPError("POLICY_CONTEXT_NOT_RESOLVABLE")
+        if route.workspace_ref is None:
+            if revision.workspace_config_revision_ref is not None:
+                raise PWPError("WORKSPACE_CONFIG_NOT_APPLICABLE")
+        else:
+            workspace_config = (
+                None
+                if revision.workspace_config_revision_ref is None
+                else self.get_workspace_config_revision(revision.workspace_config_revision_ref)
+            )
+            if workspace_config is None or workspace_config.workspace_ref != route.workspace_ref:
+                raise PWPError("WORKSPACE_CONFIG_NOT_RESOLVABLE")
+        if (revision.graph_ingress_binding_ref is None) != (revision.graph_revision_ref is None):
+            raise PWPError("GRAPH_INGRESS_BINDING_INCOMPLETE")
+        if revision.enabled_from is not None and revision.enabled_until is not None:
+            if revision.enabled_until <= revision.enabled_from:
+                raise PWPError("INVALID_INGRESS_ROUTE_ENABLEMENT_WINDOW")
 
     def _require_active_project(self, project_ref: str) -> Project:
         project = self._require_project(project_ref)

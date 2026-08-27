@@ -29,6 +29,17 @@ class Workspace:
 
 
 @dataclass(frozen=True)
+class IngressRoute:
+    ingress_route_ref: str
+    project_ref: str
+    workspace_ref: str | None
+    state: str
+    current_ingress_route_revision_ref: str | None
+    created_at: int
+    archived_at: int | None
+
+
+@dataclass(frozen=True)
 class WorkspaceRootDeclaration:
     root_key: str
     root_role: str
@@ -117,5 +128,29 @@ class EnvironmentBindingRevision:
     environment_ref: str
     binding_entries: tuple[EnvironmentBindingEntry, ...]
     portability_constraints: tuple[str, ...]
+    created_at: int
+    caused_by_ref: str
+
+
+@dataclass(frozen=True)
+class IngressRouteRevision:
+    ingress_route_revision_ref: str
+    ingress_route_ref: str
+    revision_seq: int
+    previous_revision_ref: str | None
+    source_adapter_profile_ref: str
+    source_auth_policy_ref: str
+    input_schema_ref: str
+    deduplication_contract_ref: str
+    canonical_target_owner_ref: str
+    canonical_event_type_ref: str
+    canonicalization_contract_ref: str
+    graph_ingress_binding_ref: str | None
+    graph_revision_ref: str | None
+    project_config_revision_ref: str
+    workspace_config_revision_ref: str | None
+    policy_context_revision_ref: str
+    enabled_from: int | None
+    enabled_until: int | None
     created_at: int
     caused_by_ref: str
