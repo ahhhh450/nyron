@@ -4,6 +4,8 @@ from nyron_kernel.pwp.authority import PWPAuthority, PWPError
 from nyron_kernel.pwp.models import (
     EnvironmentBindingEntry,
     EnvironmentBindingRevision,
+    IngressRoute,
+    IngressRouteRevision,
     PolicyContextRevision,
     Project,
     ProjectConfigRevision,
@@ -15,6 +17,8 @@ from nyron_kernel.pwp.models import (
 __all__ = [
     "EnvironmentBindingEntry",
     "EnvironmentBindingRevision",
+    "IngressRoute",
+    "IngressRouteRevision",
     "PolicyContextRevision",
     "Project",
     "ProjectConfigRevision",

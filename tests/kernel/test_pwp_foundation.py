@@ -7,6 +7,7 @@ import pytest
 from nyron_kernel.pwp import (
     EnvironmentBindingEntry,
     EnvironmentBindingRevision,
+    IngressRouteRevision,
     PWPAuthority,
     PWPError,
     PolicyContextRevision,
@@ -81,6 +82,61 @@ def binding(ref: str, seq: int, previous: str | None) -> EnvironmentBindingRevis
         100 + seq,
         "cause:test",
     )
+
+
+def ingress_revision(
+    ref: str,
+    seq: int,
+    previous: str | None,
+    *,
+    target_owner: str = "owner:runtime",
+) -> IngressRouteRevision:
+    return IngressRouteRevision(
+        ref,
+        "ingress-route:1",
+        seq,
+        previous,
+        "adapter:webhook@1",
+        "auth-policy:signed@1",
+        "schema:input@1",
+        "dedupe:source-event-id@1",
+        target_owner,
+        "event:execution-ingress@1",
+        "canonicalization:webhook@1",
+        "graph-ingress:1",
+        "graph-revision:1",
+        "project-config:route",
+        "workspace-config:route",
+        "policy-context:route",
+        None,
+        None,
+        200 + seq,
+        "cause:test",
+    )
+
+
+def prepare_ingress_route(owner: PWPAuthority) -> None:
+    owner.publish_project_config_revision(project_config("project-config:route", 1, None))
+    owner.publish_workspace_config_revision(workspace_config("workspace-config:route", 1, None))
+    owner.publish_policy_context_revision(
+        PolicyContextRevision(
+            "policy-context:route",
+            "WORKSPACE",
+            "workspace:1",
+            1,
+            None,
+            ("policy:project",),
+            ("policy:workspace",),
+            ("policy:security",),
+            ("policy:runtime",),
+            ("policy:user",),
+            ("policy:system",),
+            "composition:intersection@1",
+            201,
+            "cause:test",
+        )
+    )
+    owner.create_ingress_route("ingress-route:1", "project:1", "workspace:1")
 
 
 @pytest.fixture
@@ -187,6 +243,111 @@ def test_environment_binding_is_immutable_configuration_only(pwp) -> None:
     assert owner.get_environment_binding_revision(first.environment_binding_revision_ref) == first
     assert owner.get_workspace("workspace:1").current_environment_binding_revision_ref == second.environment_binding_revision_ref
     assert not hasattr(first, "resource_ref")
+
+
+def test_ingress_route_stable_identity_and_exact_target_owner_binding(pwp) -> None:
+    _, owner = pwp
+    prepare_ingress_route(owner)
+    route = owner.get_ingress_route("ingress-route:1")
+    assert owner.create_ingress_route(
+        "ingress-route:1", "project:1", "workspace:1"
+    ) == route
+    with pytest.raises(PWPError, match="INGRESS_ROUTE_IDENTITY_CONFLICT"):
+        owner.create_ingress_route("ingress-route:1", "project:1")
+    revision = ingress_revision("ingress-route-revision:1", 1, None)
+    assert owner.publish_ingress_route_revision(revision) == revision
+    assert owner.get_ingress_route_revision(revision.ingress_route_revision_ref) == revision
+    assert revision.canonical_target_owner_ref == "owner:runtime"
+    assert not hasattr(revision, "execution_ingress_fact_ref")
+    assert not hasattr(revision, "activation_ref")
+
+
+def test_ingress_route_exact_replay_conflict_and_pointer_progression(pwp) -> None:
+    _, owner = pwp
+    prepare_ingress_route(owner)
+    first = ingress_revision("ingress-route-revision:1", 1, None)
+    second = ingress_revision(
+        "ingress-route-revision:2", 2, first.ingress_route_revision_ref
+    )
+    assert owner.publish_ingress_route_revision(first) == first
+    assert owner.publish_ingress_route_revision(first) == first
+    conflict = IngressRouteRevision(
+        **{**first.__dict__, "canonical_target_owner_ref": "owner:accounting"}
+    )
+    with pytest.raises(PWPError, match="REVISION_IDENTITY_CONFLICT"):
+        owner.publish_ingress_route_revision(conflict)
+    with pytest.raises(PWPError, match="REVISION_SEQUENCE_CONFLICT"):
+        owner.publish_ingress_route_revision(
+            ingress_revision("ingress-route-revision:jump", 3, first.ingress_route_revision_ref)
+        )
+    owner.publish_ingress_route_revision(second)
+    assert owner.get_ingress_route("ingress-route:1").current_ingress_route_revision_ref == (
+        second.ingress_route_revision_ref
+    )
+
+
+def test_ingress_route_raw_pointer_rewind_and_revision_mutation_fail_closed(pwp) -> None:
+    store, owner = pwp
+    prepare_ingress_route(owner)
+    first = ingress_revision("ingress-route-revision:1", 1, None)
+    second = ingress_revision(
+        "ingress-route-revision:2", 2, first.ingress_route_revision_ref
+    )
+    owner.publish_ingress_route_revision(first)
+    owner.publish_ingress_route_revision(second)
+    with pytest.raises(sqlite3.IntegrityError):
+        store.connection.execute(
+            "UPDATE pwp_ingress_routes SET current_ingress_route_revision_ref=?"
+            " WHERE ingress_route_ref='ingress-route:1'",
+            (first.ingress_route_revision_ref,),
+        )
+    with pytest.raises(sqlite3.IntegrityError):
+        store.connection.execute(
+            "UPDATE pwp_ingress_route_revisions SET caused_by_ref='rewrite'"
+            " WHERE revision_ref=?",
+            (first.ingress_route_revision_ref,),
+        )
+    with pytest.raises(sqlite3.IntegrityError):
+        store.connection.execute(
+            "DELETE FROM pwp_ingress_route_revisions WHERE revision_ref=?",
+            (first.ingress_route_revision_ref,),
+        )
+
+
+def test_ingress_route_restart_persistence_and_archive_retains_history(tmp_path) -> None:
+    database = tmp_path / "pwp-ingress.db"
+    revision = ingress_revision("ingress-route-revision:1", 1, None)
+    with SQLiteStore(database) as store:
+        owner = authority(store)
+        owner.create_project("project:1")
+        owner.create_workspace("workspace:1", "project:1")
+        prepare_ingress_route(owner)
+        owner.publish_ingress_route_revision(revision)
+        owner.archive_ingress_route("ingress-route:1")
+    with SQLiteStore(database) as reopened:
+        owner = authority(reopened, now=300)
+        assert owner.get_ingress_route("ingress-route:1").state == "ARCHIVED"
+        assert owner.get_ingress_route_revision(revision.ingress_route_revision_ref) == revision
+
+
+def test_ingress_route_rejects_cross_project_workspace_and_unresolved_context(pwp) -> None:
+    store, owner = pwp
+    owner.create_project("project:2")
+    with pytest.raises(PWPError, match="INGRESS_ROUTE_WORKSPACE_PROJECT_MISMATCH"):
+        owner.create_ingress_route("ingress-route:bad", "project:2", "workspace:1")
+    with pytest.raises(sqlite3.IntegrityError):
+        store.connection.execute(
+            "INSERT INTO pwp_ingress_routes(ingress_route_ref,project_ref,workspace_ref,"
+            "state,created_at,archived_at) VALUES "
+            "('ingress-route:raw-bad','project:2','workspace:1','ACTIVE',100,NULL)"
+        )
+    prepare_ingress_route(owner)
+    bad = IngressRouteRevision(
+        **{**ingress_revision("ingress-route-revision:bad", 1, None).__dict__,
+           "project_config_revision_ref": "project-config:missing"}
+    )
+    with pytest.raises(PWPError, match="PROJECT_CONFIG_NOT_RESOLVABLE"):
+        owner.publish_ingress_route_revision(bad)
 
 
 def test_conflicting_revision_identity_predecessor_and_sequence_fail_closed(pwp) -> None:
@@ -418,4 +579,5 @@ def test_schema_contains_no_foreign_owner_canonical_tables(pwp) -> None:
         "pwp_projects", "pwp_workspaces", "pwp_project_config_revisions",
         "pwp_workspace_config_revisions", "pwp_policy_context_revisions",
         "pwp_environment_binding_revisions",
+        "pwp_ingress_routes", "pwp_ingress_route_revisions",
     }

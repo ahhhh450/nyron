@@ -961,6 +961,35 @@ class SQLiteStore:
                     REFERENCES pwp_environment_binding_revisions(revision_ref)
             );
 
+            CREATE TABLE IF NOT EXISTS pwp_ingress_routes (
+                ingress_route_ref TEXT PRIMARY KEY,
+                project_ref TEXT NOT NULL,
+                workspace_ref TEXT,
+                state TEXT NOT NULL CHECK (state IN ('ACTIVE','DISABLED','DEPRECATED','ARCHIVED')),
+                current_ingress_route_revision_ref TEXT,
+                created_at INTEGER NOT NULL,
+                archived_at INTEGER,
+                CHECK ((state = 'ARCHIVED') = (archived_at IS NOT NULL)),
+                FOREIGN KEY (project_ref) REFERENCES pwp_projects(project_ref),
+                FOREIGN KEY (workspace_ref) REFERENCES pwp_workspaces(workspace_ref),
+                FOREIGN KEY (current_ingress_route_revision_ref)
+                    REFERENCES pwp_ingress_route_revisions(revision_ref)
+            );
+
+            CREATE TABLE IF NOT EXISTS pwp_ingress_route_revisions (
+                revision_ref TEXT PRIMARY KEY,
+                subject_ref TEXT NOT NULL,
+                revision_seq INTEGER NOT NULL CHECK (revision_seq > 0),
+                previous_revision_ref TEXT UNIQUE,
+                payload_json TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                caused_by_ref TEXT NOT NULL,
+                UNIQUE(subject_ref, revision_seq),
+                FOREIGN KEY (subject_ref) REFERENCES pwp_ingress_routes(ingress_route_ref),
+                FOREIGN KEY (previous_revision_ref)
+                    REFERENCES pwp_ingress_route_revisions(revision_ref)
+            );
+
             CREATE TRIGGER IF NOT EXISTS pwp_project_identity_immutable
             BEFORE UPDATE OF project_ref, created_at ON pwp_projects
             BEGIN SELECT RAISE(ABORT, 'project identity immutable'); END;
@@ -1081,6 +1110,46 @@ class SQLiteStore:
              )
             BEGIN SELECT RAISE(ABORT, 'invalid environment binding pointer advance'); END;
 
+            CREATE TRIGGER IF NOT EXISTS pwp_ingress_route_identity_immutable
+            BEFORE UPDATE OF ingress_route_ref, project_ref, workspace_ref, created_at
+            ON pwp_ingress_routes
+            BEGIN SELECT RAISE(ABORT, 'ingress route identity immutable'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_ingress_route_no_delete
+            BEFORE DELETE ON pwp_ingress_routes
+            BEGIN SELECT RAISE(ABORT, 'ingress route history retained'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_ingress_route_workspace_same_project
+            BEFORE INSERT ON pwp_ingress_routes
+            WHEN NEW.workspace_ref IS NOT NULL AND NOT EXISTS (
+                SELECT 1 FROM pwp_workspaces workspace
+                WHERE workspace.workspace_ref = NEW.workspace_ref
+                  AND workspace.project_ref = NEW.project_ref
+            )
+            BEGIN SELECT RAISE(ABORT, 'ingress route workspace project mismatch'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_ingress_route_state_transition
+            BEFORE UPDATE OF state ON pwp_ingress_routes
+            WHEN NOT (
+                NEW.state = OLD.state
+                OR (OLD.state = 'ACTIVE' AND NEW.state IN ('DISABLED','DEPRECATED','ARCHIVED'))
+                OR (OLD.state = 'DISABLED' AND NEW.state IN ('ACTIVE','DEPRECATED','ARCHIVED'))
+                OR (OLD.state = 'DEPRECATED' AND NEW.state = 'ARCHIVED')
+            )
+            BEGIN SELECT RAISE(ABORT, 'invalid ingress route state transition'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_ingress_route_pointer_advance
+            BEFORE UPDATE OF current_ingress_route_revision_ref ON pwp_ingress_routes
+            WHEN NEW.current_ingress_route_revision_ref IS NOT OLD.current_ingress_route_revision_ref
+             AND NOT EXISTS (
+                SELECT 1 FROM pwp_ingress_route_revisions revision
+                WHERE revision.revision_ref = NEW.current_ingress_route_revision_ref
+                  AND revision.subject_ref = OLD.ingress_route_ref
+                  AND revision.previous_revision_ref IS OLD.current_ingress_route_revision_ref
+                  AND revision.revision_seq = CASE
+                      WHEN OLD.current_ingress_route_revision_ref IS NULL THEN 1
+                      ELSE (SELECT revision_seq + 1 FROM pwp_ingress_route_revisions
+                            WHERE revision_ref = OLD.current_ingress_route_revision_ref)
+                  END
+             )
+            BEGIN SELECT RAISE(ABORT, 'invalid ingress route pointer advance'); END;
+
             CREATE TRIGGER IF NOT EXISTS pwp_project_config_immutable
             BEFORE UPDATE ON pwp_project_config_revisions
             BEGIN SELECT RAISE(ABORT, 'PWP revision immutable'); END;
@@ -1104,6 +1173,12 @@ class SQLiteStore:
             BEGIN SELECT RAISE(ABORT, 'PWP revision immutable'); END;
             CREATE TRIGGER IF NOT EXISTS pwp_environment_binding_no_delete
             BEFORE DELETE ON pwp_environment_binding_revisions
+            BEGIN SELECT RAISE(ABORT, 'PWP revision retained'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_ingress_route_revision_immutable
+            BEFORE UPDATE ON pwp_ingress_route_revisions
+            BEGIN SELECT RAISE(ABORT, 'PWP revision immutable'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_ingress_route_revision_no_delete
+            BEFORE DELETE ON pwp_ingress_route_revisions
             BEGIN SELECT RAISE(ABORT, 'PWP revision retained'); END;
             """
         )
