@@ -272,19 +272,34 @@ class EffectAuthority:
             if row is None:
                 raise EffectError("UNRESOLVED_EFFECT_OPERATION")
             current = HistoricalOutcome(row["historical_outcome"])
-            if current == outcome:
-                if row["historical_outcome_evidence_json"] != evidence_json:
-                    raise EffectError("EFFECT_HISTORICAL_OUTCOME_REPLAY_CONFLICT")
+            accepted = connection.execute(
+                """
+                SELECT evidence_json
+                FROM effect_historical_outcome_refinements
+                WHERE operation_ref = ? AND historical_outcome = ?
+                """,
+                (operation_ref, outcome.value),
+            ).fetchone()
+            if accepted is not None:
+                if accepted["evidence_json"] != evidence_json:
+                    raise EffectError(
+                        "EFFECT_HISTORICAL_OUTCOME_REPLAY_CONFLICT"
+                    )
                 return self._operation_from_row(
                     connection.execute(
                         "SELECT * FROM effect_operations WHERE operation_ref = ?",
                         (operation_ref,),
                     ).fetchone()
                 )
+            if current == outcome:
+                raise EffectError("EFFECT_HISTORICAL_OUTCOME_REPLAY_CONFLICT")
             if self._historical_outcome_rank(outcome) <= self._historical_outcome_rank(
                 current
             ):
                 raise EffectError("EFFECT_HISTORICAL_OUTCOME_DOWNGRADE")
+            self._record_historical_refinement_with(
+                connection, operation_ref, outcome, evidence_json
+            )
             connection.execute(
                 """
                 UPDATE effect_operations
@@ -366,6 +381,13 @@ class EffectAuthority:
                             "consequence": "NONE_PROVEN",
                         },
                     )
+                    if current["historical_outcome"] == "UNKNOWN":
+                        self._record_historical_refinement_with(
+                            connection,
+                            operation.operation_ref,
+                            HistoricalOutcome.KNOWN,
+                            historical_evidence,
+                        )
                     connection.execute(
                         """
                         UPDATE effect_operations
@@ -474,7 +496,10 @@ class EffectAuthority:
         )
         with self._store.transaction() as connection:
             row = connection.execute(
-                "SELECT state, dispatch_admission_ref FROM effect_operations WHERE operation_ref = ?",
+                """
+                SELECT state, dispatch_admission_ref, historical_outcome
+                FROM effect_operations WHERE operation_ref = ?
+                """,
                 (operation.operation_ref,),
             ).fetchone()
             if row is None:
@@ -486,6 +511,13 @@ class EffectAuthority:
                 or row["dispatch_admission_ref"] is None
             ):
                 raise EffectError("EFFECT_COMPLETION_NOT_ALLOWED")
+            if row["historical_outcome"] != "KNOWN":
+                self._record_historical_refinement_with(
+                    connection,
+                    operation.operation_ref,
+                    HistoricalOutcome.KNOWN,
+                    historical_evidence,
+                )
             connection.execute(
                 """
                 UPDATE effect_operations
@@ -510,7 +542,10 @@ class EffectAuthority:
         )
         with self._store.transaction() as connection:
             row = connection.execute(
-                "SELECT state FROM effect_operations WHERE operation_ref = ?",
+                """
+                SELECT state, historical_outcome
+                FROM effect_operations WHERE operation_ref = ?
+                """,
                 (operation.operation_ref,),
             ).fetchone()
             if row is None:
@@ -519,6 +554,13 @@ class EffectAuthority:
                 return
             if row["state"] not in {"PREPARED", "REVOKE_REQUESTED"}:
                 raise EffectError("EFFECT_FENCE_NOT_ALLOWED")
+            if row["historical_outcome"] == "UNKNOWN":
+                self._record_historical_refinement_with(
+                    connection,
+                    operation.operation_ref,
+                    HistoricalOutcome.KNOWN,
+                    historical_evidence,
+                )
             connection.execute(
                 """
                 UPDATE effect_operations
@@ -714,6 +756,34 @@ class EffectAuthority:
                 "outcome": outcome.value,
                 "schema": 1,
             }
+        )
+
+    @staticmethod
+    def _record_historical_refinement_with(
+        connection: sqlite3.Connection,
+        operation_ref: str,
+        outcome: HistoricalOutcome,
+        evidence_json: str,
+    ) -> None:
+        existing = connection.execute(
+            """
+            SELECT evidence_json
+            FROM effect_historical_outcome_refinements
+            WHERE operation_ref = ? AND historical_outcome = ?
+            """,
+            (operation_ref, outcome.value),
+        ).fetchone()
+        if existing is not None:
+            if existing["evidence_json"] != evidence_json:
+                raise EffectError("EFFECT_HISTORICAL_OUTCOME_REPLAY_CONFLICT")
+            return
+        connection.execute(
+            """
+            INSERT INTO effect_historical_outcome_refinements(
+                operation_ref, historical_outcome, evidence_json
+            ) VALUES (?, ?, ?)
+            """,
+            (operation_ref, outcome.value, evidence_json),
         )
 
     @classmethod
