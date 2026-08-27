@@ -7,7 +7,7 @@
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Development Director: `ACTIVE — Global Development Coordination Authority`
 - Coordination Epoch: `2`
-- Coordination Revision: `109`
+- Coordination Revision: `110`
 - Last Accepted Production Commit: `e47511aef987cd9fa5c171e319971f90ab549bd2`
 - Canonical Repository Finalization Merge: `8962743bfbc6385bf58ebb31a63f5e5442c5f391`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
@@ -15,25 +15,49 @@
 - Current Mode: `SINGLE FOUNDATIONAL PRODUCTION TRACK / PWP CORE`
 - Orchestration Plan: `coordination/plans/FOUNDATION_WAVE_2_Plan_v0.1.md`
 - Track Board: `coordination/plans/FOUNDATION_WAVE_2_Track_Board_v0.1.md`
-- Parallelism Limit: `MAX 2 ACTIVE PRODUCTION TRACKS; CURRENTLY 1`
+- Parallelism Policy: `DYNAMIC / DEPENDENCY + WRITE-SURFACE + REVIEW + INTEGRATION CAPACITY DRIVEN`
 
 ## Foundation Wave 2 Track Board
 
 | Track | State | Track Orchestrator | Current Dependency / Gate |
 |---|---|---|---|
 | `Track A — PWP / Context Backbone` | `ACTIVE` | `Web GPT — Track A PWP / Context Backbone Orchestrator / WINDOW REQUIRED` | Task 116 → implementation → independent exact-SHA review → stable candidate |
-| `Track B — Distribution / Module Ecosystem` | `STAGED / BLOCKED` | `UNASSIGNED UNTIL READY` | reviewed Director-accepted PWP Core + no unresolved Contract dependency + no write-surface overlap |
-| `Track C — Human Interaction / Approval` | `STAGED / BLOCKED` | `UNASSIGNED UNTIL READY` | reviewed Director-accepted PWP Core + no unresolved Contract dependency + no write-surface overlap |
-| `Track D — External Interfaces / Workspace Boundary` | `DEFERRED / BLOCKED` | `UNASSIGNED` | stable required PWP context and later B/C checkpoint readiness |
+| `Track B — Distribution / Module Ecosystem` | `STAGED / BLOCKED` | `UNASSIGNED UNTIL READY` | reviewed Director-accepted PWP Core + no unresolved Contract dependency + isolated write surface |
+| `Track C — Human Interaction / Approval` | `STAGED / BLOCKED` | `UNASSIGNED UNTIL READY` | reviewed Director-accepted PWP Core + no unresolved Contract dependency + isolated write surface |
+| `Track D — External Interfaces / Workspace Boundary` | `DEFERRED / BLOCKED` | `UNASSIGNED` | stable required PWP context and dependency checkpoint readiness |
 | `Track E — Product / Visual Workflow` | `DEFERRED` | `UNASSIGNED` | System Foundation readiness |
 
-Track-level execution details remain in Track-local Task / Result / Checkpoint records. Global STATUS records only Gate, accepted candidate, blocker, architecture escalation, integration state and active Track facts.
+Track-level execution details remain in Track-local Task / Result / Review / Checkpoint records. Global STATUS records only Gate, accepted candidate, blocker, architecture escalation, integration state and active Track facts.
+
+## Mandatory File-Based Coordination Protocol
+
+Development Director, Track Orchestrators and Execution Agents must use Repository files as the formal development handoff channel and obey:
+
+- `coordination/TASK_PROTOCOL.md`
+- `coordination/OUTPUT_FORMAT.md`
+- `coordination/REVIEW_PROTOCOL.md`
+- `coordination/WORKFLOW.md`
+
+`coordination/OUTPUT_FORMAT.md` is mandatory Required Reading for all Orchestrator sessions and must be included in formal execution/review Task reading where applicable.
+
+Formal chain:
+
+```text
+Task
+→ Result
+→ Review / Re-Review Result
+→ Checkpoint / Stable Candidate evidence
+```
+
+Chat is trigger / notification / concise status only. Operator does not forward formal Results between Agents and Orchestrators.
 
 ## Active / Routed Tasks
 
 | Task | Route | State | Track / Purpose |
 |---|---|---|---|
-| `NYRON-T-20260827-116` | `Track A Orchestrator → Claude implementation` | `READY / R109` | Track A — PWP Core identity / immutable revision / historical resolution foundation |
+| `NYRON-T-20260827-116` | `Track A Orchestrator → Claude implementation` | `READY / BASED ON R109 / RECHECK_IF_UNAFFECTED` | Track A — PWP Core identity / immutable revision / historical resolution foundation |
+
+Task 116 was not recreated. Revision 110 changes coordination/file-protocol and parallelism policy only; it does not alter Task 116 PWP production semantics. Its declared `RECHECK_AND_CONTINUE_IF_UNAFFECTED` stale policy therefore requires the Track A Orchestrator / Executor to re-read current coordination state before execution and continue only if the task remains semantically unaffected.
 
 No Distribution, Human Interaction, External Interfaces, or Product production task is authorized until the PWP Core candidate has completed its required independent exact-SHA review and is accepted by the Development Director as a stable dependency candidate.
 
@@ -88,7 +112,8 @@ Track B may activate only after all are true:
 - Track A PWP Core is independently reviewed and accepted by the Development Director as a stable candidate;
 - D-007 remains the frozen Distribution authority;
 - exact Project / Workspace / config / policy context required by Distribution is available without new unfrozen cross-owner semantics;
-- no overlapping production write surface exists with another active production track;
+- production write surfaces can be safely isolated from other active production tracks;
+- sufficient independent review and integration capacity exists;
 - `Import != Trust`, `Resolve != Enable`, exact `module_ref@version` identity, and CapabilityGrant non-ownership remain preserved.
 
 ### Track C Dependency-Ready Criteria
@@ -98,7 +123,8 @@ Track C may activate only after all are true:
 - Track A PWP Core is independently reviewed and accepted by the Development Director as a stable candidate;
 - D-009 remains the frozen Human Interaction / Approval authority;
 - required Project / Workspace / policy context references are available without new unfrozen admission/foreign-owner semantics;
-- no overlapping production write surface exists with another active production track;
+- production write surfaces can be safely isolated from other active production tracks;
+- sufficient independent review and integration capacity exists;
 - HumanRequest / HumanResponse / HumanDecisionEvidence ownership remains separate from Runtime canonical execution truth;
 - suspension/resume integration waits for its concrete frozen cross-owner dependency surface.
 
@@ -106,11 +132,10 @@ Track C may activate only after all are true:
 
 After reviewed PWP Core stability:
 
-1. bounded parallel Distribution / Module Ecosystem implementation;
-2. bounded parallel Human Interaction / Approval Authority implementation;
-3. External Interfaces / Workspace implementation after context dependencies stabilize;
-4. Foundation cross-system exact-SHA integration and independent review;
-5. Product Node / Visual Workflow UX after Foundation readiness.
+1. activate any dependency-ready Distribution / Module Ecosystem and Human Interaction / Approval Authority tracks according to dynamic parallelism policy;
+2. activate External Interfaces / Workspace only after its required context/security dependencies stabilize;
+3. Foundation cross-system exact-SHA integration and independent review;
+4. Product Node / Visual Workflow UX after Foundation readiness.
 
 This ordering is orchestration only and does not amend frozen architecture.
 
@@ -139,8 +164,17 @@ This ordering is orchestration only and does not amend frozen architecture.
 - Task 116 metadata is ratified at Revision 109 and its stale policy is aligned to the protocol enum `RECHECK_AND_CONTINUE_IF_UNAFFECTED`.
 - Track B and Track C are staged only; their dependency-ready criteria are recorded and they are not authorized for production yet.
 - Track D remains deferred/high-risk and Track E remains deferred.
-- Parallelism remains `MAX 2 ACTIVE PRODUCTION TRACKS`, with only Track A active now.
 - `Last Accepted Production Commit` remains `e47511aef987cd9fa5c171e319971f90ab549bd2`.
+
+## Revision 110 Decision
+
+- File-based Task / Result / Review / Re-Review / Checkpoint protocol is reaffirmed as mandatory Repository Truth for all three coordination levels.
+- `coordination/OUTPUT_FORMAT.md` is mandatory Required Reading for all Orchestrators and formal task execution/review flows.
+- Track Orchestrators must write/read formal Repository artifacts before reporting concise Track status to the Development Director; Operator is not a manual Result relay.
+- Agent chat completion defaults to `TASK DONE` or `TASK BLOCKED` after the required Repository evidence is written.
+- Foundation production parallelism is changed from a fixed `MAX 2` limit to a dynamic, need-driven policy controlled by dependency readiness, write-surface isolation, review capacity, integration capacity and risk.
+- The current single Track A state is unchanged because PWP Core is still a dependency gate for downstream Wave-2 tracks; this is not a numeric concurrency restriction.
+- Task 116 production semantics and Last Accepted Production remain unchanged.
 
 ## Gate-6A Closure
 
@@ -186,7 +220,9 @@ Formal Agent handoff is file-based:
 
 - Task instruction: `coordination/tasks/<TaskID>.md`
 - Agent result: `coordination/results/<TaskID>.md` on the Agent task/result branch
-- Orchestrator reads Repository result directly; user only reports that the Task is done.
+- Review / Re-Review result follows `coordination/OUTPUT_FORMAT.md`
+- Checkpoint: `coordination/checkpoints/<TaskID>-<CheckpointID>.md`
+- Development Director / Track Orchestrator reads Repository evidence directly; user only receives concise routing/status when needed.
 - Chat/session is trigger/status only, not the durable handoff channel.
 - Agents must not update this STATUS file unless a Task explicitly grants authority.
 
