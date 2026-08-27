@@ -649,6 +649,16 @@ class SQLiteStore:
                 SELECT RAISE(ABORT, 'effect historical refinement immutable');
             END;
 
+            CREATE TRIGGER IF NOT EXISTS effect_historical_refinement_no_delete
+            BEFORE DELETE ON effect_historical_outcome_refinements
+            WHEN EXISTS (
+                SELECT 1 FROM effect_operations
+                WHERE operation_ref = OLD.operation_ref
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'effect historical refinement immutable');
+            END;
+
             CREATE TRIGGER IF NOT EXISTS effect_operation_immutable_fields
             BEFORE UPDATE ON effect_operations
             WHEN NEW.operation_ref != OLD.operation_ref

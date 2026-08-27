@@ -877,10 +877,16 @@ class EffectOperationFoundationTest(unittest.TestCase):
 
     def test_historical_outcome_refinement_evidence_is_immutable(self):
         self.effect.prepare(self._request())
+        partial_evidence = {"evidence_ref": "evidence:partial/immutable"}
         self.effect.refine_historical_outcome(
             OPERATION,
             HistoricalOutcome.PARTIAL,
-            {"evidence_ref": "evidence:partial/immutable"},
+            partial_evidence,
+        )
+        known = self.effect.refine_historical_outcome(
+            OPERATION,
+            HistoricalOutcome.KNOWN,
+            {"evidence_ref": "evidence:known/immutable"},
         )
         with self.assertRaises(sqlite3.IntegrityError):
             self.store.connection.execute(
@@ -891,6 +897,76 @@ class EffectOperationFoundationTest(unittest.TestCase):
                 """,
                 (OPERATION,),
             )
+        before_delete = self.store.connection.execute(
+            """
+            SELECT evidence_json
+            FROM effect_historical_outcome_refinements
+            WHERE operation_ref = ? AND historical_outcome = 'PARTIAL'
+            """,
+            (OPERATION,),
+        ).fetchone()
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.store.connection.execute(
+                """
+                DELETE FROM effect_historical_outcome_refinements
+                WHERE operation_ref = ? AND historical_outcome = 'PARTIAL'
+                """,
+                (OPERATION,),
+            )
+        self.assertEqual(
+            before_delete,
+            self.store.connection.execute(
+                """
+                SELECT evidence_json
+                FROM effect_historical_outcome_refinements
+                WHERE operation_ref = ? AND historical_outcome = 'PARTIAL'
+                """,
+                (OPERATION,),
+            ).fetchone(),
+        )
+        self.assertEqual(
+            known,
+            self.effect.refine_historical_outcome(
+                OPERATION, HistoricalOutcome.PARTIAL, partial_evidence
+            ),
+        )
+
+        self.store.close()
+        self.store = SQLiteStore(self.database)
+        self.runtime = RuntimeAuthorityResolver(self.store)
+        self.registry = CapabilityTypeRegistry(self.store)
+        self.capability = self._capability_authority()
+        self.resource = ResourceManager(
+            self.store, self.root, self.runtime, lambda: self.now
+        )
+        self.effect = self._effect_authority()
+        self.assertEqual(
+            before_delete,
+            self.store.connection.execute(
+                """
+                SELECT evidence_json
+                FROM effect_historical_outcome_refinements
+                WHERE operation_ref = ? AND historical_outcome = 'PARTIAL'
+                """,
+                (OPERATION,),
+            ).fetchone(),
+        )
+        self.assertEqual(
+            known,
+            self.effect.refine_historical_outcome(
+                OPERATION, HistoricalOutcome.PARTIAL, partial_evidence
+            ),
+        )
+        with self.assertRaises(EffectError) as conflicting:
+            self.effect.refine_historical_outcome(
+                OPERATION,
+                HistoricalOutcome.PARTIAL,
+                {"evidence_ref": "evidence:partial/conflict"},
+            )
+        self.assertEqual(
+            "EFFECT_HISTORICAL_OUTCOME_REPLAY_CONFLICT",
+            conflicting.exception.code,
+        )
 
     def test_legacy_terminal_rows_migrate_to_deterministic_known_history(self):
         completed_ref = "effect-operation:legacy/completed"
