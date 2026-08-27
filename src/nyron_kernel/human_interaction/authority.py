@@ -36,10 +36,10 @@ class HumanInteractionAuthority:
     """Own requests, accepted responses, lifecycle, and decision evidence."""
 
     _SUPPORTED_POLICY = (
-        "AT_LEAST",
-        "APPROVAL_THRESHOLD",
+        "FIRST_VALID",
+        "RESPONSE_DECISION",
         "COUNT_ONCE",
-        "DENY_VETO",
+        "FIRST_RESPONSE",
         "REJECT_AFTER_TERMINAL",
         "1",
     )
@@ -270,15 +270,9 @@ class HumanInteractionAuthority:
             "SELECT human_response_ref, principal_ref, decision FROM human_responses WHERE human_request_ref = ? ORDER BY human_response_ref",
             (request.human_request_ref,),
         ).fetchall()
-        outcome = None
-        if any(row["decision"] == ResponseDecision.DENY.value for row in rows):
-            outcome = "DENIED"
-        else:
-            principals = {row["principal_ref"] for row in rows if row["decision"] == ResponseDecision.APPROVE.value}
-            if len(principals) >= policy.required_approval_count:
-                outcome = "APPROVED"
-        if outcome is None:
-            return
+        if len(rows) != 1:
+            raise HumanInteractionConflict("FIRST_VALID policy must have exactly one accepted response")
+        outcome = "APPROVED" if rows[0]["decision"] == ResponseDecision.APPROVE.value else "DENIED"
         refs = tuple(row["human_response_ref"] for row in rows)
         evidence_ref = "human-decision:" + _semantic_hash({
             "request": request.human_request_ref,
@@ -308,7 +302,7 @@ class HumanInteractionAuthority:
             policy.cardinality_rule, policy.decision_rule, policy.duplicate_principal_rule,
             policy.conflict_rule, policy.expiry_behavior, policy.policy_version,
         )
-        if actual != self._SUPPORTED_POLICY or policy.required_approval_count < 1:
+        if actual != self._SUPPORTED_POLICY or policy.required_approval_count != 1:
             raise UnsupportedResponsePolicy("response policy semantics are unsupported in v0.1")
 
     @staticmethod

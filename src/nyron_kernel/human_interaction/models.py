@@ -23,11 +23,11 @@ class ResponseDecision(StrEnum):
 class ResponsePolicyRevision:
     response_policy_ref: str
     responder_selector_ref: str
-    required_approval_count: int
-    cardinality_rule: str = "AT_LEAST"
-    decision_rule: str = "APPROVAL_THRESHOLD"
+    required_approval_count: int = 1
+    cardinality_rule: str = "FIRST_VALID"
+    decision_rule: str = "RESPONSE_DECISION"
     duplicate_principal_rule: str = "COUNT_ONCE"
-    conflict_rule: str = "DENY_VETO"
+    conflict_rule: str = "FIRST_RESPONSE"
     expiry_behavior: str = "REJECT_AFTER_TERMINAL"
     policy_version: str = "1"
 
