@@ -154,8 +154,14 @@ def test_module_requires_existing_exact_package_provenance() -> None:
         "module.example/transform@latest",
         "module.example/transform@current",
         "module.example/transform@^3.4",
+        "module.example/transform@~1.2",
         "module.example/transform@>=3",
+        "module.example/transform@<=3",
+        "module.example/transform@>3",
+        "module.example/transform@<3",
         "module.example/transform@3.*",
+        "module.example/transform@>=1,<2",
+        "module.example/transform@1||2",
         "module.example/transform@",
         "@3.4.0",
         "module.example@transform@3.4.0",
@@ -197,19 +203,28 @@ def test_record_apis_reject_ambiguous_identity_components(record, error: str) ->
                 authority.record_module_version(candidate)
 
 
-def test_opaque_structurally_exact_version_is_accepted() -> None:
-    with SQLiteStore() as store:
+@pytest.mark.parametrize("exact_version", ["release=2026", "release|2026"])
+def test_opaque_structurally_exact_version_is_accepted(
+    tmp_path: Path, exact_version: str
+) -> None:
+    database = tmp_path / "distribution.sqlite"
+    with SQLiteStore(database) as store:
         authority = DistributionAuthority(store)
-        exact_package = package(package_version="release/2026.08-build_7")
+        exact_package = package(package_version=exact_version)
         exact_module = module(
-            module_version="release/2026.08-build_7",
+            module_version=exact_version,
             package_version=exact_package.package_version,
         )
         authority.record_package_version(exact_package)
         authority.record_module_version(exact_module)
         assert authority.resolve_exact_module(
-            "module.example/transform@release/2026.08-build_7"
-        ).module_version == "release/2026.08-build_7"
+            f"module.example/transform@{exact_version}"
+        ).module_version == exact_version
+
+    with SQLiteStore(database) as reopened:
+        assert DistributionAuthority(reopened).resolve_exact_module(
+            f"module.example/transform@{exact_version}"
+        ).module_version == exact_version
 
 
 def test_raw_sqlite_identity_rows_are_immutable() -> None:
