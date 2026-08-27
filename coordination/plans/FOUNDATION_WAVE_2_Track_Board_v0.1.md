@@ -3,7 +3,7 @@
 Status: `ACTIVE COORDINATION BOARD / NOT ARCHITECTURE`
 Authority: `Development Director / Global Development Coordination Authority`
 Coordination Epoch: `2`
-Effective Coordination Revision: `110`
+Effective Coordination Revision: `111`
 Date: `2026-08-27`
 
 ## Purpose
@@ -38,7 +38,8 @@ Repository files are the formal handoff channel. Chat is trigger, notification a
   2. no overlapping mutable production write surface, or safe physical isolation exists;
   3. required independent review capacity exists for the resulting risk level;
   4. integration checkpoint capacity is sufficient to avoid accumulating uncontrolled unreviewed foundational surfaces.
-- Until PWP Core completes required independent exact-SHA review and is accepted as a stable dependency candidate, only Track A may run Foundation Wave 2 production implementation. This is a dependency gate, not a concurrency quota.
+- PWP Core exact stable candidate `f3b6b0d022111dfc854f537c361ca5eb46516584` is independently re-reviewed and Development-Director accepted for downstream dependency use.
+- This dependency acceptance does not itself change `Last Accepted Production` and does not mean GLOBAL ACCEPTED.
 - Frozen semantics or Owner-boundary changes require `ESCALATION_REQUIRED` to the Development Director and, when architectural, routing to the Lead Design Authority.
 - Implementation Agent must differ from Independent Reviewer for high-risk production.
 
@@ -46,10 +47,10 @@ Repository files are the formal handoff channel. Chat is trigger, notification a
 
 | Track | Scope | Track Orchestrator | State | Current Gate / Dependency |
 |---|---|---|---|---|
-| `Track A — PWP / Context Backbone` | Project, Workspace, immutable config/context revisions, policy/environment binding, later IngressRoute/admission context integration | `Web GPT — Track A PWP / Context Backbone Orchestrator` | `ACTIVE / ORCHESTRATOR WINDOW REQUIRED` | `PWP CORE` — Task 116 only |
-| `Track B — Distribution / Module Ecosystem` | Import, Resolve, Install, package/module identity, Registry, Trust, Enable | `UNASSIGNED UNTIL READY` | `STAGED / BLOCKED` | Requires reviewed stable PWP Core candidate + dependency/write-surface clearance |
-| `Track C — Human Interaction / Approval` | HumanRequest, HumanResponse, HumanDecisionEvidence, approval aggregation, suspension/resume, response ingress | `UNASSIGNED UNTIL READY` | `STAGED / BLOCKED` | Requires reviewed stable PWP Core candidate + dependency/write-surface clearance |
-| `Track D — External Interfaces / Workspace Boundary` | Filesystem, Process, Network, Browser, Provider, Workspace Handle, external effects/containment/ingress adapters | `UNASSIGNED` | `DEFERRED / BLOCKED` | Opens only after required PWP context is stable and later dependency checkpoints are ready |
+| `Track A — PWP / Context Backbone` | Project, Workspace, immutable config/context revisions, policy/environment binding, later IngressRoute/admission context integration | `Web GPT — Track A PWP / Context Backbone Orchestrator` | `STABLE / IDLE` | PWP Core accepted for downstream dependency use at `f3b6b0d022111dfc854f537c361ca5eb46516584`; later Track-A slices require new Track-local Task |
+| `Track B — Distribution / Module Ecosystem` | Import, Resolve, Install, package/module identity, Registry, Trust, Enable | `Web GPT — Track B Distribution / Module Ecosystem Orchestrator / WINDOW REQUIRED` | `READY / ORCHESTRATOR WINDOW REQUIRED` | PWP dependency satisfied; Track Orchestrator must verify D-007/read-write isolation before creating production Tasks |
+| `Track C — Human Interaction / Approval` | HumanRequest, HumanResponse, HumanDecisionEvidence, approval aggregation, suspension/resume, response ingress | `Web GPT — Track C Human Interaction / Approval Orchestrator / WINDOW REQUIRED` | `READY / ORCHESTRATOR WINDOW REQUIRED` | PWP dependency satisfied; Track Orchestrator must verify D-009/read-write isolation before creating production Tasks |
+| `Track D — External Interfaces / Workspace Boundary` | Filesystem, Process, Network, Browser, Provider, Workspace Handle, external effects/containment/ingress adapters | `UNASSIGNED` | `DEFERRED / BLOCKED` | PWP dependency is now satisfied; activation still waits for required B/C dependency checkpoints and security/integration readiness |
 | `Track E — Product / Visual Workflow` | Product Node, Visual Workflow, UI/UX, execution presentation, approval UI, run history, recovery/debug presentation | `UNASSIGNED` | `DEFERRED` | Foundation readiness required; D-006 remains downstream |
 
 ## Track-Local File Protocol
@@ -88,67 +89,57 @@ Next Milestone:
 
 The Development Director reads the underlying Repository Result / Review / Checkpoint directly. Operator is not an inter-Agent message queue.
 
-## Track A — Current Directive
+## Track A — Director-Accepted Stable Candidate
 
-Current formal production Task:
+Stable candidate chain:
 
-`NYRON-T-20260827-116 — PWP Core Identity / Immutable Revision / Historical Resolution Foundation`
+- Task 116 implementation delivery: `eec8df1b364b1008c60a1594b245e7016d338dc7`.
+- Independent Review Task 117: `FAIL` with blocking Finding `NYRON-T-20260827-117-F-001`.
+- Targeted Fix Task 118 final delivery-content SHA: `f3b6b0d022111dfc854f537c361ca5eb46516584`.
+- Targeted Re-Review Task 119: `PASS` on exact SHA `f3b6b0d022111dfc854f537c361ca5eb46516584`.
+- Open Findings: `NONE`.
+- New Findings: `NONE`.
+- Complete kernel validation: `436 passed, 2 skipped, 380 subtests passed`.
+- Stable-candidate checkpoint: `coordination/checkpoints/NYRON-T-20260827-116-STABLE-CANDIDATE.md`.
 
-Task 116 is not recreated. It remains the existing HIGH-risk implementation Task and is assigned to Track A.
+Development Director disposition:
 
-Track A Orchestrator responsibilities for this task:
+`ACCEPTED FOR DOWNSTREAM DEPENDENCY USE / NOT GLOBAL PRODUCTION ACCEPTANCE`
 
-- route the existing Task 116 to the assigned implementation lane;
-- maintain Track-local progress / checkpoint / Result awareness;
-- require exact remote delivery identity;
-- route independent exact-SHA review after implementation Result;
-- route targeted fix / re-review when needed;
-- report Stable Candidate only after review closure;
-- escalate frozen-semantics or cross-owner uncertainty rather than designing around it.
-
-## Track A Stable-Candidate Exit Criteria
-
-Track A may report `STABLE CANDIDATE` only when:
-
-1. Task 116 has a formal remote Result with exact production/test content SHA;
-2. required validation is complete and honestly evidenced;
-3. no blocking implementation/contract/architecture/security finding remains open;
-4. independent exact-SHA review is `PASS` or accepted `PASS_WITH_FINDINGS` with no blocking finding;
-5. PWP ownership and historical-resolution semantics remain within D-010 + PWP Amendment 001;
-6. Development Director accepts the candidate for downstream dependency use.
+`Last Accepted Production` remains unchanged until a later explicit global acceptance/integration decision.
 
 ## Track B Dependency-Ready Criteria
 
-Track B may be activated only when:
+Track B may create production Tasks only when its Track Orchestrator confirms at task-routing time:
 
-- Track A PWP Core is a Director-accepted reviewed stable candidate;
 - D-007 remains the frozen authority for Distribution semantics;
-- exact Project / Workspace / config / policy context references needed by Distribution are available without inventing new cross-owner Contract semantics;
+- exact Project / Workspace / config / policy context references needed by Distribution are available from the Director-accepted PWP stable candidate without inventing new cross-owner Contract semantics;
 - planned Distribution production writes can be isolated from other active production tracks;
+- sufficient independent review and integration capacity exists;
 - `Import != Trust`, `Resolve != Enable`, and exact `module_ref@version` identity remain preserved;
 - Distribution does not create or mutate CapabilityGrant authority.
 
 ## Track C Dependency-Ready Criteria
 
-Track C may be activated only when:
+Track C may create production Tasks only when its Track Orchestrator confirms at task-routing time:
 
-- Track A PWP Core is a Director-accepted reviewed stable candidate;
 - D-009 remains the frozen authority for Human Interaction / Approval semantics;
-- required Project / Workspace / policy context references are available without inventing admission or foreign-owner semantics;
+- required Project / Workspace / policy context references are available from the Director-accepted PWP stable candidate without inventing admission or foreign-owner semantics;
 - planned Human Interaction production writes can be isolated from other active production tracks;
+- sufficient independent review and integration capacity exists;
 - HumanRequest / HumanResponse / HumanDecisionEvidence ownership remains separate from Runtime canonical execution truth;
 - Runtime suspension/resume integration is not started until the corresponding frozen cross-owner contract surface is concretely dependency-ready.
 
 ## Next Global Milestone
 
-`PWP CORE STABLE CANDIDATE`
+`TRACK B + TRACK C ORCHESTRATOR ACTIVATION`
 
 Sequence:
 
 ```text
-Task 116 implementation Result
-→ independent exact-SHA review
-→ targeted fix / re-review if required
-→ Director acceptance of PWP Core stable candidate
-→ dependency-driven activation decision for Track B / C and any other eligible Track
+Director accepts PWP Core stable candidate for dependency use
+→ Operator opens Track B and Track C Orchestrator windows
+→ each Orchestrator restores Repository Truth and verifies dependency/write-surface readiness
+→ each Orchestrator creates Track-local formal implementation Tasks
+→ bounded parallel production begins under dynamic parallelism policy
 ```
