@@ -11,42 +11,43 @@ This file records current operational availability only. It does not define perm
 | Agent | Availability | Default Use While State Applies |
 |---|---|---|
 | `Claude` | `UNAVAILABLE` | Do not assign new implementation, fix, review, re-review, or specialist work. Do not request a new Claude window. |
-| `Codex` | `UNAVAILABLE — QUOTA EXHAUSTED / CLOSEOUT HOLD` | Do not dispatch new Codex work until the Operator explicitly restores capacity. Already completed Repository deliveries remain valid; pending mandatory high-risk reviews stay pending rather than being downgraded or reassigned to an ineligible reviewer. |
-| `DeepSeek` | `AVAILABLE` | Preferred lane for bounded non-production contract tracing, low-risk implementation, mechanical/schema consistency, regression and targeted verification where risk permits. DeepSeek may provide supplementary/pre-review evidence for high-risk work, but does not by itself satisfy final high-risk acceptance review where `REVIEW_PROTOCOL.md` requires Codex/Claude-class review. |
+| `Codex` | `AVAILABLE — CLOSEOUT ONLY / LIMITED WEEKLY CAPACITY` | Operator has restored Codex capacity, but remaining weekly quota is limited. Use only for mandatory high-risk exact-SHA review/re-review, blocking fixes required by those reviews, and final closeout verification. Do not reopen broad parallel development. |
+| `DeepSeek` | `AVAILABLE` | Preferred lane for bounded non-production contract tracing, low-risk implementation, localization work, mechanical/schema consistency, regression and targeted verification where risk permits. DeepSeek may provide supplementary/pre-review evidence for high-risk work, but does not by itself satisfy final high-risk acceptance review where `REVIEW_PROTOCOL.md` requires Codex/Claude-class review. |
 | `GPT / Web GPT` | `AVAILABLE FOR ORCHESTRATION` | Development Director / Track coordination; not default production implementation or substitute high-risk final reviewer. |
 
 ## Mandatory Routing Rule
 
-While Claude is `UNAVAILABLE` and Codex quota is exhausted:
+While Claude is `UNAVAILABLE` and Codex is restored with limited weekly capacity:
 
 - do not create or dispatch new Claude assignments;
-- do not dispatch new Codex assignments until capacity is explicitly restored;
+- do not reopen broad Codex parallelism;
 - preserve already-delivered candidates and their exact-SHA review targets;
 - high-risk `Implementation Agent != Independent Reviewer` remains mandatory;
-- do not downgrade a mandatory high-risk exact-SHA review to DeepSeek solely because Codex quota is unavailable;
-- DeepSeek may perform bounded low-risk/mechanical work, targeted verification, or supplementary pre-review where useful, but such work does not close a high-risk independent-review gate by itself;
-- if no currently available agent satisfies the required risk/independence class, keep the delivery `PENDING_INDEPENDENT_REVIEW` / capacity-held rather than weakening the gate;
+- reserve Codex for mandatory high-risk exact-SHA review/re-review, any blocking fix needed to close those reviews, and final closeout verification;
+- DeepSeek may perform bounded low-risk/mechanical work, localization work, targeted verification, or supplementary pre-review where useful, but such work does not close a high-risk independent-review gate by itself;
 - capacity pressure never authorizes weakening architecture, security, Owner boundaries, stale-check rules, exact-SHA requirements, or independent review.
 
 ## Execution Mode Failover
 
-When Codex capacity is available, assignments may begin in Chat mode. If a Codex session encounters tool execution, repository-write, workspace, or environment errors and there is no durable Task-scoped technical/architecture blocker evidence, treat that signal first as an execution-mode failure rather than a Product blocker.
+Codex assignments may begin in Chat mode. If a Codex session encounters tool execution, repository-write, workspace, or environment errors and there is no durable Task-scoped technical/architecture blocker evidence, treat that signal first as an execution-mode failure rather than a Product blocker.
 
 The Operator may continue the **same Task ID and Scope** in Work mode. A Chat → Work mode switch does not create a new Task, does not reset the required base/SHA, and does not waive Result/checkpoint/review requirements. Only durable Repository evidence may establish a substantive blocker.
 
 ## Closeout Priority
 
-When eligible reviewer capacity is restored, current closeout priority is:
+Current closeout priority is deliberately sequential to conserve weekly Codex capacity:
 
-1. complete mandatory exact-SHA review for Task 142 (`NYRON-T-20260827-148`);
-2. complete mandatory exact-SHA review for Task 144;
+1. complete Task `NYRON-T-20260827-149` — independent exact-SHA review of Task 144 Effect historical-outcome orthogonality;
+2. if Task 149 is PASS or otherwise does not consume a blocking-fix cycle, complete Task `NYRON-T-20260827-148` — independent exact-SHA review of Task 142 PWP IngressRoute/IngressRouteRevision;
 3. perform only blocking fixes/re-reviews required by those reviews;
-4. close or checkpoint the current Foundation / Track D wave cleanly;
-5. leave optional next-slice implementation for a later restored-capacity window.
+4. perform the smallest required final convergence/closeout verification;
+5. leave optional next-slice implementation for a later capacity window.
+
+Do not run Tasks 148 and 149 in parallel by default while weekly capacity is limited. Task 149 is first because Effect/replay/recovery semantics carry the higher correctness risk.
 
 ## Temporary Window Rule
 
-This Codex quota-exhausted state is operator-reported operational truth for the current quota window. A later quota reset does not automatically reopen broad Codex parallelism; the Operator / Development Director must explicitly restore availability and choose the next closeout actions.
+This limited-capacity restoration is operator-authorized operational truth for the current quota window. It does not restore the prior broad parallel-capacity mode. Broader Codex use requires a later explicit Operator / Development Director decision.
 
 ## Change Rule
 
