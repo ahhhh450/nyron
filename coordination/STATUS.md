@@ -7,7 +7,7 @@
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Development Director: `ACTIVE — Global Development Coordination Authority`
 - Coordination Epoch: `2`
-- Coordination Revision: `111`
+- Coordination Revision: `112`
 - Last Accepted Production Commit: `e47511aef987cd9fa5c171e319971f90ab549bd2`
 - Canonical Repository Finalization Merge: `8962743bfbc6385bf58ebb31a63f5e5442c5f391`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
@@ -15,7 +15,18 @@
 - Current Mode: `TRACK A STABLE / TRACK B + C READY FOR ORCHESTRATOR ACTIVATION`
 - Orchestration Plan: `coordination/plans/FOUNDATION_WAVE_2_Plan_v0.1.md`
 - Track Board: `coordination/plans/FOUNDATION_WAVE_2_Track_Board_v0.1.md`
+- Track Orchestrator Protocol: `coordination/TRACK_ORCHESTRATOR_PROTOCOL.md`
+- Agent Availability: `coordination/AGENT_AVAILABILITY.md`
 - Parallelism Policy: `DYNAMIC / DEPENDENCY + WRITE-SURFACE + REVIEW + INTEGRATION CAPACITY DRIVEN`
+
+## Current Agent Availability
+
+- `Claude`: `UNAVAILABLE` until explicitly restored by a later Operator / Development Director coordination decision.
+- `Codex`: `AVAILABLE` and current primary complex implementation / correctness / test / review lane, subject to independence rules.
+- `DeepSeek`: `AVAILABLE` for low-risk / mechanical / targeted audit and review work where risk permits.
+- `GPT / Web GPT`: `AVAILABLE FOR ORCHESTRATION`; not default production implementation.
+
+Operational availability overrides older generic model-preference guidance. High-risk `Implementation Agent != Independent Reviewer` remains mandatory; if current available Agents cannot satisfy required independence or specialist review, the affected Task must block rather than weaken review.
 
 ## Foundation Wave 2 Track Board
 
@@ -37,8 +48,10 @@ Development Director, Track Orchestrators and Execution Agents must use Reposito
 - `coordination/OUTPUT_FORMAT.md`
 - `coordination/REVIEW_PROTOCOL.md`
 - `coordination/WORKFLOW.md`
+- `coordination/TRACK_ORCHESTRATOR_PROTOCOL.md`
+- `coordination/AGENT_AVAILABILITY.md`
 
-`coordination/OUTPUT_FORMAT.md` is mandatory Required Reading for all Orchestrator sessions and must be included in formal execution/review Task reading where applicable.
+`coordination/OUTPUT_FORMAT.md` and `coordination/TRACK_ORCHESTRATOR_PROTOCOL.md` are mandatory Required Reading for all Track Orchestrator sessions. Current Agent routing must also honor `coordination/AGENT_AVAILABILITY.md`.
 
 Formal chain:
 
@@ -50,6 +63,8 @@ Task
 ```
 
 Chat is trigger / notification / concise status only. Operator does not forward formal Results between Agents and Orchestrators.
+
+Track-to-Agent scheduling replies must use the Track dispatch-block format defined in `coordination/TRACK_ORCHESTRATOR_PROTOCOL.md`, beginning with a human-facing label such as `[TRACK_B_TASK_001]`. This dispatch label is not the canonical `NYRON-T-*` Task ID.
 
 ## Current Track-Level State
 
@@ -215,6 +230,17 @@ This ordering is orchestration only and does not amend frozen architecture.
 - Track B and Track C move to `READY / ORCHESTRATOR WINDOW REQUIRED` and may create production Tasks only after their Track-local readiness checks.
 - Track D remains deferred/high-risk; PWP is no longer its blocking dependency, but later B/C/security/integration dependencies still govern activation.
 - `Last Accepted Production Commit` remains `e47511aef987cd9fa5c171e319971f90ab549bd2`; no GLOBAL ACCEPTED or global production baseline change is made by this revision.
+
+## Revision 112 Decision
+
+- `coordination/TRACK_ORCHESTRATOR_PROTOCOL.md` is active and defines mandatory Track activation, routing and dispatch behavior.
+- A readiness check alone cannot complete a production-activation directive; readiness `PASS` requires creation and routing of at least one formal Track-local Task, while readiness `BLOCKED` requires durable blocker evidence.
+- Track dispatch replies now use a self-contained Track-local dispatch label format such as `[TRACK_A_TASK_001]`; this is chat/routing metadata only and never replaces canonical `NYRON-T-*` Task identity.
+- `coordination/AGENT_AVAILABILITY.md` is established as current operational Agent-availability truth.
+- Claude is currently `UNAVAILABLE`; no new Claude implementation / fix / review / re-review assignment or Claude window request is authorized until a later explicit availability change.
+- Codex is the current primary available complex implementation / correctness / test / review lane; DeepSeek remains available for appropriate lower-risk / mechanical / targeted work.
+- High-risk review independence remains mandatory and is not relaxed by Claude unavailability.
+- No production semantics, Track A accepted dependency SHA, or Last Accepted Production value changes in Revision 112.
 
 ## Gate-6A Closure
 
