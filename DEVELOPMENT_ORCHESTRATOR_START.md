@@ -22,12 +22,18 @@
 2. `AGENTS.md`
 3. `ORCHESTRATOR.md`
 4. `coordination/STATUS.md`
-5. 当前 Active / In Review / Blocked Task
-6. 仅在需要时读取相关 Result / Checkpoint / design 文件
+5. `coordination/TASK_PROTOCOL.md`
+6. `coordination/OUTPUT_FORMAT.md`
+7. `coordination/REVIEW_PROTOCOL.md`
+8. `coordination/WORKFLOW.md`
+9. 当前 Active / In Review / Blocked Task
+10. 仅在需要时读取相关 Result / Checkpoint / design 文件
+
+其中 `coordination/OUTPUT_FORMAT.md` 为所有 Development Director / Track Orchestrator 的强制 Required Reading，不得省略。
 
 不要默认扫描全部历史 Task、archive 或整个 Repository。
 
-Repository 是项目事实源，不依赖聊天记忆恢复项目状态。
+Repository 是项目事实源，不依赖聊天记忆恢复项目状态。聊天只用于触发、通知和简短状态，不得替代 Task / Result / Review / Checkpoint 文件。
 
 ### 2. Agent 默认分工
 
@@ -83,6 +89,8 @@ Task ID 仍保留在正式 Task 文件和任务指令中。复用已有窗口时
 
 需要执行的新工作必须创建正式 Task，并给出可直接发送给目标 Agent 的最终任务指令。
 
+生产并行度不采用永久固定数字。由当前依赖关系、写入面隔离、Review 容量、Integration 容量和风险集中度动态决定。
+
 ### 5. 调度约束
 
 必须遵守：
@@ -97,7 +105,7 @@ Task ID 仍保留在正式 Task 文件和任务指令中。复用已有窗口时
 尤其不得绕过：
 
 - Single Coordination Authority；
-- Task ID 只能由 Orchestrator 分配；
+- Task ID 只能由授权 Orchestrator 分配；
 - Coordination Epoch / Revision / CAS；
 - Workspace Isolation；
 - Validation Honesty；
@@ -108,14 +116,27 @@ Task ID 仍保留在正式 Task 文件和任务指令中。复用已有窗口时
 
 Executor 的 `SUCCESS / PASS` 不自动等于项目级 `ACCEPTED / COMPLETED / FROZEN / RELEASED`。
 
-### 6. 输出方式
+### 6. 文件制交接与输出方式
 
-正常调度时保持简洁，只优先输出：
+所有正式开发调度先形成 Repository 文件：
+
+```text
+Task
+→ Result
+→ Review / Re-Review Result
+→ Checkpoint / Stable Candidate evidence
+```
+
+Track Orchestrator 不通过聊天复制正式子 Task Result；Development Director 自行读取 Repository 原始证据。Operator 不承担人工转发 Result 的职责。
+
+Agent 完成正式 Task 并正确落盘后，聊天默认只返回 `TASK DONE`；阻塞且已正确形成 Result / HANDOFF Checkpoint 时默认返回 `TASK BLOCKED`。
+
+Development Director 正常调度时保持简洁，只优先输出：
 
 1. 当前状态；
 2. 调度判断；
-3. 下一步 Agent；
-4. 可直接复制的 Task 指令。
+3. 下一步 Agent / Track；
+4. 必须由 Operator 新开或复用窗口时的完整可复制指令。
 
 只有存在 Blocking Finding、架构冲突、权限冲突或必须由用户本人裁决的问题时，再展开说明。
 
