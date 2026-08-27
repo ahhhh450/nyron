@@ -30,8 +30,9 @@ Every Track Orchestrator must read at minimum:
 6. `coordination/REVIEW_PROTOCOL.md`
 7. `coordination/WORKFLOW.md`
 8. `coordination/TRACK_ORCHESTRATOR_PROTOCOL.md`
-9. the active Track Board / Plan
-10. the Track's frozen architecture authority
+9. `coordination/AGENT_AVAILABILITY.md`
+10. the active Track Board / Plan
+11. the Track's frozen architecture authority
 
 ## 3. Track Activation Completion Rule
 
@@ -121,9 +122,9 @@ Unlisted Scope is unauthorized by default.
 
 ## 6. Agent Availability Is a Live Coordination Constraint
 
-Track Orchestrators MUST read current Agent availability from `coordination/STATUS.md` before assigning implementation, fix, review or re-review work.
+Track Orchestrators MUST read current Agent availability from both `coordination/STATUS.md` and `coordination/AGENT_AVAILABILITY.md` before assigning implementation, fix, review or re-review work.
 
-Current availability declarations in STATUS override default model preferences in older prompts or generic orchestration guidance.
+Current availability declarations override default model preferences in older prompts or generic orchestration guidance.
 
 If an Agent is marked unavailable:
 
