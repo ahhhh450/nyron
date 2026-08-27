@@ -7,12 +7,12 @@
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Development Director: `ACTIVE — Global Development Coordination Authority`
 - Coordination Epoch: `2`
-- Coordination Revision: `116`
+- Coordination Revision: `117`
 - Last Accepted Production Commit: `e47511aef987cd9fa5c171e319971f90ab549bd2`
 - Canonical Repository Finalization Merge: `8962743bfbc6385bf58ebb31a63f5e5442c5f391`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
-- Current Gate: `FOUNDATION WAVE 2 — PHASE 3 / TRACK D TARGETED ACCEPTED-DEPENDENCY INVENTORY CORRECTION`
-- Current Mode: `TRACK A + B + C STABLE / TRACK D NON-PRODUCTION TARGETED CORRECTION ACTIVE`
+- Current Gate: `FOUNDATION WAVE 2 — PHASE 3 / TRACK D PARALLEL SPECIALIST SECURITY REVIEW`
+- Current Mode: `TRACK A + B + C STABLE / TRACK D CORRECTION + PARALLEL CODEX READINESS REVIEWS ACTIVE`
 - Orchestration Plan: `coordination/plans/FOUNDATION_WAVE_2_Plan_v0.1.md`
 - Track Board: `coordination/plans/FOUNDATION_WAVE_2_Track_Board_v0.1.md`
 - Track Orchestrator Protocol: `coordination/TRACK_ORCHESTRATOR_PROTOCOL.md`
@@ -23,11 +23,11 @@
 ## Current Agent Availability
 
 - `Claude`: `UNAVAILABLE`.
-- `Codex`: `CONSTRAINED / NO NEW TRACK WORK`; current capacity is near exhaustion and is not to be consumed by new Track assignments until explicitly restored.
-- `DeepSeek`: `AVAILABLE`; preferred current lane for bounded non-production contract tracing, repository-surface inventory, low-risk implementation, mechanical/regression and targeted verification where risk permits.
+- `Codex`: `AVAILABLE — TEMPORARY PARALLEL CAPACITY WINDOW`; multiple parallel Codex sessions are authorized for independent Tasks with non-conflicting dependencies/write surfaces.
+- `DeepSeek`: `AVAILABLE`; preferred lane for bounded non-production contract tracing, low-risk implementation, mechanical/schema consistency, regression and targeted verification where risk permits.
 - `GPT / Web GPT`: `AVAILABLE FOR ORCHESTRATION`; not default Production implementation.
 
-High-risk `Implementation Agent != Independent Reviewer` remains mandatory. Capacity constraints never authorize weakening review, architecture, security or Owner-boundary requirements.
+High-risk `Implementation Agent != Independent Reviewer` remains mandatory. Capacity availability never authorizes weakening review, architecture, security or Owner-boundary requirements.
 
 ## Foundation Wave 2 Track Board
 
@@ -36,7 +36,7 @@ High-risk `Implementation Agent != Independent Reviewer` remains mandatory. Capa
 | `Track A — PWP / Context Backbone` | `STABLE / IDLE` | `Dedicated Orchestrator used for Foundation slice` | PWP Core accepted for downstream dependency use at `f3b6b0d022111dfc854f537c361ca5eb46516584` |
 | `Track B — Distribution / Module Ecosystem` | `STABLE / IDLE` | `Dedicated Orchestrator used for Foundation slice` | Distribution identity / exact-resolution Foundation accepted for downstream dependency use at `b2ec8e2e79745fee75a9dfdde7d6ab4cebe5f863`; later Distribution stages require new Tasks |
 | `Track C — Human Interaction / Approval` | `STABLE / IDLE` | `Dedicated Orchestrator used for Foundation slice` | Human Interaction Owner Core accepted for downstream dependency use at `a85507b9b74e0f6b68a65460d9e5a4f19aa79f93`; Runtime resume/ingress deferred |
-| `Track D — External Interfaces / Workspace Boundary` | `TARGETED INVENTORY CORRECTION ACTIVE` | `Development Director direct scheduling` | Task `NYRON-T-20260827-133` assigned to DeepSeek; Task 132 delivery succeeded but contains material accepted-dependency surface omissions, so Track D readiness is not yet adjudicated |
+| `Track D — External Interfaces / Workspace Boundary` | `PARALLEL READINESS / SECURITY REVIEW ACTIVE` | `Development Director direct scheduling` | DeepSeek Task 133 corrects accepted-dependency inventory; Codex Tasks 134–137 independently review Filesystem, Process, Network and Provider/Model boundaries; Production remains unopened |
 | `Track E — Product / Visual Workflow` | `DEFERRED` | `UNASSIGNED` | Foundation readiness |
 
 ## Mandatory File-Based Coordination Protocol
@@ -100,13 +100,14 @@ A dedicated Track Orchestrator is not mandatory for every Track. Small bounded T
 - Task 132 delivered a remotely reviewable factual audit Result at `cf594fedc71b38a871f688d633cde6823755ce68` on `task/NYRON-T-20260827-132` with `Findings: NONE` and `Blockers: NONE` against the audit itself.
 - Development Director verification found material repository-surface omissions in Task 132: accepted Track A PWP owner-core surfaces and accepted Track C Human Interaction owner-core surfaces were incorrectly reported absent.
 - Director disposition evidence: `coordination/checkpoints/NYRON-T-20260827-132-DIRECTOR-DISPOSITION.md`.
-- Current formal Task: `NYRON-T-20260827-133`.
-- Assigned Agent: `DeepSeek — Targeted Verification Session / TRACK_D_TASK_003`.
-- Type: `TARGETED FACTUAL CORRECTION / VERIFICATION`.
-- Production Mutation Authorization: `DENIED`.
-- Task 133 is limited to correcting accepted Track A/B/C production-surface facts; it does not redo the full D-008 audit and does not make the Track D GO/BLOCKED decision.
+- Task 133: `TARGETED FACTUAL CORRECTION / VERIFICATION`, assigned to DeepSeek; Production mutation denied.
+- Task 134: Codex read-only specialist review of Filesystem containment / path resolution / symlink / mount / TOCTOU boundary.
+- Task 135: Codex read-only specialist review of Process descendant containment / kill-confirm / platform primitives.
+- Task 136: Codex read-only specialist review of Network effective-destination / DNS / redirect / proxy boundary.
+- Task 137: Codex read-only specialist review of Provider/Model PREPARED / FENCED / UNKNOWN / retry / idempotency / streaming boundary.
+- Tasks 134–137 have intentionally disjoint review scopes and no Production write authorization; they may execute concurrently.
 - Development Director retains the final Track D `GO_BOUNDED | BLOCKED | ESCALATION_REQUIRED` decision.
-- Track D Production remains unopened pending Task 133 evidence and Director adjudication.
+- Track D Production remains unopened pending corrected inventory and specialist evidence.
 
 ## Director-Accepted Foundation Dependencies
 
@@ -186,6 +187,16 @@ These are accepted for downstream dependency use only. `Last Accepted Production
 - Task `NYRON-T-20260827-133` is created as a targeted factual correction/verification Task for DeepSeek; no full D-008 re-audit is requested.
 - Track D Production remains unopened until corrected evidence is reviewed and the Director makes the final readiness decision.
 - `Last Accepted Production Commit` remains unchanged; Revision 116 does not declare `GLOBAL ACCEPTED`.
+
+### Revision 117
+
+- Operator explicitly restores Codex for a temporary parallel-capacity window before quota reset/exhaustion.
+- Codex availability changes from `CONSTRAINED / NO NEW TRACK WORK` to `AVAILABLE — TEMPORARY PARALLEL CAPACITY WINDOW`.
+- Four independent read-only Track D specialist Tasks are opened in parallel: 134 Filesystem, 135 Process, 136 Network, 137 Provider/Model external-effect correctness.
+- These Tasks have disjoint review scopes and no Production mutation authorization, so parallel execution does not create Production write-surface conflicts.
+- DeepSeek Task 133 continues independently as the targeted accepted-dependency factual correction.
+- Track D Production remains unopened; specialist review capacity is being used to reduce security/implementation uncertainty before bounded Production slices are authorized.
+- `Last Accepted Production Commit` remains unchanged; Revision 117 does not declare `GLOBAL ACCEPTED`.
 
 ## Gate-6A Closure
 
