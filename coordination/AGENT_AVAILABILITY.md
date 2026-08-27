@@ -11,22 +11,26 @@ This file records current operational availability only. It does not define perm
 | Agent | Availability | Default Use While State Applies |
 |---|---|---|
 | `Claude` | `UNAVAILABLE` | Do not assign new implementation, fix, review, re-review, or specialist work. Do not request a new Claude window. |
-| `Codex` | `CONSTRAINED / NO NEW TRACK WORK` | Current quota/capacity is near exhaustion. Do not assign new Track work. Existing already-routed closure work may finish if capacity remains. Restore only by later explicit Operator / Development Director decision. |
-| `DeepSeek` | `AVAILABLE` | Preferred current lane for non-production readiness/contract/security audit, low-risk bounded implementation, mechanical/schema consistency, regression and targeted verification where risk permits. |
+| `Codex` | `AVAILABLE — TEMPORARY PARALLEL CAPACITY WINDOW` | Operator explicitly restored Codex for the current quota window. Multiple parallel Codex sessions are authorized where dependencies and write surfaces are independent. Prioritize high-value security/correctness review and bounded high-risk work; do not create artificial work only to consume quota. |
+| `DeepSeek` | `AVAILABLE` | Preferred lane for bounded non-production contract tracing, low-risk implementation, mechanical/schema consistency, regression and targeted verification where risk permits. |
 | `GPT / Web GPT` | `AVAILABLE FOR ORCHESTRATION` | Development Director / Track coordination; not default production implementation. |
 
 ## Mandatory Routing Rule
 
-While Claude is `UNAVAILABLE` and Codex is `CONSTRAINED / NO NEW TRACK WORK`:
+While Claude is `UNAVAILABLE` and the temporary Codex parallel window is active:
 
 - do not create new Claude assignments;
-- do not create new Codex Track assignments;
-- use DeepSeek only for Tasks whose risk/scope is suitable;
-- prefer non-production audit/readiness work and bounded low-risk implementation for DeepSeek;
-- do not assign DeepSeek sole responsibility for high-risk external-effect/security-critical Production merely to avoid a capacity blocker;
+- Codex may receive multiple parallel Tasks when dependency, workspace/write-surface, review-independence and integration safety permit;
+- prefer independent read-only specialist/security reviews in parallel before opening conflicting Production writes;
 - high-risk `Implementation Agent != Independent Reviewer` remains mandatory;
-- if no available Agent can satisfy implementation, specialist review, or independence requirements, record `BLOCKED` rather than weakening requirements.
+- do not use the same Codex session as both implementation and independent reviewer for a high-risk delivery;
+- DeepSeek remains suitable for bounded low-risk/mechanical work and targeted verification;
+- capacity availability never authorizes weakening architecture, security, Owner boundaries, stale-check rules, or exact-SHA review requirements.
+
+## Temporary Window Rule
+
+This Codex state is an operator-authorized temporary capacity window. It remains active until the Operator / Development Director explicitly closes or changes it. Quota reset/exhaustion does not itself amend architecture; coordination should re-evaluate active assignments when capacity changes.
 
 ## Change Rule
 
-Claude and Codex availability states remain in force until a later explicit Operator / Development Director instruction changes or supersedes them.
+Agent availability remains operational state and may be superseded only by later explicit Operator / Development Director instruction.
