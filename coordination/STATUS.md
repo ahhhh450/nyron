@@ -7,12 +7,12 @@
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Development Director: `ACTIVE — Global Development Coordination Authority`
 - Coordination Epoch: `2`
-- Coordination Revision: `115`
+- Coordination Revision: `116`
 - Last Accepted Production Commit: `e47511aef987cd9fa5c171e319971f90ab549bd2`
 - Canonical Repository Finalization Merge: `8962743bfbc6385bf58ebb31a63f5e5442c5f391`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
-- Current Gate: `FOUNDATION WAVE 2 — PHASE 3 / TRACK D BOUNDED CONTRACT TRACE`
-- Current Mode: `TRACK A + B + C STABLE / TRACK D NON-PRODUCTION CONTRACT TRACE ACTIVE`
+- Current Gate: `FOUNDATION WAVE 2 — PHASE 3 / TRACK D TARGETED ACCEPTED-DEPENDENCY INVENTORY CORRECTION`
+- Current Mode: `TRACK A + B + C STABLE / TRACK D NON-PRODUCTION TARGETED CORRECTION ACTIVE`
 - Orchestration Plan: `coordination/plans/FOUNDATION_WAVE_2_Plan_v0.1.md`
 - Track Board: `coordination/plans/FOUNDATION_WAVE_2_Track_Board_v0.1.md`
 - Track Orchestrator Protocol: `coordination/TRACK_ORCHESTRATOR_PROTOCOL.md`
@@ -36,7 +36,7 @@ High-risk `Implementation Agent != Independent Reviewer` remains mandatory. Capa
 | `Track A — PWP / Context Backbone` | `STABLE / IDLE` | `Dedicated Orchestrator used for Foundation slice` | PWP Core accepted for downstream dependency use at `f3b6b0d022111dfc854f537c361ca5eb46516584` |
 | `Track B — Distribution / Module Ecosystem` | `STABLE / IDLE` | `Dedicated Orchestrator used for Foundation slice` | Distribution identity / exact-resolution Foundation accepted for downstream dependency use at `b2ec8e2e79745fee75a9dfdde7d6ab4cebe5f863`; later Distribution stages require new Tasks |
 | `Track C — Human Interaction / Approval` | `STABLE / IDLE` | `Dedicated Orchestrator used for Foundation slice` | Human Interaction Owner Core accepted for downstream dependency use at `a85507b9b74e0f6b68a65460d9e5a4f19aa79f93`; Runtime resume/ingress deferred |
-| `Track D — External Interfaces / Workspace Boundary` | `CONTRACT TRACE / INVENTORY ACTIVE` | `Development Director direct scheduling` | Task `NYRON-T-20260827-132` assigned to DeepSeek for bounded factual audit; Task 131 produced no accepted technical blocker evidence and is superseded for audit execution |
+| `Track D — External Interfaces / Workspace Boundary` | `TARGETED INVENTORY CORRECTION ACTIVE` | `Development Director direct scheduling` | Task `NYRON-T-20260827-133` assigned to DeepSeek; Task 132 delivery succeeded but contains material accepted-dependency surface omissions, so Track D readiness is not yet adjudicated |
 | `Track E — Product / Visual Workflow` | `DEFERRED` | `UNASSIGNED` | Foundation readiness |
 
 ## Mandatory File-Based Coordination Protocol
@@ -95,18 +95,18 @@ A dedicated Track Orchestrator is not mandatory for every Track. Small bounded T
 
 ### Track D — External Interfaces / Workspace Boundary
 
-- Frozen authority: `NYRON-D-008` Frozen Baseline + named Lead clarifications.
-- Task 131 was originally assigned as a HIGH/security-sensitive readiness/security audit to DeepSeek.
-- The assigned session returned `TASK BLOCKED`, but no remotely readable Task-131 Result or blocker checkpoint was present when the Development Director verified Repository Truth.
-- Director disposition checkpoint: `coordination/checkpoints/NYRON-T-20260827-131-DIRECTOR-DISPOSITION.md`.
-- No technical, architecture, dependency or security blocker is accepted from Task 131.
-- Task 131 is superseded for audit execution because its scope combined DeepSeek-suitable mechanical evidence collection with final high-risk readiness/security judgment.
-- Current formal Task: `NYRON-T-20260827-132`.
-- Assigned Agent: `DeepSeek — Bounded Audit Session / TRACK_D_TASK_002`.
-- Type: `CONTRACT TRACE / REPOSITORY SURFACE INVENTORY`.
+- Frozen authority: `NYRON-D-008` Frozen Baseline + named Lead clarifications + `External_Interfaces_Amendment_001_Fenced_Retry_Semantics.md`.
+- Task 131 was superseded after a chat-only `TASK BLOCKED` without durable blocker evidence; no technical blocker was accepted.
+- Task 132 delivered a remotely reviewable factual audit Result at `cf594fedc71b38a871f688d633cde6823755ce68` on `task/NYRON-T-20260827-132` with `Findings: NONE` and `Blockers: NONE` against the audit itself.
+- Development Director verification found material repository-surface omissions in Task 132: accepted Track A PWP owner-core surfaces and accepted Track C Human Interaction owner-core surfaces were incorrectly reported absent.
+- Director disposition evidence: `coordination/checkpoints/NYRON-T-20260827-132-DIRECTOR-DISPOSITION.md`.
+- Current formal Task: `NYRON-T-20260827-133`.
+- Assigned Agent: `DeepSeek — Targeted Verification Session / TRACK_D_TASK_003`.
+- Type: `TARGETED FACTUAL CORRECTION / VERIFICATION`.
 - Production Mutation Authorization: `DENIED`.
-- Task 132 is limited to factual frozen-contract tracing, exact repository-surface inventory, dependency/evidence-gap mapping, candidate-slice classification by observable risk signals, and adversarial/security test enumeration.
+- Task 133 is limited to correcting accepted Track A/B/C production-surface facts; it does not redo the full D-008 audit and does not make the Track D GO/BLOCKED decision.
 - Development Director retains the final Track D `GO_BOUNDED | BLOCKED | ESCALATION_REQUIRED` decision.
+- Track D Production remains unopened pending Task 133 evidence and Director adjudication.
 
 ## Director-Accepted Foundation Dependencies
 
@@ -178,6 +178,14 @@ These are accepted for downstream dependency use only. `Last Accepted Production
 - DeepSeek is not asked to make the final Track-D security/readiness decision; the Development Director retains that authority and will decide from Task-132 evidence.
 - Track D Production remains unopened.
 - `Last Accepted Production Commit` remains unchanged; Revision 115 does not declare `GLOBAL ACCEPTED`.
+
+### Revision 116
+
+- Task 132 remote Result at `cf594fedc71b38a871f688d633cde6823755ce68` is accepted as a successfully delivered audit artifact, but not as sufficient readiness evidence.
+- Development Director independently verified two material factual omissions: PWP owner-core and Human Interaction owner-core production surfaces already exist in accepted Track A/C implementations.
+- Task `NYRON-T-20260827-133` is created as a targeted factual correction/verification Task for DeepSeek; no full D-008 re-audit is requested.
+- Track D Production remains unopened until corrected evidence is reviewed and the Director makes the final readiness decision.
+- `Last Accepted Production Commit` remains unchanged; Revision 116 does not declare `GLOBAL ACCEPTED`.
 
 ## Gate-6A Closure
 
