@@ -1040,6 +1040,11 @@ class SQLiteStore:
                   AND revision.subject_kind = 'PROJECT'
                   AND revision.subject_ref = OLD.project_ref
                   AND revision.previous_revision_ref IS OLD.current_policy_context_revision_ref
+                  AND revision.revision_seq = CASE
+                      WHEN OLD.current_policy_context_revision_ref IS NULL THEN 1
+                      ELSE (SELECT revision_seq + 1 FROM pwp_policy_context_revisions
+                            WHERE revision_ref = OLD.current_policy_context_revision_ref)
+                  END
              )
             BEGIN SELECT RAISE(ABORT, 'invalid project policy pointer advance'); END;
 
@@ -1052,6 +1057,11 @@ class SQLiteStore:
                   AND revision.subject_kind = 'WORKSPACE'
                   AND revision.subject_ref = OLD.workspace_ref
                   AND revision.previous_revision_ref IS OLD.current_policy_context_revision_ref
+                  AND revision.revision_seq = CASE
+                      WHEN OLD.current_policy_context_revision_ref IS NULL THEN 1
+                      ELSE (SELECT revision_seq + 1 FROM pwp_policy_context_revisions
+                            WHERE revision_ref = OLD.current_policy_context_revision_ref)
+                  END
              )
             BEGIN SELECT RAISE(ABORT, 'invalid workspace policy pointer advance'); END;
 
@@ -1063,6 +1073,11 @@ class SQLiteStore:
                 WHERE revision.revision_ref = NEW.current_environment_binding_revision_ref
                   AND revision.subject_ref = OLD.workspace_ref
                   AND revision.previous_revision_ref IS OLD.current_environment_binding_revision_ref
+                  AND revision.revision_seq = CASE
+                      WHEN OLD.current_environment_binding_revision_ref IS NULL THEN 1
+                      ELSE (SELECT revision_seq + 1 FROM pwp_environment_binding_revisions
+                            WHERE revision_ref = OLD.current_environment_binding_revision_ref)
+                  END
              )
             BEGIN SELECT RAISE(ABORT, 'invalid environment binding pointer advance'); END;
 

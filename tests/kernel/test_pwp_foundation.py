@@ -232,6 +232,130 @@ def test_raw_pointer_rewind_is_blocked(pwp) -> None:
         )
 
 
+@pytest.mark.parametrize(
+    "pointer_kind",
+    ["project_policy", "workspace_policy", "environment_binding"],
+)
+def test_raw_context_pointer_sequence_jumps_fail_closed_across_restart(
+    tmp_path, pointer_kind: str
+) -> None:
+    database = tmp_path / f"{pointer_kind}.db"
+
+    def insert_raw(
+        connection: sqlite3.Connection,
+        revision_ref: str,
+        sequence: int,
+        previous_ref: str | None,
+    ) -> None:
+        if pointer_kind == "environment_binding":
+            connection.execute(
+                "INSERT INTO pwp_environment_binding_revisions("
+                "revision_ref,subject_ref,revision_seq,previous_revision_ref,"
+                "payload_json,created_at,caused_by_ref) VALUES (?,?,?,?,?,100,'cause:raw')",
+                (revision_ref, "workspace:1", sequence, previous_ref, "{}"),
+            )
+        else:
+            connection.execute(
+                "INSERT INTO pwp_policy_context_revisions("
+                "revision_ref,subject_kind,subject_ref,revision_seq,"
+                "previous_revision_ref,payload_json,created_at,caused_by_ref)"
+                " VALUES (?,?,?,?,?,?,100,'cause:raw')",
+                (
+                    revision_ref,
+                    "PROJECT" if pointer_kind == "project_policy" else "WORKSPACE",
+                    "project:1" if pointer_kind == "project_policy" else "workspace:1",
+                    sequence,
+                    previous_ref,
+                    "{}",
+                ),
+            )
+
+    def advance_raw(connection: sqlite3.Connection, revision_ref: str) -> None:
+        if pointer_kind == "project_policy":
+            connection.execute(
+                "UPDATE pwp_projects SET current_policy_context_revision_ref=?"
+                " WHERE project_ref='project:1'",
+                (revision_ref,),
+            )
+        elif pointer_kind == "workspace_policy":
+            connection.execute(
+                "UPDATE pwp_workspaces SET current_policy_context_revision_ref=?"
+                " WHERE workspace_ref='workspace:1'",
+                (revision_ref,),
+            )
+        else:
+            connection.execute(
+                "UPDATE pwp_workspaces SET current_environment_binding_revision_ref=?"
+                " WHERE workspace_ref='workspace:1'",
+                (revision_ref,),
+            )
+
+    def current_pointer(owner: PWPAuthority) -> str | None:
+        if pointer_kind == "project_policy":
+            return owner.get_project("project:1").current_policy_context_revision_ref
+        workspace = owner.get_workspace("workspace:1")
+        if pointer_kind == "workspace_policy":
+            return workspace.current_policy_context_revision_ref
+        return workspace.current_environment_binding_revision_ref
+
+    def valid_revision(ref: str, sequence: int, previous_ref: str | None):
+        if pointer_kind == "project_policy":
+            return policy(ref, sequence, previous_ref)
+        if pointer_kind == "workspace_policy":
+            return policy(ref, sequence, previous_ref, workspace=True)
+        return binding(ref, sequence, previous_ref)
+
+    def publish(owner: PWPAuthority, revision) -> None:
+        if pointer_kind == "environment_binding":
+            owner.publish_environment_binding_revision(revision)
+        else:
+            owner.publish_policy_context_revision(revision)
+
+    initial_ref = f"{pointer_kind}:valid:1"
+    initial_jump_ref = f"{pointer_kind}:jump:initial"
+    successor_ref = f"{pointer_kind}:valid:2"
+    successor_jump_ref = f"{pointer_kind}:jump:successor"
+
+    with SQLiteStore(database) as store:
+        owner = authority(store)
+        owner.create_project("project:1")
+        owner.create_workspace("workspace:1", "project:1")
+        with pytest.raises(sqlite3.IntegrityError):
+            with store.transaction() as connection:
+                insert_raw(connection, initial_jump_ref, 99, None)
+                advance_raw(connection, initial_jump_ref)
+
+    with SQLiteStore(database) as reopened:
+        owner = authority(reopened)
+        assert current_pointer(owner) is None
+        table = (
+            "pwp_environment_binding_revisions"
+            if pointer_kind == "environment_binding"
+            else "pwp_policy_context_revisions"
+        )
+        assert reopened.connection.execute(
+            f"SELECT 1 FROM {table} WHERE revision_ref=?", (initial_jump_ref,)
+        ).fetchone() is None
+        publish(owner, valid_revision(initial_ref, 1, None))
+
+    with SQLiteStore(database) as reopened:
+        owner = authority(reopened)
+        assert current_pointer(owner) == initial_ref
+        with pytest.raises(sqlite3.IntegrityError):
+            with reopened.transaction() as connection:
+                insert_raw(connection, successor_jump_ref, 77, initial_ref)
+                advance_raw(connection, successor_jump_ref)
+        assert current_pointer(owner) == initial_ref
+        publish(owner, valid_revision(successor_ref, 2, initial_ref))
+
+    with SQLiteStore(database) as reopened:
+        owner = authority(reopened)
+        assert current_pointer(owner) == successor_ref
+        assert reopened.connection.execute(
+            f"SELECT 1 FROM {table} WHERE revision_ref=?", (successor_jump_ref,)
+        ).fetchone() is None
+
+
 @pytest.mark.parametrize("table", [
     "pwp_project_config_revisions",
     "pwp_workspace_config_revisions",
