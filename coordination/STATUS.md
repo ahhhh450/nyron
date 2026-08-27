@@ -7,12 +7,12 @@
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Development Director: `ACTIVE — Global Development Coordination Authority`
 - Coordination Epoch: `2`
-- Coordination Revision: `120`
+- Coordination Revision: `121`
 - Last Accepted Production Commit: `e47511aef987cd9fa5c171e319971f90ab549bd2`
 - Canonical Repository Finalization Merge: `8962743bfbc6385bf58ebb31a63f5e5442c5f391`
 - Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
-- Current Gate: `FOUNDATION WAVE 2 — PHASE 3 / BOUNDED PRODUCTION + EXACT-SHA REVIEW WAVE`
-- Current Mode: `TRACK A + B + C ACCEPTED FOR DEPENDENCY USE / TRACK D GO_BOUNDED + PARALLEL CODEX WORK ACTIVE`
+- Current Gate: `FOUNDATION WAVE 2 — PHASE 3 / CONSERVATION CLOSEOUT + EXACT-SHA REVIEW`
+- Current Mode: `TRACK A + B + C ACCEPTED FOR DEPENDENCY USE / TRACK D GO_BOUNDED / CODEX CONSERVATION + CLOSEOUT ACTIVE`
 - Orchestration Plan: `coordination/plans/FOUNDATION_WAVE_2_Plan_v0.1.md`
 - Track Board: `coordination/plans/FOUNDATION_WAVE_2_Track_Board_v0.1.md`
 - Track Orchestrator Protocol: `coordination/TRACK_ORCHESTRATOR_PROTOCOL.md`
@@ -23,25 +23,27 @@
 ## Current Agent Availability
 
 - `Claude`: `UNAVAILABLE`.
-- `Codex`: `AVAILABLE — TEMPORARY PARALLEL CAPACITY WINDOW`; multiple parallel Codex sessions are authorized for independent Tasks with non-conflicting dependencies/write surfaces.
+- `Codex`: `CONSERVATION / CLOSEOUT WINDOW`; existing active Tasks may finish, but freed lanes are not automatically refilled. New Codex work is reserved for mandatory exact-SHA review/re-review, blocking fixes needed to close already-open gates, and final integration/regression verification.
 - `DeepSeek`: `AVAILABLE`; preferred lane for bounded non-production contract tracing, low-risk implementation, mechanical/schema consistency, regression and targeted verification where risk permits.
 - `GPT / Web GPT`: `AVAILABLE FOR ORCHESTRATION`; not default Production implementation.
 
-High-risk `Implementation Agent != Independent Reviewer` remains mandatory. Capacity availability never authorizes weakening review, architecture, security or Owner-boundary requirements.
+High-risk `Implementation Agent != Independent Reviewer` remains mandatory. Capacity pressure never authorizes weakening review, architecture, security or Owner-boundary requirements.
 
-Execution-mode failover is operationally active per `coordination/AGENT_AVAILABILITY.md`: Chat-mode tool/workspace/repository-write failure without durable technical blocker evidence may continue under the same Task ID/Scope in Work mode; mode change is not a new Task and does not waive Repository evidence requirements.
+Execution-mode failover remains active per `coordination/AGENT_AVAILABILITY.md`: Chat-mode tool/workspace/repository-write failure without durable technical blocker evidence may continue under the same Task ID/Scope in Work mode; mode change is not a new Task and does not waive Repository evidence requirements.
+
+Conservation rule: do not open new broad exploratory/specialist lanes merely because a Codex slot becomes free. Finish active Tasks, complete mandatory reviews, perform only required fixes/re-reviews, and checkpoint/close the current wave before opening optional next-slice work.
 
 ## Foundation Wave 2 Track Board
 
 | Track | State | Coordination Mode | Current Dependency / Gate |
 |---|---|---|---|
-| `Track A — PWP / Context Backbone` | `STABLE / DEPENDENCY EXTENSION ACTIVE` | `Development Director direct scheduling for bounded extension` | PWP Core accepted at `f3b6b0d022111dfc854f537c361ca5eb46516584`; Task 142 implements frozen PWP-owned IngressRoute/IngressRouteRevision foundation |
+| `Track A — PWP / Context Backbone` | `STABLE / DEPENDENCY EXTENSION DELIVERED` | `Development Director direct scheduling for bounded extension` | PWP Core accepted at `f3b6b0d022111dfc854f537c361ca5eb46516584`; Task 142 delivered PWP-owned IngressRoute/IngressRouteRevision at `91d8fa230be3261f51e72df12b74f7dffd0462c7`, pending mandatory independent exact-SHA review |
 | `Track B — Distribution / Module Ecosystem` | `STABLE / IDLE` | `Dedicated Orchestrator used for Foundation slice` | Distribution identity / exact-resolution accepted at `b2ec8e2e79745fee75a9dfdde7d6ab4cebe5f863`; later stages deferred |
 | `Track C — Human Interaction / Approval` | `STABLE / IDLE` | `Dedicated Orchestrator used for Foundation slice` | Human Interaction Owner Core accepted at `a85507b9b74e0f6b68a65460d9e5a4f19aa79f93`; Runtime resume/ingress deferred |
-| `Track D — External Interfaces / Workspace Boundary` | `GO_BOUNDED / PARALLEL ACTIVE` | `Development Director direct scheduling` | Task 138 SUCCESS pending Task 146 exact-SHA review; Task 140 PASS_WITH_FINDINGS; Task 144 bounded Effect historical-outcome foundation active; consequential external-effect families remain closed |
+| `Track D — External Interfaces / Workspace Boundary` | `GO_BOUNDED / CLOSEOUT ACTIVE` | `Development Director direct scheduling` | Task 138 SUCCESS pending Task 146 exact-SHA review; Task 140 PASS_WITH_FINDINGS; Task 144 bounded Effect historical-outcome foundation remains active; consequential external-effect families remain closed |
 | `Track E — Product / Visual Workflow` | `DEFERRED` | `UNASSIGNED` | Foundation readiness |
 
-Cross-track Foundation convergence Task `NYRON-T-20260827-141` delivered candidate `ccb607b4d84b5f1154427e027170c55e787f9b87` and is pending independent Task 145 review. PWP ingress-route Task `NYRON-T-20260827-142` remains active. Runtime ingress-fact Task `NYRON-T-20260827-143` delivered `96386f366e2f4f2dbb137ff484bf551def0dbd1d` and is pending independent Task 147 review.
+Cross-track Foundation convergence Task `NYRON-T-20260827-141` delivered candidate `ccb607b4d84b5f1154427e027170c55e787f9b87` and is pending independent Task 145 review. Runtime ingress-fact Task `NYRON-T-20260827-143` delivered `96386f366e2f4f2dbb137ff484bf551def0dbd1d` and is pending independent Task 147 review. Task 142 review will use the next available mandatory-review Codex slot rather than increasing concurrency.
 
 ## Mandatory File-Based Coordination Protocol
 
@@ -67,7 +69,7 @@ A dedicated Track Orchestrator is not mandatory for every Track. Small bounded T
 - Open Findings: `NONE`.
 - Validation: `436 passed, 2 skipped, 380 subtests passed`.
 - Director disposition: `ACCEPTED FOR DOWNSTREAM DEPENDENCY USE / NOT GLOBAL PRODUCTION ACCEPTANCE`.
-- New bounded dependency extension: Task `NYRON-T-20260827-142` implements only PWP-owned `IngressRoute` / `IngressRouteRevision` configuration under frozen D-010/D-001 authority; high-risk independent review required after delivery.
+- Bounded dependency extension Task `NYRON-T-20260827-142`: `SUCCESS` at exact delivery SHA `91d8fa230be3261f51e72df12b74f7dffd0462c7`; focused PWP suite `25 passed`; full regression `441 passed, 2 skipped, 380 subtests passed`; Findings/Blockers `NONE`. Mandatory independent exact-SHA review remains required before downstream acceptance.
 
 ### Track B — Distribution / Module Ecosystem
 
@@ -231,6 +233,17 @@ These are accepted for downstream dependency use only. `Last Accepted Production
 - Task 142 and Task 144 remain active unless later Repository evidence says otherwise.
 - No new durable Task-144 Result is accepted from chat/window numbering alone.
 - `Last Accepted Production Commit` remains unchanged; Revision 120 does not declare `GLOBAL ACCEPTED`.
+
+### Revision 121
+
+- Operator reports the temporary Codex quota has fallen to approximately 30% and explicitly requests gradual tightening rather than continued parallel saturation.
+- Codex availability changes to `CONSERVATION / CLOSEOUT WINDOW`.
+- Existing active Tasks may finish, but freed Codex lanes are no longer automatically refilled.
+- New Codex work is reserved for mandatory exact-SHA review/re-review, blocking fixes required to close already-open gates, and final integration/regression verification.
+- Task 142 is now `SUCCESS` at exact delivery SHA `91d8fa230be3261f51e72df12b74f7dffd0462c7`; its mandatory independent review is queued for the next freed review slot rather than increasing current concurrency.
+- Tasks 144, 145, 146 and 147 remain the active Codex closeout set unless later Repository evidence changes their state.
+- Broad new Track D implementation, optional hardening, and exploratory specialist work are deferred until Codex capacity is explicitly restored.
+- `Last Accepted Production Commit` remains unchanged; Revision 121 does not declare `GLOBAL ACCEPTED`.
 
 ## Gate-6A Closure
 
