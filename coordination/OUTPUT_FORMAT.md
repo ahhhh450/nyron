@@ -2,6 +2,14 @@
 
 所有 Agent 默认只返回 Orchestrator 执行下一步所需的信息，不返回冗长自检过程。
 
+Repository 文件是正式开发调度事实源。聊天只用于触发、通知和简短状态，不得替代 Task / Result / Review / Checkpoint 文件。
+
+Development Director、Track Orchestrator、Execution Agent 均必须遵守：
+
+- `coordination/TASK_PROTOCOL.md`
+- `coordination/OUTPUT_FORMAT.md`
+- `coordination/REVIEW_PROTOCOL.md`
+
 ## 1. Task Result
 
 ```text
@@ -88,6 +96,14 @@ Required Resolution:
 
 `Code` 为可选字段。只有存在框架定义的标准化问题代码时填写；不要为了形式给每个 Finding 发明新的 Code。
 
+Reviewer 默认只审查，不得顺手修改 Production，除非 Task 明确授权 Review + Fix。
+
+高风险 Production 必须满足：
+
+```text
+Implementation Agent != Independent Reviewer
+```
+
 ## 3. Re-Review Result
 
 ```text
@@ -102,7 +118,17 @@ Open Findings:
 New Findings:
 ```
 
+Targeted Re-Review 默认只验证原 Finding 是否关闭及修复是否引入新问题，不因 Finding 数量少而重复完整 Review，除非 Task 明确要求。
+
 ## 4. Checkpoint
+
+Checkpoint 必须写入：
+
+```text
+coordination/checkpoints/<TaskID>-<CheckpointID>.md
+```
+
+并创建新文件，不覆盖旧 Checkpoint。
 
 ```text
 [CHECKPOINT]
@@ -119,6 +145,62 @@ Blockers:
 Next Action:
 ```
 
-## 5. Authority
+以下情况必须形成 `HANDOFF`：Agent/session 交接、workspace 交接、quota/tool 中断、任务暂停、Blocking Failure 导致当前执行停止。
 
-输出中的 `SUCCESS / PASS` 是 Agent 报告，不自动改变 `STATUS.md` 中的项目级状态。只有 Active Orchestrator 能裁决 ACCEPTED / COMPLETED / FROZEN / RELEASED。
+以下情况应形成 `PROGRESS`：完成 milestone 但尚未结束；自上次 checkpoint 新触及 5 个不同文件；自上次 checkpoint 新产生 3 个 Task-scoped commits。短任务在达到阈值前直接结束时，Final Result 即可。
+
+## 5. Track Orchestrator Repository Handoff
+
+Track Orchestrator 不得依赖聊天复制子 Task 结果给 Development Director。
+
+正式链路必须先存在 Repository 文件：
+
+```text
+Task
+→ Result
+→ Review / Re-Review Result
+→ Checkpoint / Stable Candidate evidence
+```
+
+然后 Track Orchestrator 只向 Development Director 汇报：
+
+```text
+Track:
+Current Gate:
+Stable Candidate SHA:
+Review State:
+Open Findings:
+Blockers:
+Next Milestone:
+```
+
+Development Director 应自行从 Repository 读取原始 Result / Review / Checkpoint。Operator 不承担人工转发 Result 的职责。
+
+## 6. Chat Output
+
+Agent 完成正式 Task 且要求的 Repository Result / Review / Checkpoint 已正确落盘后，聊天默认只返回：
+
+```text
+TASK DONE
+```
+
+如果任务被阻塞并已形成相应 Result / HANDOFF Checkpoint：
+
+```text
+TASK BLOCKED
+```
+
+详细证据留在 Repository，不在聊天中复制正式 Result。
+
+## 7. Authority
+
+输出中的 `SUCCESS / PASS` 是 Agent 报告，不自动改变 `coordination/STATUS.md` 中的项目级状态。
+
+只有拥有对应全局协调权限的 Development Director / Active Orchestrator 能裁决：
+
+- `ACCEPTED`
+- `COMPLETED`
+- Gate `PASS / CLOSED`
+- `Last Accepted Production`
+
+Frozen Architecture 仍只能由 Lead Design Authority 裁决。
