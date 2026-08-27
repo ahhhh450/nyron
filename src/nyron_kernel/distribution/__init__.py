@@ -6,6 +6,7 @@ from nyron_kernel.distribution.authority import (
 )
 from nyron_kernel.distribution.models import (
     ModuleVersion,
+    PackageSourceEvidence,
     PackageVersion,
     ResolvedModule,
 )
@@ -14,6 +15,7 @@ __all__ = [
     "DistributionAuthority",
     "DistributionError",
     "ModuleVersion",
+    "PackageSourceEvidence",
     "PackageVersion",
     "ResolvedModule",
 ]
