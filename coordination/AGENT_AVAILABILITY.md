@@ -27,6 +27,12 @@ While Claude is `UNAVAILABLE` and the temporary Codex parallel window is active:
 - DeepSeek remains suitable for bounded low-risk/mechanical work and targeted verification;
 - capacity availability never authorizes weakening architecture, security, Owner boundaries, stale-check rules, or exact-SHA review requirements.
 
+## Execution Mode Failover
+
+Current Codex assignments may begin in Chat mode. If a Codex session encounters tool execution, repository-write, workspace, or environment errors and there is no durable Task-scoped technical/architecture blocker evidence, treat that signal first as an execution-mode failure rather than a Product blocker.
+
+The Operator may continue the **same Task ID and Scope** in Work mode. A Chat → Work mode switch does not create a new Task, does not reset the required base/SHA, and does not waive Result/checkpoint/review requirements. Only durable Repository evidence may establish a substantive blocker.
+
 ## Temporary Window Rule
 
 This Codex state is an operator-authorized temporary capacity window. It remains active until the Operator / Development Director explicitly closes or changes it. Quota reset/exhaustion does not itself amend architecture; coordination should re-evaluate active assignments when capacity changes.
