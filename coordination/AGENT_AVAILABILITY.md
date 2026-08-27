@@ -11,21 +11,22 @@ This file records current operational availability only. It does not define perm
 | Agent | Availability | Default Use While State Applies |
 |---|---|---|
 | `Claude` | `UNAVAILABLE` | Do not assign new implementation, fix, review, re-review, or specialist work. Do not request a new Claude window. |
-| `Codex` | `AVAILABLE` | Primary implementation / correctness / tests / CI / independent review lane, subject to required independence. |
-| `DeepSeek` | `AVAILABLE` | Low-risk, mechanical, schema/document consistency, regression, targeted verification/review where risk permits. |
-| `GPT / Web GPT` | `AVAILABLE FOR ORCHESTRATION` | Development Director / Track Orchestrator coordination; not default production implementation. |
+| `Codex` | `CONSTRAINED / NO NEW TRACK WORK` | Current quota/capacity is near exhaustion. Do not assign new Track work. Existing already-routed closure work may finish if capacity remains. Restore only by later explicit Operator / Development Director decision. |
+| `DeepSeek` | `AVAILABLE` | Preferred current lane for non-production readiness/contract/security audit, low-risk bounded implementation, mechanical/schema consistency, regression and targeted verification where risk permits. |
+| `GPT / Web GPT` | `AVAILABLE FOR ORCHESTRATION` | Development Director / Track coordination; not default production implementation. |
 
 ## Mandatory Routing Rule
 
-While Claude is `UNAVAILABLE`:
+While Claude is `UNAVAILABLE` and Codex is `CONSTRAINED / NO NEW TRACK WORK`:
 
-- existing generic guidance that prefers Claude for architecture-sensitive work is suspended operationally;
-- Track Orchestrators must choose an available Agent that satisfies the Task's risk and independence requirements;
-- Codex is the default substitute for complex implementation and high-risk code review when suitable;
-- DeepSeek may be used only where the Task risk/scope permits;
+- do not create new Claude assignments;
+- do not create new Codex Track assignments;
+- use DeepSeek only for Tasks whose risk/scope is suitable;
+- prefer non-production audit/readiness work and bounded low-risk implementation for DeepSeek;
+- do not assign DeepSeek sole responsibility for high-risk external-effect/security-critical Production merely to avoid a capacity blocker;
 - high-risk `Implementation Agent != Independent Reviewer` remains mandatory;
-- if no available Agent can provide required independent/specialist review, record `BLOCKED` rather than weakening review requirements.
+- if no available Agent can satisfy implementation, specialist review, or independence requirements, record `BLOCKED` rather than weakening requirements.
 
 ## Change Rule
 
-Claude remains unavailable until a later explicit Operator / Development Director instruction changes this file or supersedes it through a newer coordination decision.
+Claude and Codex availability states remain in force until a later explicit Operator / Development Director instruction changes or supersedes them.
