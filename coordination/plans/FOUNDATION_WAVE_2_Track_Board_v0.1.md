@@ -26,8 +26,35 @@ Every Development Director / Track Orchestrator session must include, at minimum
 2. `coordination/OUTPUT_FORMAT.md`
 3. `coordination/REVIEW_PROTOCOL.md`
 4. `coordination/WORKFLOW.md`
+5. `coordination/TRACK_ORCHESTRATOR_PROTOCOL.md`
 
 Repository files are the formal handoff channel. Chat is trigger, notification and concise status only.
+
+## Track Activation Completion Gate
+
+A Track Orchestrator activation directive is not complete merely because Repository Truth was restored or a readiness check was performed.
+
+If readiness is `PASS`, the Orchestrator MUST, in the same activation flow:
+
+```text
+readiness PASS
+→ define first bounded production slice
+→ allocate collision-safe formal Task ID
+→ create coordination/tasks/<TaskID>.md
+→ assign Execution Agent
+→ route execution
+→ verify Task file is remotely readable
+```
+
+Only after those actions may an activation directive be reported complete.
+
+For a production-activation directive, `TASK DONE` is invalid if no formal production Task was actually created and routed.
+
+If readiness is `BLOCKED`, the Orchestrator must record the blocker durably, return `TASK BLOCKED`, and escalate when necessary. It must not return `TASK DONE` merely because the readiness analysis itself completed.
+
+Detailed rules, including concurrent Task-ID collision handling, are authoritative in:
+
+`coordination/TRACK_ORCHESTRATOR_PROTOCOL.md`
 
 ## Global Interlocks
 
@@ -48,8 +75,8 @@ Repository files are the formal handoff channel. Chat is trigger, notification a
 | Track | Scope | Track Orchestrator | State | Current Gate / Dependency |
 |---|---|---|---|---|
 | `Track A — PWP / Context Backbone` | Project, Workspace, immutable config/context revisions, policy/environment binding, later IngressRoute/admission context integration | `Web GPT — Track A PWP / Context Backbone Orchestrator` | `STABLE / IDLE` | PWP Core accepted for downstream dependency use at `f3b6b0d022111dfc854f537c361ca5eb46516584`; later Track-A slices require new Track-local Task |
-| `Track B — Distribution / Module Ecosystem` | Import, Resolve, Install, package/module identity, Registry, Trust, Enable | `Web GPT — Track B Distribution / Module Ecosystem Orchestrator / WINDOW REQUIRED` | `READY / ORCHESTRATOR WINDOW REQUIRED` | PWP dependency satisfied; Track Orchestrator must verify D-007/read-write isolation before creating production Tasks |
-| `Track C — Human Interaction / Approval` | HumanRequest, HumanResponse, HumanDecisionEvidence, approval aggregation, suspension/resume, response ingress | `Web GPT — Track C Human Interaction / Approval Orchestrator / WINDOW REQUIRED` | `READY / ORCHESTRATOR WINDOW REQUIRED` | PWP dependency satisfied; Track Orchestrator must verify D-009/read-write isolation before creating production Tasks |
+| `Track B — Distribution / Module Ecosystem` | Import, Resolve, Install, package/module identity, Registry, Trust, Enable | `Web GPT — Track B Distribution / Module Ecosystem Orchestrator / WINDOW REQUIRED` | `READY / ORCHESTRATOR WINDOW REQUIRED` | PWP dependency satisfied; activation is incomplete until readiness PASS creates + routes first formal production Task |
+| `Track C — Human Interaction / Approval` | HumanRequest, HumanResponse, HumanDecisionEvidence, approval aggregation, suspension/resume, response ingress | `Web GPT — Track C Human Interaction / Approval Orchestrator / WINDOW REQUIRED` | `READY / ORCHESTRATOR WINDOW REQUIRED` | PWP dependency satisfied; activation is incomplete until readiness PASS creates + routes first formal production Task |
 | `Track D — External Interfaces / Workspace Boundary` | Filesystem, Process, Network, Browser, Provider, Workspace Handle, external effects/containment/ingress adapters | `UNASSIGNED` | `DEFERRED / BLOCKED` | PWP dependency is now satisfied; activation still waits for required B/C dependency checkpoints and security/integration readiness |
 | `Track E — Product / Visual Workflow` | Product Node, Visual Workflow, UI/UX, execution presentation, approval UI, run history, recovery/debug presentation | `UNASSIGNED` | `DEFERRED` | Foundation readiness required; D-006 remains downstream |
 
@@ -72,6 +99,8 @@ All formal Task files must conform to `coordination/TASK_PROTOCOL.md` and includ
 All Result / Review / Re-Review / Checkpoint files must conform to `coordination/OUTPUT_FORMAT.md` and `coordination/REVIEW_PROTOCOL.md`.
 
 For remote-delivery Tasks, formal `SUCCESS` requires remote-readable delivery with exact `Commit == Remote Commit == final remotely reviewable delivery-content commit` and SHA verification evidence.
+
+Task ID allocation across concurrently active Track Orchestrators must follow the collision-safe atomic-create procedure in `coordination/TRACK_ORCHESTRATOR_PROTOCOL.md`. No Track may overwrite or repurpose another Track's Task file.
 
 ## Track Orchestrator Reporting
 
@@ -119,6 +148,8 @@ Track B may create production Tasks only when its Track Orchestrator confirms at
 - `Import != Trust`, `Resolve != Enable`, and exact `module_ref@version` identity remain preserved;
 - Distribution does not create or mutate CapabilityGrant authority.
 
+If these readiness criteria pass, the same activation flow must create and route Track B's first bounded formal production Task. Readiness PASS without a Task file is not activation completion.
+
 ## Track C Dependency-Ready Criteria
 
 Track C may create production Tasks only when its Track Orchestrator confirms at task-routing time:
@@ -130,9 +161,11 @@ Track C may create production Tasks only when its Track Orchestrator confirms at
 - HumanRequest / HumanResponse / HumanDecisionEvidence ownership remains separate from Runtime canonical execution truth;
 - Runtime suspension/resume integration is not started until the corresponding frozen cross-owner contract surface is concretely dependency-ready.
 
+If these readiness criteria pass, the same activation flow must create and route Track C's first bounded formal production Task. Readiness PASS without a Task file is not activation completion.
+
 ## Next Global Milestone
 
-`TRACK B + TRACK C ORCHESTRATOR ACTIVATION`
+`TRACK B + TRACK C FIRST FORMAL PRODUCTION TASKS ROUTED`
 
 Sequence:
 
@@ -140,6 +173,6 @@ Sequence:
 Director accepts PWP Core stable candidate for dependency use
 → Operator opens Track B and Track C Orchestrator windows
 → each Orchestrator restores Repository Truth and verifies dependency/write-surface readiness
-→ each Orchestrator creates Track-local formal implementation Tasks
+→ readiness PASS requires each Orchestrator to create + route its first formal implementation Task
 → bounded parallel production begins under dynamic parallelism policy
 ```
