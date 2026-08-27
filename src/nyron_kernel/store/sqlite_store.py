@@ -149,6 +149,51 @@ class SQLiteStore:
                     REFERENCES execution_admissions(admission_ref)
             );
 
+            CREATE TABLE IF NOT EXISTS execution_ingress_facts (
+                execution_ingress_ref TEXT PRIMARY KEY,
+                ingress_route_revision_ref TEXT NOT NULL,
+                external_source_identity_ref TEXT NOT NULL,
+                external_event_ref TEXT NOT NULL,
+                canonical_payload_ref TEXT NOT NULL,
+                payload_hash TEXT NOT NULL,
+                authentication_evidence_ref TEXT NOT NULL,
+                validation_evidence_ref TEXT NOT NULL,
+                canonical_target_owner_ref TEXT NOT NULL
+                    CHECK (canonical_target_owner_ref = 'RUNTIME_ORCHESTRATION'),
+                canonical_event_type TEXT NOT NULL
+                    CHECK (canonical_event_type = 'ExecutionIngressFact'),
+                project_ref TEXT NOT NULL,
+                workspace_ref TEXT,
+                project_config_revision_ref TEXT NOT NULL,
+                workspace_config_revision_ref TEXT,
+                policy_context_revision_ref TEXT NOT NULL,
+                environment_binding_revision_ref TEXT,
+                graph_revision_ref TEXT NOT NULL,
+                graph_ingress_binding_ref TEXT NOT NULL,
+                caused_by_ref TEXT NOT NULL,
+                admitted_at_owner_order INTEGER NOT NULL UNIQUE
+                    CHECK (admitted_at_owner_order > 0),
+                UNIQUE (
+                    ingress_route_revision_ref,
+                    external_source_identity_ref,
+                    external_event_ref
+                ),
+                FOREIGN KEY (graph_revision_ref)
+                    REFERENCES graph_revisions(graph_revision_ref)
+            );
+
+            CREATE TRIGGER IF NOT EXISTS execution_ingress_facts_no_update
+            BEFORE UPDATE ON execution_ingress_facts
+            BEGIN
+                SELECT RAISE(ABORT, 'execution ingress facts are immutable');
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS execution_ingress_facts_no_delete
+            BEFORE DELETE ON execution_ingress_facts
+            BEGIN
+                SELECT RAISE(ABORT, 'execution ingress facts are immutable');
+            END;
+
             """
         )
 
