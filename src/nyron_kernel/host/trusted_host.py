@@ -5,7 +5,7 @@ hostile-plugin sandboxing.  The host exposes the frozen
 ``execute(inputs, config, runtime_context)`` ABI shape and invokes only
 a known, registry-resolved trusted module implementation.  Module code
 never receives the StateStore, SQLite connection, filesystem, network,
-or capability objects.
+or capability objects through the supported ABI.
 
 The host accepts only ``None`` or the exact frozen ``RuntimeContext`` value
 shape and fails closed on arbitrary objects or subclasses before Module code
@@ -25,6 +25,11 @@ from typing import TYPE_CHECKING, Any
 
 from nyron_kernel.definitions import ModuleRegistry
 from nyron_kernel.modules import builtin_text_concat
+
+from .isolation_profile import (
+    TRUSTED_SAME_PROCESS_ISOLATION_PROFILE,
+    IsolationProfile,
+)
 
 if TYPE_CHECKING:
     from .runtime_context import RuntimeContext
@@ -87,6 +92,11 @@ class TrustedModuleHost:
 
     def __init__(self, registry: ModuleRegistry) -> None:
         self._registry = registry
+
+    @property
+    def isolation_profile(self) -> IsolationProfile:
+        """Report the immutable truthful isolation claim for this host mode."""
+        return TRUSTED_SAME_PROCESS_ISOLATION_PROFILE
 
     def execute(
         self,
