@@ -587,6 +587,23 @@ class SQLiteStore:
                 )
             );
 
+            CREATE TABLE IF NOT EXISTS effect_historical_outcome_refinements (
+                operation_ref TEXT NOT NULL,
+                historical_outcome TEXT NOT NULL CHECK (
+                    historical_outcome IN ('PARTIAL', 'KNOWN')
+                ),
+                evidence_json TEXT NOT NULL CHECK (length(evidence_json) > 0),
+                PRIMARY KEY (operation_ref, historical_outcome),
+                FOREIGN KEY (operation_ref)
+                    REFERENCES effect_operations(operation_ref) ON DELETE CASCADE
+            );
+
+            CREATE TRIGGER IF NOT EXISTS effect_historical_refinement_immutable
+            BEFORE UPDATE ON effect_historical_outcome_refinements
+            BEGIN
+                SELECT RAISE(ABORT, 'effect historical refinement immutable');
+            END;
+
             CREATE TRIGGER IF NOT EXISTS effect_operation_immutable_fields
             BEFORE UPDATE ON effect_operations
             WHEN NEW.operation_ref != OLD.operation_ref
@@ -738,6 +755,45 @@ class SQLiteStore:
                         WHERE operation_ref = ?
                         """,
                         (evidence_json, row["operation_ref"]),
+                    )
+        current_refinements = self.connection.execute(
+            """
+            SELECT operation_ref, historical_outcome,
+                   historical_outcome_evidence_json
+            FROM effect_operations
+            WHERE historical_outcome IN ('PARTIAL', 'KNOWN')
+              AND historical_outcome_evidence_json IS NOT NULL
+            """
+        ).fetchall()
+        with self.transaction() as connection:
+            for row in current_refinements:
+                existing = connection.execute(
+                    """
+                    SELECT evidence_json
+                    FROM effect_historical_outcome_refinements
+                    WHERE operation_ref = ? AND historical_outcome = ?
+                    """,
+                    (row["operation_ref"], row["historical_outcome"]),
+                ).fetchone()
+                if existing is None:
+                    connection.execute(
+                        """
+                        INSERT INTO effect_historical_outcome_refinements(
+                            operation_ref, historical_outcome, evidence_json
+                        ) VALUES (?, ?, ?)
+                        """,
+                        (
+                            row["operation_ref"],
+                            row["historical_outcome"],
+                            row["historical_outcome_evidence_json"],
+                        ),
+                    )
+                elif (
+                    existing["evidence_json"]
+                    != row["historical_outcome_evidence_json"]
+                ):
+                    raise sqlite3.IntegrityError(
+                        "effect historical refinement projection conflict"
                     )
 
     def create_budget_schema(self) -> None:

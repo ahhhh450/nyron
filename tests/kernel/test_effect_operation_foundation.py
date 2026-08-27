@@ -807,9 +807,59 @@ class EffectOperationFoundationTest(unittest.TestCase):
             {"evidence_ref": "evidence:known/1", "observed": "TERMINAL"},
         )
         self.assertEqual(HistoricalOutcome.KNOWN, known.historical_outcome)
-        with self.assertRaises(EffectError) as downgrade:
+        self.assertEqual(
+            known,
             self.effect.refine_historical_outcome(
                 OPERATION, HistoricalOutcome.PARTIAL, evidence
+            ),
+        )
+        with self.assertRaises(EffectError) as conflicting_after_advancement:
+            self.effect.refine_historical_outcome(
+                OPERATION,
+                HistoricalOutcome.PARTIAL,
+                {"evidence_ref": "evidence:conflict", "observed": "OTHER"},
+            )
+        self.assertEqual(
+            "EFFECT_HISTORICAL_OUTCOME_REPLAY_CONFLICT",
+            conflicting_after_advancement.exception.code,
+        )
+
+        self.store.close()
+        self.store = SQLiteStore(self.database)
+        self.runtime = RuntimeAuthorityResolver(self.store)
+        self.registry = CapabilityTypeRegistry(self.store)
+        self.capability = self._capability_authority()
+        self.resource = ResourceManager(
+            self.store, self.root, self.runtime, lambda: self.now
+        )
+        self.effect = self._effect_authority()
+        self.assertEqual(
+            known,
+            self.effect.refine_historical_outcome(
+                OPERATION, HistoricalOutcome.PARTIAL, evidence
+            ),
+        )
+        with self.assertRaises(EffectError) as conflicting_after_restart:
+            self.effect.refine_historical_outcome(
+                OPERATION,
+                HistoricalOutcome.PARTIAL,
+                {"evidence_ref": "evidence:conflict", "observed": "OTHER"},
+            )
+        self.assertEqual(
+            "EFFECT_HISTORICAL_OUTCOME_REPLAY_CONFLICT",
+            conflicting_after_restart.exception.code,
+        )
+
+        unseen_partial_ref = "effect-operation:historical/unseen-partial"
+        self.effect.prepare(self._request(operation_ref=unseen_partial_ref))
+        self.effect.refine_historical_outcome(
+            unseen_partial_ref,
+            HistoricalOutcome.KNOWN,
+            {"evidence_ref": "evidence:known/2", "observed": "TERMINAL"},
+        )
+        with self.assertRaises(EffectError) as downgrade:
+            self.effect.refine_historical_outcome(
+                unseen_partial_ref, HistoricalOutcome.PARTIAL, evidence
             )
         self.assertEqual(
             "EFFECT_HISTORICAL_OUTCOME_DOWNGRADE", downgrade.exception.code
@@ -824,6 +874,97 @@ class EffectOperationFoundationTest(unittest.TestCase):
             self.assertEqual(
                 "EFFECT_HISTORICAL_OUTCOME_INVALID", invalid.exception.code
             )
+
+    def test_historical_outcome_refinement_evidence_is_immutable(self):
+        self.effect.prepare(self._request())
+        self.effect.refine_historical_outcome(
+            OPERATION,
+            HistoricalOutcome.PARTIAL,
+            {"evidence_ref": "evidence:partial/immutable"},
+        )
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.store.connection.execute(
+                """
+                UPDATE effect_historical_outcome_refinements
+                SET evidence_json = '{}'
+                WHERE operation_ref = ? AND historical_outcome = 'PARTIAL'
+                """,
+                (OPERATION,),
+            )
+
+    def test_legacy_terminal_rows_migrate_to_deterministic_known_history(self):
+        completed_ref = "effect-operation:legacy/completed"
+        fenced_ref = "effect-operation:legacy/fenced"
+        self.effect.execute(self._request(operation_ref=completed_ref))
+        self.effect.prepare(self._request(operation_ref=fenced_ref))
+        self.effect.request_revoke(fenced_ref)
+
+        legacy_column_rows = [
+            row
+            for row in self.store.connection.execute(
+                "PRAGMA table_info(effect_operations)"
+            ).fetchall()
+            if row["name"]
+            not in {
+                "historical_outcome",
+                "historical_outcome_evidence_json",
+            }
+        ]
+        legacy_columns = [row["name"] for row in legacy_column_rows]
+        self.store.connection.execute(
+            "CREATE TABLE legacy_effect_operations ("
+            + ", ".join(
+                f"{row['name']} {row['type']}"
+                + (" PRIMARY KEY" if row["name"] == "operation_ref" else "")
+                for row in legacy_column_rows
+            )
+            + ")"
+        )
+        self.store.connection.execute(
+            "INSERT INTO legacy_effect_operations SELECT "
+            + ", ".join(legacy_columns)
+            + " FROM effect_operations"
+        )
+        self.store.connection.executescript(
+            """
+            DROP TABLE effect_historical_outcome_refinements;
+            DROP TABLE effect_operations;
+            ALTER TABLE legacy_effect_operations RENAME TO effect_operations;
+            """
+        )
+        self.store.create_effect_schema()
+
+        for operation_ref, terminal_state in (
+            (completed_ref, "COMPLETED"),
+            (fenced_ref, "FENCED"),
+        ):
+            with self.subTest(state=terminal_state):
+                row = self.store.connection.execute(
+                    """
+                    SELECT historical_outcome,
+                           historical_outcome_evidence_json
+                    FROM effect_operations
+                    WHERE operation_ref = ?
+                    """,
+                    (operation_ref,),
+                ).fetchone()
+                self.assertEqual("KNOWN", row["historical_outcome"])
+                self.assertIn(
+                    '"basis":"LEGACY_BOUNDED_EFFECT_TERMINAL_EVIDENCE"',
+                    row["historical_outcome_evidence_json"],
+                )
+                history = self.store.connection.execute(
+                    """
+                    SELECT evidence_json
+                    FROM effect_historical_outcome_refinements
+                    WHERE operation_ref = ? AND historical_outcome = 'KNOWN'
+                    """,
+                    (operation_ref,),
+                ).fetchone()
+                self.assertEqual(
+                    row["historical_outcome_evidence_json"],
+                    history["evidence_json"],
+                )
 
     def test_persistence_rejects_raw_invalid_historical_transitions(self):
         self.effect.prepare(self._request())
