@@ -1,5 +1,14 @@
 """In-process TRUSTED MODULE MODE host boundary."""
 
+from .isolation_profile import (
+    TRUSTED_SAME_PROCESS_ISOLATION_PROFILE,
+    BoundaryEnforcementClaim,
+    CredentialExposureClaim,
+    IsolationProfile,
+    ModuleCodeTrustClass,
+    ProcessDescendantContainmentClaim,
+    RawOSAPIAccessClaim,
+)
 from .trusted_host import (
     Completed,
     Failed,
@@ -31,9 +40,17 @@ def __getattr__(name: str):
         return getattr(runtime_context, name)
     raise AttributeError(name)
 
+
 __all__ = [
+    "BoundaryEnforcementClaim",
     "Completed",
+    "CredentialExposureClaim",
     "Failed",
+    "IsolationProfile",
+    "ModuleCodeTrustClass",
+    "ProcessDescendantContainmentClaim",
+    "RawOSAPIAccessClaim",
+    "TRUSTED_SAME_PROCESS_ISOLATION_PROFILE",
     "TrustedHostError",
     "TrustedModuleHost",
     "BoundedWriteDispatched",
