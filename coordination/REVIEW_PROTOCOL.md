@@ -7,6 +7,23 @@
 Implementation Agent != Independent Reviewer
 ```
 
+这里的 `Agent` 独立性默认按**执行会话 / 执行身份**判断，而不是强制按模型家族判断。除非具体 Task 明确要求 cross-model review，否则以下都可以满足独立性：
+
+```text
+Claude session A implements → Claude session B independently reviews
+Claude implements → Codex reviews
+Codex implements → Claude reviews
+Codex session A implements → Codex session B independently reviews
+```
+
+必须同时满足：
+- Reviewer 未参与该 Delivery 的实现；
+- Reviewer 使用独立会话/工作区，不继承实现会话的 mutable workspace 或 self-review role；
+- Review 锁定 exact SHA；
+- Review Task 没有更严格的 cross-model / named-reviewer 要求。
+
+因此，Claude 与 Codex 都可以承担开发、Review、Fix、Re-Review；模型名称本身不构成固定角色分工。
+
 Review Task 必须记录：
 - Reviews Task
 - Original Agent
@@ -221,10 +238,12 @@ Re-Review 应优先做 targeted verification，只验证原 Finding 是否关闭
 
 ## 7. Reviewer 选择
 
-- Claude Code：复杂架构、复杂实现、Contract、高风险 Review。
-- Codex：代码 correctness、工程实现、测试、CI、复杂代码 Review。
-- DeepSeek：低风险 Review、定向 Re-Review、文档一致性、机械验证。
+- Claude：可承担复杂架构、复杂实现、Contract、高风险 Review，也可承担核心 Production 开发。
+- Codex：可承担代码 correctness、工程实现、测试、CI、复杂代码 Review，也可承担核心 Production 开发。
+- DeepSeek：优先低风险 Review、定向 Re-Review、文档一致性、机械验证、简单/机械实现。
 
-DeepSeek 可以检查明确的 complexity trace / checklist，但高风险核心实现的最终放行仍由 Orchestrator 根据风险选择 Codex / Claude Code 或交叉 Review。
+Claude / Codex 没有固定“开发者 / 审查者”角色。Orchestrator 根据当前可用性、任务复杂度、写面隔离、独立性和集成成本动态分配。高风险核心实现的最终独立放行由满足独立性要求的 Claude/Codex 会话承担；如果具体 Task 明确要求 cross-model，则必须遵守该更严格要求。
+
+DeepSeek 可以检查明确的 complexity trace / checklist，但高风险核心实现的最终放行仍由 Orchestrator 根据风险选择满足独立性要求的 Claude / Codex 会话或交叉 Review。
 
 实际分配由 Orchestrator 根据风险裁决。
