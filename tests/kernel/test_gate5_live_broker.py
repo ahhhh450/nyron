@@ -17,7 +17,7 @@ from nyron_kernel.capability import (
     CapabilityTypeRegistry,
 )
 from nyron_kernel.definitions import ModuleRegistry
-from nyron_kernel.effect import EffectAuthority
+from nyron_kernel.effect import EffectAuthority, EffectError, EffectRequest
 from nyron_kernel.execution import (
     ActivationRepository,
     RunRepository,
@@ -29,6 +29,10 @@ from nyron_kernel.host import (
     BoundedWriteRejected,
     BoundedWriteUnknown,
     CapabilityHandle,
+    ModelInvokeDispatched,
+    ModelInvokeIdentityConflict,
+    ModelInvokeRejected,
+    ModelInvokeUnknown,
     ResourceHandle,
     RuntimeContext,
     TrustedHostError,
@@ -67,6 +71,16 @@ class Gate5LiveBrokerTest(unittest.TestCase):
                 {},
             )
         )
+        self.capability_types.register(
+            CapabilityTypeDefinition(
+                "capability.model-invoke",
+                "1",
+                "schema:model-invoke-scope@1",
+                None,
+                (EffectAuthority.MODEL_INVOKE_EFFECT_CLASS,),
+                {},
+            )
+        )
         self.capability = CapabilityAuthority(
             self.store,
             self.capability_types,
@@ -89,6 +103,21 @@ class Gate5LiveBrokerTest(unittest.TestCase):
         self.grant1 = self._grant("grant:gate5/1", "resource:gate5/1")
         self.grant1b = self._grant("grant:gate5/1b", "resource:gate5/1")
         self.grant2 = self._grant("grant:gate5/2", "resource:gate5/2")
+        self.model_grant = self.capability.issue(
+            CapabilityRequest(
+                "grant:gate5/model",
+                "capability.model-invoke",
+                "1",
+                self.attempt,
+                {
+                    "effect_class": "MODEL_INVOKE",
+                    "provider_ref": "provider:test",
+                    "model_ref": "model:test",
+                },
+                "capability-authority:test",
+            ),
+            expires_at=200,
+        )
         self.effect = EffectAuthority(
             self.store, self.runtime, self.capability, self.resources, lambda: self.now
         )
@@ -135,10 +164,23 @@ class Gate5LiveBrokerTest(unittest.TestCase):
     @staticmethod
     def _scope_valid(schema: str, value: object) -> bool:
         return (
-            schema == "schema:gate5-scope@1"
-            and isinstance(value, dict)
-            and value.get("effect_class") == EffectAuthority.EFFECT_CLASS
-            and isinstance(value.get("resource_ref"), str)
+            isinstance(value, dict)
+            and (
+                (
+                    schema == "schema:gate5-scope@1"
+                    and value.get("effect_class") == EffectAuthority.EFFECT_CLASS
+                    and isinstance(value.get("resource_ref"), str)
+                )
+                or (
+                    schema == "schema:model-invoke-scope@1"
+                    and value
+                    == {
+                        "effect_class": "MODEL_INVOKE",
+                        "provider_ref": "provider:test",
+                        "model_ref": "model:test",
+                    }
+                )
+            )
         )
 
     @staticmethod
@@ -168,7 +210,12 @@ class Gate5LiveBrokerTest(unittest.TestCase):
             authority=self.attempt,
             activation_repository=ActivationRepository(self.store, self.registry),
             accounting_scope_ref="accounting:gate5",
-            capability_grants=(self.grant1, self.grant1b, self.grant2),
+            capability_grants=(
+                self.grant1,
+                self.grant1b,
+                self.grant2,
+                self.model_grant,
+            ),
             resource_leases=(self.lease1, self.lease2),
             effect_authority=effect or self.effect,
             metadata=(("mode", "trusted"),),
@@ -181,6 +228,18 @@ class Gate5LiveBrokerTest(unittest.TestCase):
             self.context.resource_handles[resource],
             intent,
             payload,
+        )
+
+    def _invoke(self, intent="invoke.1", input_text="hello", context=None):
+        runtime_context = context or self.context
+        assert runtime_context.effect_broker is not None
+        return runtime_context.effect_broker.dispatch_model_invoke(
+            runtime_context.capability_handles[3],
+            intent,
+            provider_ref="provider:test",
+            model_ref="model:test",
+            conflict_scope_ref="conversation:test",
+            input_text=input_text,
         )
 
     def test_shapes_are_frozen_and_resource_handle_has_no_path(self) -> None:
@@ -439,6 +498,158 @@ class Gate5LiveBrokerTest(unittest.TestCase):
         blocked = self._dispatch("gate4.second")
         self.assertIsInstance(blocked, BoundedWriteRejected)
         self.assertEqual("EFFECT_DISPATCH_AUTHORITY_REJECTED", blocked.reason_code)
+
+    def test_model_invoke_prepared_before_local_dispatch_and_completion_evidence(self) -> None:
+        stages = []
+        effect = EffectAuthority(
+            self.store,
+            self.runtime,
+            self.capability,
+            self.resources,
+            lambda: self.now,
+            lambda stage, operation: stages.append((stage, operation.state)),
+        )
+        result = self._invoke(context=self._context(effect))
+        self.assertIsInstance(result, ModelInvokeDispatched)
+        operation = effect.resolve(result.operation_ref)
+        assert operation is not None and operation.completion_evidence is not None
+        self.assertEqual("COMPLETED", operation.state)
+        self.assertEqual("KNOWN", operation.historical_outcome.value)
+        self.assertEqual(
+            "BOUNDED_LOCAL_SIMULATION",
+            operation.completion_evidence["dispatch_boundary"],
+        )
+        self.assertEqual("NONE", operation.completion_evidence["external_consequence"])
+        self.assertEqual("PREPARED", stages[0][1])
+
+    def test_model_invoke_replay_conflict_and_fabricated_handle_fail_closed(self) -> None:
+        first = self._invoke("invoke.replay", "same")
+        self.assertEqual(first, self._invoke("invoke.replay", "same"))
+        self.assertIsInstance(
+            self._invoke("invoke.replay", "different"), ModelInvokeIdentityConflict
+        )
+        broker = self.context.effect_broker
+        assert broker is not None
+        fabricated = CapabilityHandle("capability.model-invoke", "1", "grant:missing")
+        self.assertEqual(
+            ModelInvokeRejected(None, "BROKER_HANDLE_NOT_IN_CONTEXT"),
+            broker.dispatch_model_invoke(
+                fabricated,
+                "invoke.invalid",
+                provider_ref="provider:test",
+                model_ref="model:test",
+                conflict_scope_ref="conversation:test",
+                input_text="x",
+            ),
+        )
+
+    def test_model_invoke_stale_attempt_and_ambiguous_recovery_fail_closed(self) -> None:
+        old_context = self.context
+        RunRepository(self.store).replace_attempt(
+            run_ref="run:gate5/1",
+            expected_attempt_seq=self.attempt.attempt_seq,
+            expected_fencing_generation=self.attempt.fencing_generation,
+        )
+        rejected = self._invoke("invoke.stale", context=old_context)
+        self.assertIsInstance(rejected, ModelInvokeRejected)
+        self.assertEqual("EFFECT_DISPATCH_AUTHORITY_REJECTED", rejected.reason_code)
+
+        self.tearDown()
+        self.setUp()
+
+        def crash(stage, _operation):
+            if stage == "AFTER_ACTIVE_COMMIT":
+                raise InjectedCrash
+
+        effect = EffectAuthority(
+            self.store,
+            self.runtime,
+            self.capability,
+            self.resources,
+            lambda: self.now,
+            crash,
+        )
+        context = self._context(effect)
+        with self.assertRaises(InjectedCrash):
+            self._invoke("invoke.unknown", context=context)
+        assert context.effect_broker is not None
+        operation_ref = context.effect_broker._operation_ref("invoke.unknown")
+        recovered = self.effect.recover(operation_ref)
+        self.assertEqual("UNKNOWN", recovered.state)
+        self.assertEqual("UNKNOWN", recovered.historical_outcome.value)
+        self.assertIsInstance(
+            self._invoke("invoke.unknown", context=context), ModelInvokeUnknown
+        )
+
+    def test_model_invoke_conflict_scope_resource_shape_and_sqlite_restart(self) -> None:
+        def crash(stage, _operation):
+            if stage == "AFTER_PREPARED_COMMIT":
+                raise InjectedCrash
+
+        preparing = EffectAuthority(
+            self.store,
+            self.runtime,
+            self.capability,
+            self.resources,
+            lambda: self.now,
+            crash,
+        )
+        prepared_context = self._context(preparing)
+        with self.assertRaises(InjectedCrash):
+            self._invoke("invoke.blocker", context=prepared_context)
+        blocked = self._invoke("invoke.conflicting")
+        self.assertIsInstance(blocked, ModelInvokeRejected)
+        self.assertEqual("EFFECT_DISPATCH_AUTHORITY_REJECTED", blocked.reason_code)
+
+        broker = self.context.effect_broker
+        assert broker is not None
+        disjoint = broker.dispatch_model_invoke(
+            self.context.capability_handles[3],
+            "invoke.disjoint",
+            provider_ref="provider:test",
+            model_ref="model:test",
+            conflict_scope_ref="conversation:other",
+            input_text="hello",
+        )
+        self.assertIsInstance(disjoint, ModelInvokeDispatched)
+
+        with self.assertRaises(EffectError) as invalid_resource:
+            self.effect.prepare(
+                EffectRequest(
+                    operation_ref="effect:model-invalid-resource",
+                    effect_class="MODEL_INVOKE",
+                    authority=self.attempt,
+                    capability_grant_ref=self.model_grant.grant_ref,
+                    resource_ref=self.lease1.resource_ref,
+                    resource_lease_ref=self.lease1.lease_ref,
+                    payload='{"conflict_scope_ref":"x","input":"x","model_ref":"model:test","provider_ref":"provider:test"}',
+                    caused_by_ref="delivery:gate5-trigger",
+                )
+            )
+        self.assertEqual("EFFECT_REQUEST_INVALID", invalid_resource.exception.code)
+
+        completed_ref = disjoint.operation_ref
+        database_path = self.root / "kernel.db"
+        self.store.close()
+        self.store = SQLiteStore(database_path)
+        runtime = RuntimeAuthorityResolver(self.store)
+        capability = CapabilityAuthority(
+            self.store,
+            CapabilityTypeRegistry(self.store),
+            runtime,
+            lambda _request: CapabilityDecision("GRANTED", "decision:gate5"),
+            self._scope_valid,
+            lambda: self.now,
+        )
+        resources = ResourceManager(
+            self.store, self.root / "managed", runtime, lambda: self.now
+        )
+        reopened = EffectAuthority(
+            self.store, runtime, capability, resources, lambda: self.now
+        ).resolve(completed_ref)
+        assert reopened is not None
+        self.assertEqual("COMPLETED", reopened.state)
+        self.assertEqual("KNOWN", reopened.historical_outcome.value)
 
 
 if __name__ == "__main__":

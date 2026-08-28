@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 from dataclasses import dataclass
 
@@ -49,6 +50,31 @@ class BoundedWriteUnknown:
 
 @dataclass(frozen=True)
 class BoundedWriteIdentityConflict:
+    operation_ref: str
+    existing_state: str
+    reason_code: str = "EFFECT_OPERATION_IDENTITY_CONFLICT"
+
+
+@dataclass(frozen=True)
+class ModelInvokeDispatched:
+    operation_ref: str
+    state: str = "COMPLETED"
+
+
+@dataclass(frozen=True)
+class ModelInvokeRejected:
+    operation_ref: str | None
+    reason_code: str
+
+
+@dataclass(frozen=True)
+class ModelInvokeUnknown:
+    operation_ref: str
+    note: str = _UNKNOWN_NOTE
+
+
+@dataclass(frozen=True)
+class ModelInvokeIdentityConflict:
     operation_ref: str
     existing_state: str
     reason_code: str = "EFFECT_OPERATION_IDENTITY_CONFLICT"
@@ -152,6 +178,80 @@ class BoundedWriteEffectBroker:
             + intent_ref
         )
         return "module-effect:" + hashlib.sha256(identity.encode("utf-8")).hexdigest()
+
+    def dispatch_model_invoke(
+        self,
+        capability_handle: CapabilityHandle,
+        intent_ref: str,
+        *,
+        provider_ref: str,
+        model_ref: str,
+        conflict_scope_ref: str,
+        input_text: str,
+    ) -> (
+        ModelInvokeDispatched
+        | ModelInvokeRejected
+        | ModelInvokeUnknown
+        | ModelInvokeIdentityConflict
+    ):
+        if (
+            type(capability_handle) is not CapabilityHandle
+            or capability_handle not in self._capability_handles
+        ):
+            return ModelInvokeRejected(None, "BROKER_HANDLE_NOT_IN_CONTEXT")
+        refs = (intent_ref, provider_ref, model_ref, conflict_scope_ref)
+        if any(
+            not isinstance(value, str)
+            or not value
+            or len(value.encode("utf-8")) > 128
+            or _INTENT_PATTERN.fullmatch(value) is None
+            for value in refs
+        ):
+            return ModelInvokeRejected(None, "BROKER_MODEL_INVOKE_REF_INVALID")
+        if not isinstance(input_text, str) or len(input_text.encode("utf-8")) > 2048:
+            return ModelInvokeRejected(None, "BROKER_MODEL_INVOKE_INPUT_INVALID")
+        operation_ref = self._operation_ref(intent_ref)
+        payload = json.dumps(
+            {
+                "provider_ref": provider_ref,
+                "model_ref": model_ref,
+                "conflict_scope_ref": conflict_scope_ref,
+                "input": input_text,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=True,
+        )
+        request = EffectRequest(
+            operation_ref=operation_ref,
+            effect_class=EffectAuthority.MODEL_INVOKE_EFFECT_CLASS,
+            authority=self._authority,
+            capability_grant_ref=capability_handle.grant_ref,
+            resource_ref=None,
+            resource_lease_ref=None,
+            payload=payload,
+            caused_by_ref=self._caused_by_ref,
+        )
+        try:
+            operation = self._effect_authority.execute(request)
+        except EffectError as error:
+            existing = self._effect_authority.resolve(operation_ref)
+            if error.code == "EFFECT_OPERATION_IDENTITY_CONFLICT":
+                if existing is None:
+                    raise RuntimeContextInvariantError(
+                        "identity conflict without durable operation"
+                    ) from error
+                return ModelInvokeIdentityConflict(operation_ref, existing.state)
+            if existing is not None and existing.state == "COMPLETED":
+                return ModelInvokeDispatched(operation_ref)
+            if existing is not None and existing.state == "UNKNOWN":
+                return ModelInvokeUnknown(operation_ref)
+            return ModelInvokeRejected(operation_ref, error.code)
+        if operation.state != "COMPLETED":
+            raise RuntimeContextInvariantError(
+                "EffectAuthority.execute returned a non-COMPLETED operation"
+            )
+        return ModelInvokeDispatched(operation_ref)
 
 
 @dataclass(frozen=True)
@@ -261,7 +361,6 @@ def build_runtime_context(
     if (
         effect_authority is not None
         and capability_handles
-        and resource_handles
         and causal_ref is not None
     ):
         broker = BoundedWriteEffectBroker(

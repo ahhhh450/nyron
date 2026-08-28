@@ -36,8 +36,8 @@ class EffectRequest:
     effect_class: str
     authority: AttemptAuthority
     capability_grant_ref: str
-    resource_ref: str
-    resource_lease_ref: str
+    resource_ref: str | None
+    resource_lease_ref: str | None
     payload: str
     caused_by_ref: str
 
@@ -53,8 +53,8 @@ class EffectOperation:
     fencing_token: str
     fencing_generation: int
     capability_grant_ref: str
-    resource_ref: str
-    resource_lease_ref: str
+    resource_ref: str | None
+    resource_lease_ref: str | None
     target_ref: str
     payload: str
     payload_hash: str
@@ -73,6 +73,10 @@ class EffectAuthority:
     """Sole canonical writer and trusted adapter for the bounded effect."""
 
     EFFECT_CLASS = "nyron.kernel.managed-resource-bounded-write@1"
+    MODEL_INVOKE_EFFECT_CLASS = "MODEL_INVOKE"
+    SUPPORTED_EFFECT_CLASSES = frozenset(
+        {EFFECT_CLASS, MODEL_INVOKE_EFFECT_CLASS}
+    )
     _MAX_PAYLOAD_BYTES = 4096
 
     def __init__(
@@ -126,11 +130,14 @@ class EffectAuthority:
             self._require_identical_replay(existing, request, payload_hash)
             return existing
 
-        resource = self._resource_manager.resolve_resource(request.resource_ref)
-        if resource is None:
-            raise EffectError("UNRESOLVED_RESOURCE")
-        directory = Path(resource.external_ref)
-        target = directory / self._target_name(request.operation_ref)
+        if request.effect_class == self.EFFECT_CLASS:
+            resource = self._resource_manager.resolve_resource(request.resource_ref)
+            if resource is None:
+                raise EffectError("UNRESOLVED_RESOURCE")
+            directory = Path(resource.external_ref)
+            target_ref = str(directory / self._target_name(request.operation_ref))
+        else:
+            target_ref = self._model_target_ref(request.operation_ref, request.payload)
         prepared_at = self._now()
 
         try:
@@ -162,7 +169,7 @@ class EffectAuthority:
                         request.capability_grant_ref,
                         request.resource_ref,
                         request.resource_lease_ref,
-                        str(target),
+                        target_ref,
                         payload_json,
                         payload_hash,
                         request.caused_by_ref,
@@ -181,6 +188,10 @@ class EffectAuthority:
         operation = self._require_operation(operation_ref)
         if operation.state not in {"PREPARED", "ACTIVE"}:
             return operation
+        if operation.effect_class == self.MODEL_INVOKE_EFFECT_CLASS:
+            if operation.state == "ACTIVE" or operation.dispatch_admission_ref is not None:
+                self._mark_unknown(operation_ref)
+            return self._require_operation(operation_ref)
         evidence = self._target_evidence(operation)
         if operation.state == "ACTIVE":
             if evidence == "EXACT":
@@ -201,6 +212,12 @@ class EffectAuthority:
 
         operation = self._require_operation(operation_ref)
         if operation.state == "PREPARED":
+            if operation.effect_class == self.MODEL_INVOKE_EFFECT_CLASS:
+                if operation.dispatch_admission_ref is None:
+                    self._commit_fenced(operation, "PREPARED_NEVER_ADMITTED")
+                else:
+                    self._mark_unknown(operation_ref)
+                return self._require_operation(operation_ref)
             evidence = self._target_evidence(operation)
             if evidence == "ABSENT":
                 self._commit_fenced(operation, "PREPARED_NEVER_ACTIVE")
@@ -220,6 +237,9 @@ class EffectAuthority:
         operation = self._require_operation(operation_ref)
         if operation.state != "REVOKE_REQUESTED":
             return operation
+        if operation.effect_class == self.MODEL_INVOKE_EFFECT_CLASS:
+            self._mark_unknown(operation_ref)
+            return self._require_operation(operation_ref)
         evidence = self._target_evidence(operation)
         if evidence == "EXACT":
             self._commit_completed(operation)
@@ -313,10 +333,7 @@ class EffectAuthority:
 
     def _admit_dispatch(self, operation: EffectOperation) -> EffectOperation:
         authority = self._authority_from_operation(operation)
-        exact_scope = {
-            "effect_class": operation.effect_class,
-            "resource_ref": operation.resource_ref,
-        }
+        exact_scope = self._exact_capability_scope(operation)
         rejected = False
         with self._store.transaction() as connection:
             current = connection.execute(
@@ -329,27 +346,54 @@ class EffectAuthority:
                 return self._operation_from_row(current)
 
             now = self._now()
-            resource_directory = self._resource_manager._resolve_effect_directory_with(
-                connection,
-                operation.resource_ref,
-                operation.resource_lease_ref,
-                authority,
-                now,
-            )
-            target = Path(operation.target_ref)
-            target_evidence = self._target_evidence(operation)
-            conflicting_operation = connection.execute(
-                """
-                SELECT 1 FROM effect_operations
-                WHERE resource_ref = ?
-                  AND operation_ref != ?
-                  AND state IN (
-                      'PREPARED', 'ACTIVE', 'REVOKE_REQUESTED', 'UNKNOWN'
-                  )
-                LIMIT 1
-                """,
-                (operation.resource_ref, operation.operation_ref),
-            ).fetchone()
+            if operation.effect_class == self.EFFECT_CLASS:
+                resource_directory = self._resource_manager._resolve_effect_directory_with(
+                    connection,
+                    operation.resource_ref,
+                    operation.resource_lease_ref,
+                    authority,
+                    now,
+                )
+                target = Path(operation.target_ref)
+                target_evidence = self._target_evidence(operation)
+                resource_valid = (
+                    resource_directory is not None
+                    and target.parent == resource_directory
+                    and target.name == self._target_name(operation.operation_ref)
+                )
+                conflict_column = "resource_ref"
+                conflict_value = operation.resource_ref
+            else:
+                target_evidence = "ABSENT"
+                resource_valid = (
+                    operation.resource_ref is None
+                    and operation.resource_lease_ref is None
+                    and operation.target_ref
+                    == self._model_target_ref(operation.operation_ref, operation.payload)
+                )
+                conflict_column = "target_ref"
+                conflict_value = self._model_conflict_prefix(operation.payload) + "%"
+            if conflict_column == "resource_ref":
+                conflicting_operation = connection.execute(
+                    """
+                    SELECT 1 FROM effect_operations
+                    WHERE resource_ref = ? AND operation_ref != ?
+                      AND state IN ('PREPARED','ACTIVE','REVOKE_REQUESTED','UNKNOWN')
+                    LIMIT 1
+                    """,
+                    (conflict_value, operation.operation_ref),
+                ).fetchone()
+            else:
+                conflicting_operation = connection.execute(
+                    """
+                    SELECT 1 FROM effect_operations
+                    WHERE effect_class = 'MODEL_INVOKE' AND target_ref LIKE ?
+                      AND operation_ref != ?
+                      AND state IN ('PREPARED','ACTIVE','REVOKE_REQUESTED','UNKNOWN')
+                    LIMIT 1
+                    """,
+                    (conflict_value, operation.operation_ref),
+                ).fetchone()
             valid = (
                 self._runtime_authority.is_current_with(connection, authority)
                 and self._capability_authority._is_effect_dispatch_admissible_with(
@@ -359,9 +403,7 @@ class EffectAuthority:
                     exact_scope,
                     now,
                 )
-                and resource_directory is not None
-                and target.parent == resource_directory
-                and target.name == self._target_name(operation.operation_ref)
+                and resource_valid
                 and target_evidence == "ABSENT"
                 and conflicting_operation is None
             )
@@ -455,6 +497,13 @@ class EffectAuthority:
         return self._require_operation(operation.operation_ref)
 
     def _mutate_and_complete(self, operation: EffectOperation) -> EffectOperation:
+        if operation.effect_class == self.MODEL_INVOKE_EFFECT_CLASS:
+            current = self._require_operation(operation.operation_ref)
+            if current.state != "ACTIVE":
+                raise EffectError("EFFECT_OPERATION_NOT_MUTABLE")
+            self._crash_hook("BEFORE_MODEL_INVOKE_LOCAL_DISPATCH", current)
+            self._commit_model_invoke_completed(current)
+            return self._require_operation(operation.operation_ref)
         evidence = self._target_evidence(operation)
         if evidence == "ABSENT":
             current = self._require_operation(operation.operation_ref)
@@ -528,6 +577,49 @@ class EffectAuthority:
                         THEN historical_outcome_evidence_json
                         ELSE ?
                     END
+                WHERE operation_ref = ?
+                """,
+                (evidence_json, historical_evidence, operation.operation_ref),
+            )
+
+    def _commit_model_invoke_completed(self, operation: EffectOperation) -> None:
+        evidence = {
+            "schema": 1,
+            "effect_class": self.MODEL_INVOKE_EFFECT_CLASS,
+            "dispatch_boundary": "BOUNDED_LOCAL_SIMULATION",
+            "external_consequence": "NONE",
+            "payload_hash": operation.payload_hash,
+        }
+        evidence_json = self._canonical_json(evidence)
+        historical_evidence = self._historical_outcome_evidence(
+            operation.operation_ref,
+            HistoricalOutcome.KNOWN,
+            {"basis": "LOCAL_NON_CONSEQUENTIAL_COMPLETION", "evidence": evidence},
+        )
+        with self._store.transaction() as connection:
+            row = connection.execute(
+                "SELECT state, dispatch_admission_ref, historical_outcome FROM effect_operations WHERE operation_ref = ?",
+                (operation.operation_ref,),
+            ).fetchone()
+            if row is None:
+                raise EffectError("UNRESOLVED_EFFECT_OPERATION")
+            if row["state"] == "COMPLETED":
+                return
+            if row["state"] != "ACTIVE" or row["dispatch_admission_ref"] is None:
+                raise EffectError("EFFECT_COMPLETION_NOT_ALLOWED")
+            if row["historical_outcome"] != "KNOWN":
+                self._record_historical_refinement_with(
+                    connection,
+                    operation.operation_ref,
+                    HistoricalOutcome.KNOWN,
+                    historical_evidence,
+                )
+            connection.execute(
+                """
+                UPDATE effect_operations
+                SET state = 'COMPLETED', completion_evidence_json = ?,
+                    historical_outcome = 'KNOWN',
+                    historical_outcome_evidence_json = ?
                 WHERE operation_ref = ?
                 """,
                 (evidence_json, historical_evidence, operation.operation_ref),
@@ -631,18 +723,26 @@ class EffectAuthority:
             request.operation_ref,
             request.effect_class,
             request.capability_grant_ref,
-            request.resource_ref,
-            request.resource_lease_ref,
             request.caused_by_ref,
         )
         if (
             any(not isinstance(value, str) or not value for value in strings)
-            or request.effect_class != cls.EFFECT_CLASS
+            or request.effect_class not in cls.SUPPORTED_EFFECT_CLASSES
             or not isinstance(request.authority, AttemptAuthority)
             or not isinstance(request.payload, str)
             or len(request.payload.encode("utf-8")) > cls._MAX_PAYLOAD_BYTES
         ):
             raise EffectError("EFFECT_REQUEST_INVALID")
+        if request.effect_class == cls.EFFECT_CLASS:
+            if any(
+                not isinstance(value, str) or not value
+                for value in (request.resource_ref, request.resource_lease_ref)
+            ):
+                raise EffectError("EFFECT_REQUEST_INVALID")
+        elif request.resource_ref is not None or request.resource_lease_ref is not None:
+            raise EffectError("EFFECT_REQUEST_INVALID")
+        if request.effect_class == cls.MODEL_INVOKE_EFFECT_CLASS:
+            cls._model_payload(request.payload)
 
     @staticmethod
     def _payload_identity(payload: str) -> tuple[str, str]:
@@ -656,6 +756,52 @@ class EffectAuthority:
     def _target_name(operation_ref: str) -> str:
         digest = hashlib.sha256(operation_ref.encode("utf-8")).hexdigest()
         return f"effect-{digest}.bounded"
+
+    @classmethod
+    def _model_payload(cls, payload: str) -> dict[str, str]:
+        try:
+            value = json.loads(payload)
+        except (TypeError, ValueError) as error:
+            raise EffectError("MODEL_INVOKE_PAYLOAD_INVALID") from error
+        required = {"provider_ref", "model_ref", "conflict_scope_ref", "input"}
+        if (
+            not isinstance(value, dict)
+            or set(value) != required
+            or any(not isinstance(value[key], str) or not value[key] for key in required)
+        ):
+            raise EffectError("MODEL_INVOKE_PAYLOAD_INVALID")
+        return value
+
+    @classmethod
+    def _model_conflict_prefix(cls, payload: str) -> str:
+        value = cls._model_payload(payload)
+        identity = cls._canonical_json(
+            {
+                "provider_ref": value["provider_ref"],
+                "model_ref": value["model_ref"],
+                "conflict_scope_ref": value["conflict_scope_ref"],
+            }
+        )
+        return "model-invoke:" + hashlib.sha256(identity.encode("utf-8")).hexdigest() + ":"
+
+    @classmethod
+    def _model_target_ref(cls, operation_ref: str, payload: str) -> str:
+        operation_hash = hashlib.sha256(operation_ref.encode("utf-8")).hexdigest()
+        return cls._model_conflict_prefix(payload) + operation_hash
+
+    @classmethod
+    def _exact_capability_scope(cls, operation: EffectOperation) -> dict[str, object]:
+        if operation.effect_class == cls.EFFECT_CLASS:
+            return {
+                "effect_class": operation.effect_class,
+                "resource_ref": operation.resource_ref,
+            }
+        value = cls._model_payload(operation.payload)
+        return {
+            "effect_class": cls.MODEL_INVOKE_EFFECT_CLASS,
+            "provider_ref": value["provider_ref"],
+            "model_ref": value["model_ref"],
+        }
 
     @staticmethod
     def _admission_ref(operation_ref: str) -> str:

@@ -6,10 +6,15 @@ import json
 import sqlite3
 from dataclasses import dataclass
 from hashlib import sha256
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 from nyron_kernel.definitions import ModuleDefinition, ModuleRegistry
-from nyron_kernel.host import Completed, Failed, TrustedModuleHost
+from nyron_kernel.definitions.registry import EFFECT_CAPABILITY
+from nyron_kernel.host import (
+    Completed,
+    Failed,
+    TrustedModuleHost,
+)
 from nyron_kernel.store import SQLiteStore
 
 from .activation import Activation, ActivationRepository
@@ -17,6 +22,10 @@ from .attempt import AttemptAuthority
 from .delivery import Delivery
 from .packet import Packet, PacketRepository
 from .value import DurableValueError, DurableValueRepository
+
+if TYPE_CHECKING:
+    from nyron_kernel.capability import CapabilityAuthority
+    from nyron_kernel.effect import EffectAuthority
 
 
 class AttemptExecutionError(RuntimeError):
@@ -35,6 +44,7 @@ class _Invocation:
     definition: ModuleDefinition
     inputs: dict[str, Any]
     config: dict[str, Any]
+    accounting_scope_ref: str
 
 
 class AttemptExecutor:
@@ -46,11 +56,15 @@ class AttemptExecutor:
         registry: ModuleRegistry,
         config_loader: Callable[[str, str], object],
         host: TrustedModuleHost | None = None,
+        capability_authority: CapabilityAuthority | None = None,
+        effect_authority: EffectAuthority | None = None,
     ) -> None:
         self._store = store
         self._registry = registry
         self._config_loader = config_loader
         self._host = host or TrustedModuleHost(registry)
+        self._capability_authority = capability_authority
+        self._effect_authority = effect_authority
         self._values = DurableValueRepository(store)
         self._packets = PacketRepository(store)
         self._activations = ActivationRepository(store, registry)
@@ -66,11 +80,12 @@ class AttemptExecutor:
             raise AttemptExecutionError("INJECTED_AFTER_ACTIVE")
 
         try:
+            runtime_context = self._runtime_context(invocation)
             result = self._host.execute(
                 invocation.module_ref_version,
                 invocation.inputs,
                 invocation.config,
-                runtime_context=None,
+                runtime_context=runtime_context,
             )
         except Exception as error:
             raise AttemptExecutionError("MODULE_INVOCATION_INTERRUPTED") from error
@@ -93,6 +108,40 @@ class AttemptExecutor:
         return self.commit_prepared_success(
             invocation.authority,
             inject_failure=inject_failure,
+        )
+
+    def _runtime_context(self, invocation: _Invocation):
+        if invocation.definition.effect_classes == ("PURE",):
+            return None
+        effect_classes = tuple(
+            EFFECT_CAPABILITY[effect]
+            for effect in invocation.definition.effect_classes
+            if effect != "PURE"
+        )
+        if (
+            not effect_classes
+            or any(
+                effect != "MODEL_INVOKE"
+                for effect in effect_classes
+            )
+            or self._capability_authority is None
+            or self._effect_authority is None
+        ):
+            raise AttemptExecutionError("RUNTIME_CONTEXT_AUTHORITY_INVALID")
+        grants = self._capability_authority._resolve_active_for_attempt(
+            invocation.authority, effect_classes
+        )
+        if not grants:
+            raise AttemptExecutionError("RUNTIME_CONTEXT_AUTHORITY_INVALID")
+        from nyron_kernel.host import build_runtime_context
+
+        return build_runtime_context(
+            authority=invocation.authority,
+            activation_repository=self._activations,
+            accounting_scope_ref=invocation.accounting_scope_ref,
+            capability_grants=grants,
+            effect_authority=self._effect_authority,
+            metadata=(("mode", "trusted"),),
         )
 
     def commit_prepared_success(
@@ -261,6 +310,7 @@ class AttemptExecutor:
             definition=definition,
             inputs=inputs,
             config=config,
+            accounting_scope_ref=evidence["accounting_scope_ref"],
         )
 
     def _load_current_evidence(self, run_ref: str) -> dict[str, Any]:
@@ -269,7 +319,8 @@ class AttemptExecutor:
             SELECT r.activation_ref, r.execution_ref,
                    a.graph_revision_ref, a.module_instance_revision_ref,
                    m.module_ref, m.module_version, m.config_ref, m.config_hash,
-                   m.input_port_contract_json, m.output_port_contract_json
+                   m.input_port_contract_json, m.output_port_contract_json,
+                   a.static_accounting_scope_ref AS accounting_scope_ref
             FROM runs AS r
             JOIN activations AS a ON a.activation_ref = r.activation_ref
             JOIN workflow_executions AS w

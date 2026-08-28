@@ -214,6 +214,67 @@ class CapabilityAuthority:
         ).fetchone()
         return self._grant_from_row(row) if row is not None else None
 
+    def _resolve_active_for_attempt(
+        self,
+        authority: AttemptAuthority,
+        effect_classes: tuple[str, ...],
+    ) -> tuple[CapabilityGrant, ...]:
+        """Return current, time-valid grants compatible with each requested effect."""
+
+        if (
+            type(authority) is not AttemptAuthority
+            or not effect_classes
+            or any(not isinstance(value, str) or not value for value in effect_classes)
+        ):
+            return ()
+        now = self._now()
+        with self._store.transaction() as connection:
+            if not self._runtime_authority.is_current_with(connection, authority):
+                return ()
+            rows = connection.execute(
+                """
+                SELECT g.*, t.contract_json
+                FROM capability_grants AS g
+                JOIN capability_types AS t
+                  ON t.capability_type_ref = g.capability_type_ref
+                 AND t.version = g.capability_type_version
+                WHERE g.execution_ref = ? AND g.activation_ref = ?
+                  AND g.run_ref = ? AND g.attempt_seq = ?
+                  AND g.fencing_token = ? AND g.fencing_generation = ?
+                  AND g.state = 'ACTIVE'
+                  AND (g.not_before IS NULL OR g.not_before <= ?)
+                  AND (g.expires_at IS NULL OR g.expires_at > ?)
+                ORDER BY g.grant_ref
+                """,
+                (
+                    authority.execution_ref,
+                    authority.activation_ref,
+                    authority.run_ref,
+                    authority.attempt_seq,
+                    authority.fencing_token,
+                    authority.fencing_generation,
+                    now,
+                    now,
+                ),
+            ).fetchall()
+        requested = set(effect_classes)
+        grants = tuple(
+            self._grant_from_row(row)
+            for row in rows
+            if requested.intersection(
+                json.loads(row["contract_json"])["compatible_effect_classes"]
+            )
+        )
+        covered = {
+            effect_class
+            for row in rows
+            for effect_class in json.loads(row["contract_json"])[
+                "compatible_effect_classes"
+            ]
+            if effect_class in requested
+        }
+        return grants if covered == requested else ()
+
     def revoke(self, grant_ref: str) -> CapabilityGrant:
         now = self._now()
         with self._store.transaction() as connection:

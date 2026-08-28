@@ -588,8 +588,8 @@ class SQLiteStore:
                 fencing_generation INTEGER NOT NULL
                     CHECK (fencing_generation > 0),
                 capability_grant_ref TEXT NOT NULL,
-                resource_ref TEXT NOT NULL,
-                resource_lease_ref TEXT NOT NULL,
+                resource_ref TEXT,
+                resource_lease_ref TEXT,
                 target_ref TEXT NOT NULL UNIQUE,
                 payload_json TEXT NOT NULL,
                 payload_hash TEXT NOT NULL,

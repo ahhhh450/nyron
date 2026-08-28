@@ -2,12 +2,21 @@
 
 from __future__ import annotations
 
+import json
 import tempfile
 import unittest
 from dataclasses import replace
 from pathlib import Path
 
+from nyron_kernel.capability import (
+    CapabilityAuthority,
+    CapabilityDecision,
+    CapabilityRequest,
+    CapabilityTypeDefinition,
+    CapabilityTypeRegistry,
+)
 from nyron_kernel.definitions import ModuleRegistry
+from nyron_kernel.effect import EffectAuthority
 from nyron_kernel.execution import (
     ActivationRepository,
     AttemptExecutionError,
@@ -16,10 +25,12 @@ from nyron_kernel.execution import (
     DurableValueRepository,
     PacketRepository,
     RunRepository,
+    RuntimeAuthorityResolver,
 )
 from nyron_kernel.graph import GraphRepository, ModuleInstanceRevision
 from nyron_kernel.host import Completed, Failed, TrustedModuleHost
 from nyron_kernel.modules import builtin_text_concat
+from nyron_kernel.resource import ResourceManager
 from nyron_kernel.store import SQLiteStore
 
 
@@ -204,6 +215,69 @@ class AttemptExecutionCommitTest(unittest.TestCase):
             f"SELECT COUNT(*) FROM {table}"
         ).fetchone()[0]
 
+    def _make_model_effect_capable(self) -> None:
+        row = self.store.connection.execute(
+            "SELECT contract_json FROM module_definitions WHERE module_ref = 'builtin.text.concat' AND version = '1'"
+        ).fetchone()
+        contract = json.loads(row["contract_json"])
+        contract["effect_classes"] = ["MODEL_CALL"]
+        contract["required_capability_types"] = ["MODEL_INVOKE"]
+        with self.store.transaction() as connection:
+            connection.execute(
+                "UPDATE module_definitions SET contract_json = ? WHERE module_ref = 'builtin.text.concat' AND version = '1'",
+                (json.dumps(contract, sort_keys=True, separators=(",", ":")),),
+            )
+
+    def _model_authorities(self, managed_root: Path):
+        runtime = RuntimeAuthorityResolver(self.store)
+        types = CapabilityTypeRegistry(self.store)
+        types.register(
+            CapabilityTypeDefinition(
+                "capability.model-invoke",
+                "1",
+                "schema:model-invoke@1",
+                None,
+                ("MODEL_INVOKE",),
+                {},
+            )
+        )
+        capability = CapabilityAuthority(
+            self.store,
+            types,
+            runtime,
+            lambda _request: CapabilityDecision("GRANTED", "decision:model"),
+            lambda schema, scope: schema == "schema:model-invoke@1"
+            and scope
+            == {
+                "effect_class": "MODEL_INVOKE",
+                "provider_ref": "provider:test",
+                "model_ref": "model:test",
+            },
+            lambda: 100,
+        )
+        resources = ResourceManager(self.store, managed_root, runtime, lambda: 100)
+        effect = EffectAuthority(
+            self.store, runtime, capability, resources, lambda: 100
+        )
+        authority = runtime.resolve_current(RUN)
+        assert authority is not None
+        capability.issue(
+            CapabilityRequest(
+                "grant:attempt/model",
+                "capability.model-invoke",
+                "1",
+                authority,
+                {
+                    "effect_class": "MODEL_INVOKE",
+                    "provider_ref": "provider:test",
+                    "model_ref": "model:test",
+                },
+                "capability-authority:test",
+            ),
+            expires_at=200,
+        )
+        return capability, effect
+
     def test_happy_path_uses_exact_activation_inputs_config_and_host_boundary(self):
         config_calls = []
         host = RecordingHost(
@@ -226,6 +300,52 @@ class AttemptExecutionCommitTest(unittest.TestCase):
         state = self._state()
         self.assertEqual(("SUCCESS", 1, "SUCCEEDED"), (state["run_state"], state["terminal_attempt_seq"], state["attempt_state"]))
         self.assertEqual(1, self._count("run_terminal_events"))
+
+    def test_effect_capable_attempt_receives_only_bounded_runtime_context(self):
+        self._make_model_effect_capable()
+        with tempfile.TemporaryDirectory() as directory:
+            capability, effect = self._model_authorities(Path(directory) / "managed")
+            registry = ModuleRegistry(self.store)
+            class EffectHost:
+                def __init__(self):
+                    self.calls = []
+
+                def execute(self, module_ref_version, inputs, config, runtime_context=None):
+                    self.calls.append((module_ref_version, inputs, config, runtime_context))
+                    return Completed({"text": inputs["a"] + inputs["b"]})
+
+            host = EffectHost()
+            executor = AttemptExecutor(
+                self.store,
+                registry,
+                lambda _ref, _digest: {},
+                host=host,
+                capability_authority=capability,
+                effect_authority=effect,
+            )
+            executor.execute(RUN)
+        context = host.calls[0][3]
+        self.assertIsNotNone(context)
+        self.assertIsNotNone(context.effect_broker)
+        self.assertEqual(
+            ("grant:attempt/model",),
+            tuple(handle.grant_ref for handle in context.capability_handles),
+        )
+        self.assertEqual((), context.resource_handles)
+
+    def test_effect_capable_attempt_without_canonical_grant_fails_before_host(self):
+        self._make_model_effect_capable()
+        host = ResultHost(Completed({"text": "should-not-run"}))
+        executor = AttemptExecutor(
+            self.store,
+            ModuleRegistry(self.store),
+            lambda _ref, _digest: {},
+            host=host,
+        )
+        with self.assertRaises(AttemptExecutionError) as raised:
+            executor.execute(RUN)
+        self.assertEqual("MODULE_INVOCATION_INTERRUPTED", raised.exception.code)
+        self.assertEqual(0, host.calls)
 
     def test_post_activation_new_delivery_cannot_replace_recorded_input(self):
         values = DurableValueRepository(self.store)
