@@ -7,13 +7,13 @@
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Development Director: `ACTIVE — Global Development Coordination Authority`
 - Coordination Epoch: `3`
-- Coordination Revision: `125`
-- Revision CAS Basis: `Expected Epoch 3 / Expected Revision 124 — MATCHED`
+- Coordination Revision: `126`
+- Revision CAS Basis: `Expected Epoch 3 / Expected Revision 125 — MATCHED`
 - Last Accepted Production Commit: `e47511aef987cd9fa5c171e319971f90ab549bd2`
 - Canonical Repository Finalization Merge: `8962743bfbc6385bf58ebb31a63f5e5442c5f391`
 - Foundation Wave 2 Accepted Downstream Base: `fa12ad2ba51a010786ac307e8efd683bc1be832b`
 - Development Gate: `PRODUCT NODE / VISUAL WORKFLOW DEVELOPMENT — OPEN`
-- Current Gate: `TRACK E — NODE FOUNDATION v0.1 BOUNDED IMPLEMENTATION`
+- Current Gate: `TRACK E — NODE FOUNDATION v0.1 INDEPENDENT EXACT-SHA REVIEW`
 - Current Mode: `TRACK E PRIMARY / TRACK A+B+C+D SUPPORT ON CONCRETE PRODUCT NEED`
 - Primary Milestone: `MODULE ASSEMBLY NODE FOUNDATION`
 - Target Acceptance Milestone: `NODE FOUNDATION v0.1`
@@ -26,8 +26,6 @@
 
 A Handoff is a recovery aid, not canonical state.
 
-New Director startup order:
-
 ```text
 fetch latest main
 → read STATUS
@@ -38,23 +36,20 @@ fetch latest main
 ```
 
 Current handoff:
-
 `coordination/handoffs/NYRON_DEVELOPMENT_HANDOFF_2026-08-28_R2.md`
 
 ## Current Agent Availability
 
 Operational availability is authoritative in `coordination/AGENT_AVAILABILITY.md`.
 
-- `Claude`: `AVAILABLE — ACTIVE PRIMARY LANE`.
-- `Codex`: `TEMPORARILY RATE-LIMITED — OPERATOR-REPORTED RESPONSE CAPACITY EXPECTED TO RETURN IN ~1 HOUR`.
+- `Claude`: `AVAILABLE — ACTIVE PRIMARY / REVIEW LANE`.
+- `Codex`: `RECHECK BEFORE ASSIGNMENT`; previous temporary rate-limit window may have elapsed, but no fresh operator confirmation is recorded.
 - `DeepSeek`: `AVAILABLE` for simple/mechanical/low-risk implementation and targeted verification.
 - `GPT / Web GPT`: `AVAILABLE FOR ORCHESTRATION`; not default Production implementation.
 
-Claude and Codex are both eligible for development and independent review. Independence is session/execution-identity based unless a concrete Task explicitly requires cross-model review. Available capacity does not authorize speculative infrastructure expansion.
+Claude and Codex are both eligible for development and independent review. Independence is session/execution-identity based unless a concrete Task explicitly requires cross-model review.
 
 ## Product Direction — Current Scheduling Authority
-
-Nyron's Product target is:
 
 ```text
 Module
@@ -70,9 +65,7 @@ GraphRevision
 Execution Runtime
 ```
 
-The user-facing canvas is a module assembly system similar in interaction model to ComfyUI / Langflow / Flowise.
-
-**Product Node is not Runtime-object visualization.** Runtime/canonical objects such as `Attempt`, `EffectOperation`, `HumanResponse`, `CapabilityGrant`, `BudgetReservation`, `CredentialBinding` and similar authority/evidence records remain internal mechanisms unless a future Product requirement explicitly justifies a user-facing abstraction.
+The Product canvas is a module assembly system. Runtime/canonical objects such as Attempt, EffectOperation, HumanResponse, CapabilityGrant, BudgetReservation and CredentialBinding remain internal mechanisms unless a future Product requirement explicitly justifies a user-facing abstraction.
 
 Development ordering:
 
@@ -94,56 +87,44 @@ return to Product Node
 |---|---|---|
 | `Track A — PWP / Context Backbone` | `STABLE / DOWNSTREAM USABLE` | Support Product/Runtime admission context when a concrete node needs an extension. |
 | `Track B — Distribution / Module Ecosystem` | `STABLE / DOWNSTREAM USABLE` | Exact module identity/resolution foundation is available; later Import/Install/Enable work is Product-demand driven. |
-| `Track C — Human Interaction / Approval` | `STABLE CORE / SUPPORT DEFERRED` | Human Interaction core remains valid. Suspension/resume and external HumanResponse ingress are deferred until Human Approval Node requires them. |
-| `Track D — External Interfaces / Workspace Boundary` | `BOUNDED SUPPORT / CONSEQUENTIAL PRODUCTION CLOSED` | Provider/Credential and accepted foundations remain usable where accepted. Network/Filesystem/Browser/etc. resume only for concrete Product Node needs and under their own gates. |
-| `Track E — Product / Visual Workflow` | `PRIMARY / ACTIVE IMPLEMENTATION` | Task `NYRON-T-20260828-171` is the P0 Node Foundation v0.1 bounded implementation. |
+| `Track C — Human Interaction / Approval` | `STABLE CORE / SUPPORT DEFERRED` | Suspension/resume and external HumanResponse ingress remain deferred until Human Approval Node requires them. |
+| `Track D — External Interfaces / Workspace Boundary` | `BOUNDED SUPPORT / CONSEQUENTIAL PRODUCTION CLOSED` | Provider/Credential foundations remain usable where accepted; Network/Filesystem/Browser resume only for concrete Product needs. |
+| `Track E — Product / Visual Workflow` | `PRIMARY / REVIEW GATE` | Task `NYRON-T-20260828-172` independently reviews the exact Task-171 Node Foundation delivery SHA. |
 
 ## Current Live Task Table
 
 | State | Task | Meaning |
 |---|---|---|
-| `ACTIVE / READY` | `NYRON-T-20260828-171` | Claude Track-E Node Foundation v0.1 bounded Production implementation. |
-| `COMPLETED / GO` | `NYRON-T-20260828-170` | Claude readiness completed successfully; Principal Disposition `GO_BOUNDED_IMPLEMENTATION`. |
-| `PAUSED` | `NYRON-T-20260828-168` | Network foundation paused by Product scheduling hold; do not duplicate. Current pause is not a quota blocker. |
+| `ACTIVE / READY` | `NYRON-T-20260828-172` | Independent HIGH-risk exact-SHA Review of Task 171 delivery `30998e73f1471921ab9b1b201fa8ea6227dc71f6`. |
+| `DELIVERED / PENDING INDEPENDENT REVIEW` | `NYRON-T-20260828-171` | Claude implementation SUCCESS; 458 passed, 2 skipped; not yet accepted or merged as Production. |
+| `COMPLETED / GO` | `NYRON-T-20260828-170` | Readiness SUCCESS; Principal Disposition `GO_BOUNDED_IMPLEMENTATION`. |
+| `PAUSED` | `NYRON-T-20260828-168` | Network foundation paused by Product scheduling hold; do not duplicate. |
 | `DEFERRED / NOT STARTED` | `NYRON-T-20260828-169` | Human suspension/resume + response ingress readiness; resume only for Human Approval Node need. |
-| `WAITING REVIEW` | `NONE until Task 171 delivers an exact Production SHA` | Task 171 is HIGH-risk and must receive independent exact-SHA Review after delivery. |
 
-### Task 170
+### Task 171 Delivery
 
-- Assigned Agent: `Claude — Product Node / Visual Workflow Architecture Readiness Session`.
-- State: `COMPLETED / SUCCESS`.
-- Principal Disposition: `GO_BOUNDED_IMPLEMENTATION`.
-- Result: `coordination/results/NYRON-T-20260828-170.md`.
-- Delivery Commit: `ec74ce73762337560567d4dde97621e82c97abcb`.
-- Result was fast-forwarded to `main` after verifying it was exactly one coordination Result commit ahead of Revision-123 main and changed no Production file.
-- Findings `NYRON-T-20260828-170-F-001` and `NYRON-T-20260828-170-F-002` are NON_BLOCKING and are required implementation closure items inside Task 171.
+- Implementation Session: `Claude — Product Node Foundation Implementation Session`.
+- Result: `coordination/results/NYRON-T-20260828-171.md` on branch `task/NYRON-T-20260828-171-node-foundation-v0-1`.
+- Exact Delivery SHA: `30998e73f1471921ab9b1b201fa8ea6227dc71f6`.
+- Execution Result: `SUCCESS`.
+- Validation reported: `458 passed, 2 skipped, 380 subtests passed`.
+- Implementer reports complete persisted/restarted E2E proof: `Text Input → Mock LLM → Text Output` through Product → Graph → existing Runtime.
+- Production is `PENDING_INDEPENDENT_REVIEW`; implementer self-check does not equal Acceptance.
 
-### Task 171
+### Task 172 Review Gate
 
-- Assigned Agent: `Claude — Product Node Foundation Implementation Session`.
-- State: `ASSIGNED / READY`.
-- Priority: `P0 — PRIMARY PRODUCT DEVELOPMENT TRACK`.
-- Risk: `HIGH`.
-- Production mutation: `AUTHORIZED ONLY WITHIN TASK-SPECIFIED BOUNDED SURFACES`.
-- Target: `NODE FOUNDATION v0.1` and first pure/mock Product vertical slice `Text Input → Mock LLM → Text Output`.
-- Reassignment: `Revision 125 operator-directed rebind from Codex to Claude before implementation start; Task ID/scope/base/write surfaces unchanged`.
-- Independent Review after delivery: `MANDATORY`; reviewer session must not be the Task 171 implementation session. Same-model independent session is permitted unless the Review Task explicitly requires cross-model independence.
-
-### Task 168
-
-- State: `PAUSED — PRODUCT-VERTICAL-SLICE HOLD / DO NOT DUPLICATE`.
-- Resume the same Task ID only when a concrete Product Node needs bounded Network foundation or the Development Director explicitly reopens it.
-- Real Network/Provider consequential Production remains closed.
-
-### Task 169
-
-- State: `DEFERRED / NOT STARTED`.
-- No Result / task-scoped checkpoint existed at defer time.
-- Resume the same Task only when Human Approval Product Node needs this Track-C slice.
+- Assigned Reviewer: `Claude — Independent Node Foundation Exact-SHA Review Session`.
+- Review Independence: `REQUIRED`; fresh session/identity, no implementation participation.
+- Exact Review Target: `30998e73f1471921ab9b1b201fa8ea6227dc71f6`.
+- Production mutation: `DENIED`.
+- Mandatory adversarial focus includes:
+  - Graph multi-instance/Edge atomic publish and Task-170 F-001/F-002 closure;
+  - whether activation-mode → `SINGLE_SOURCE/MULTI_SOURCE` cardinality derivation is actually frozen-authorized rather than invented;
+  - old accepted SQLite database reopen/restart compatibility after adding `graph_edges.role`;
+  - correctness of Task-171 Finding F-003 NON_BLOCKING classification;
+  - Product/Graph/Runtime ownership, exact-version reproducibility, scope and complexity.
 
 ## Accepted / Usable Foundation
-
-The Product scheduling correction does not invalidate prior accepted work.
 
 Important accepted/downstream-usable foundation includes:
 
@@ -183,39 +164,19 @@ Product layout/UI metadata != Runtime canonical truth
 
 ## NODE FOUNDATION v0.1 Acceptance Intent
 
-Task 171 must prove at least:
+Acceptance requires independent evidence for at least:
 
-- Module → ProductNodeDefinition exact binding;
-- stable input/output ports;
-- persistent/restart-restorable NodeInstance;
-- fail-closed Edge validation;
-- immutable VisualWorkflowRevision;
-- exact node/module version pinning;
-- deterministic workflow compile/project;
-- compile output enters existing Graph abstraction;
-- restart reproduces the exact workflow;
-- Product layer does not re-own Runtime canonical truth;
-- one complete pure/mock Runtime execution path.
-
-Required first end-to-end Product proof:
-
-```text
-Text Input
-   ↓
-Mock LLM
-   ↓
-Text Output
-```
-
-Exercise:
-
-```text
-Module → ProductNodeDefinition → NodeInstance / Ports / Connections
-→ VisualWorkflowRevision → deterministic compile
-→ GraphRevision → Runtime execution → Result
-```
-
-No real Network/Provider/Credential value/Browser/external effect in this first slice.
+- exact Module → ProductNodeDefinition binding;
+- stable Product ports;
+- persistent/restart-restorable NodeInstance/workflow state;
+- fail-closed Product connection and Graph Edge validation;
+- immutable VisualWorkflowRevision with predecessor/replay/conflict semantics;
+- exact Product-node and Module version pinning;
+- deterministic Product workflow compile/project;
+- compile output enters existing Graph authority, with no second executable truth;
+- restart reproduces the exact workflow and compiled Graph;
+- Product cannot re-own Runtime/Capability/Graph authority;
+- complete pure/mock Runtime execution path `Text Input → Mock LLM → Text Output`.
 
 ## Standard Review / Finding Decision Tree
 
@@ -229,7 +190,7 @@ Independent Review
         └─ ESCALATION_REQUIRED → Lead Design Authority
 ```
 
-Review independence defaults to a separate execution session/identity. Claude↔Codex cross-review is valid; Claude session A↔Claude session B or Codex session A↔Codex session B is also valid when the reviewer was not involved in implementation and the specific Review Task does not demand cross-model review.
+Review independence defaults to a separate execution session/identity. Cross-model review and same-model independent cross-session review are both permitted unless a concrete Task is stricter.
 
 ## Pause / Resume Rule
 
@@ -243,7 +204,7 @@ PAUSE SAME TASK
 → resume/rebind same Task later
 ```
 
-Do not create a replacement technical Task merely because an Agent/tool temporarily failed. If the Task is still unstarted, the Development Director may rebind it to another capable Claude/Codex session without changing technical scope.
+Do not create a replacement technical Task merely because an Agent/tool temporarily failed.
 
 ## External / Consequential Production Gates
 
@@ -258,106 +219,67 @@ Until their own accepted implementation/review gates say otherwise:
 
 Product Nodes may initially use pure/mock behavior that truthfully avoids these consequential boundaries.
 
-## Open Non-Blocking Findings / Debt
+## Open Findings / Debt
 
-### `NYRON-T-20260828-170-F-001`
-- Type: `ARCHITECTURE / IMPLEMENTATION COMPLETENESS`
-- Severity: `NON_BLOCKING`
-- State: `OPEN / REQUIRED IN TASK 171`
-- Summary: current `GraphRepository.publish()` / `GraphRevision` Python surface supports only a single `ModuleInstanceRevision` and no published Edge set, so a real multi-node workflow cannot yet become a GraphRevision.
+### Task-170 findings carried into Task 171
 
-### `NYRON-T-20260828-170-F-002`
-- Type: `IMPLEMENTATION`
-- Severity: `NON_BLOCKING`
-- State: `OPEN / REQUIRED IN TASK 171`
-- Summary: Graph edge/port/topology correctness is currently checked too late; Task 171 must add fail-closed publish-time validation for the frozen Graph rules in its bounded Graph extension.
+- `NYRON-T-20260828-170-F-001` — `NON_BLOCKING`; implementer claims CLOSED by multi-instance + Edge Graph publication, `PENDING INDEPENDENT REVIEW VERIFICATION`.
+- `NYRON-T-20260828-170-F-002` — `NON_BLOCKING`; implementer claims CLOSED by fail-closed Graph publish-time validation, `PENDING INDEPENDENT REVIEW VERIFICATION`.
 
-### `NYRON-T-20260826-078-F-001`
-- Type: `IMPLEMENTATION`
-- Severity: `NON_BLOCKING`
-- State: `OPEN / DEFERRED`
-- Summary: no explicit DELETE immutability guard for canonical Accounting policy/reservation rows; current production exposes no delete path.
+### Task-171 finding
 
-### `NYRON-T-20260826-078-F-002`
-- Type: `IMPLEMENTATION / CONTRACT PRECISION`
-- Severity: `NON_BLOCKING`
-- State: `OPEN / DEFERRED`
-- Summary: reservation dimension replay identity is order-sensitive, causing fail-closed false conflicts for reordered equivalent tuples.
+- `NYRON-T-20260828-171-F-003` — `ARCHITECTURE / NON_BLOCKING` per implementer; multi-instance `ExecutionAdmissionGate.admit()` eagerly validates only the first instance while later Activation/Attempt checks validate each executed instance. Severity/classification is `PENDING INDEPENDENT REVIEW VERIFICATION` in Task 172.
 
-### `NYRON-T-20260826-078-F-003`
-- Type: `TEST`
-- Severity: `NON_BLOCKING`
-- State: `OPEN / DEFERRED`
-- Summary: focused validation branch coverage debt retained for later bounded cleanup.
+### Pre-existing non-blocking debt
 
-### `R-096-03 / NYRON-T-20260826-098-F-004 / NYRON-T-20260826-097-F-001`
-- Type: `PROCESS`
-- Severity: `NON_BLOCKING`
-- State: `OPEN / RECORD-ONLY`
-- Summary: historical Task-092 Result used the older session-name convention; no production correctness impact.
+- `NYRON-T-20260826-078-F-001` — Accounting canonical policy/reservation has no explicit DELETE immutability guard; no current delete path.
+- `NYRON-T-20260826-078-F-002` — reservation dimension replay identity is order-sensitive.
+- `NYRON-T-20260826-078-F-003` — focused validation branch coverage debt.
+- `R-096-03 / NYRON-T-20260826-098-F-004 / NYRON-T-20260826-097-F-001` — historical process/session-name record-only debt.
 
 ## Standing Interlocks
 
 - `NYRON-T-20260825-038-F-001` — SECURITY / NARROWED / OPEN; less-trusted filesystem/managed-root namespace mutation activates blocking review.
-- `NYRON-T-20260826-043-F-001` — ARCHITECTURE / NON_BLOCKING / OPEN; synchronous SQLite single-writer assumption remains mandatory. Genuine concurrency/pools/raw writers/process-distributed authority trigger revalidation.
-- `NYRON-T-20260826-048-F-001` — IMPLEMENTATION / NON_BLOCKING / OPEN; Effect recovery caller ergonomics, out of current scope.
-- `NYRON-T-20260826-056-F-001` — IMPLEMENTATION / NON_BLOCKING / OPEN; cross-version schema migration/rebuild debt, unaffected.
-- `NYRON-T-20260828-166-F-001` — SECURITY / NON_BLOCKING / STANDING; `ResolvedCredentialHandle` itself must never cross into low-trust plugin/module/network-facing code.
+- `NYRON-T-20260826-043-F-001` — ARCHITECTURE / NON_BLOCKING / OPEN; synchronous SQLite single-writer assumption remains mandatory; genuine concurrency/pools/raw writers/process-distributed authority trigger revalidation.
+- `NYRON-T-20260826-048-F-001` — IMPLEMENTATION / NON_BLOCKING / OPEN; Effect recovery caller ergonomics.
+- `NYRON-T-20260826-056-F-001` — IMPLEMENTATION / NON_BLOCKING / OPEN; cross-version schema migration/rebuild debt.
+- `NYRON-T-20260828-166-F-001` — SECURITY / NON_BLOCKING / STANDING; `ResolvedCredentialHandle` must never cross into low-trust plugin/module/network-facing code.
 
 ## Revision Decisions
 
 ### Revision 122 / Epoch 3
-
-- Development Director handoff CAS advanced the Coordination Epoch from 2 to 3 and Revision from 121 to 122.
-- Track E became the primary Product development track.
-- Task 168 moved to Product-demand pause; Task 169 moved to deferred/not-started; Task 170 was created for Track-E readiness.
-- Claude/Codex restored availability superseded the older quota snapshot.
+- Track E became primary; 168 paused, 169 deferred, 170 readiness created.
 
 ### Revision 123 / Epoch 3
-
-- CAS against `Epoch 3 / Revision 122` succeeded; Revision advances to `123` without changing Epoch.
-- Robust recovery Handoff is added at `coordination/handoffs/NYRON_DEVELOPMENT_HANDOFF_2026-08-28_R2.md`; `handoffs/LATEST.md` provides a stable pointer.
-- Handoff is explicitly non-canonical and must be checked against current Repository state on every new Director startup.
-- `coordination/AGENT_AVAILABILITY.md` is aligned with the Product-mainline priority and no longer points new work at the historical Provider closeout chain.
-- Current live task classification is made explicit: 170 active/ready, 168 paused, 169 deferred, no current Product-mainline waiting-review Task.
-- `NODE FOUNDATION v0.1` acceptance intent and the first Text Input → Mock LLM → Text Output vertical slice are recorded as the next implementation target if Task 170 returns GO.
-- Pause/resume, Acceptance-vs-Integration, Product non-goals, and lower-level Track Pull Rule are preserved in the Handoff.
-- `Last Accepted Production Commit` remains unchanged; Revision 123 is coordination-only and does not declare Product implementation accepted.
+- Robust Product-phase Handoff recorded; Product-mainline priority and NODE FOUNDATION v0.1 intent made explicit.
 
 ### Revision 124 / Epoch 3
-
-- CAS against `Epoch 3 / Revision 123` succeeded; Revision advances to `124` without changing Epoch.
-- Task 170 Result was verified as exactly one Result-only commit ahead of Revision-123 main and fast-forwarded to `main` at `ec74ce73762337560567d4dde97621e82c97abcb`.
-- Task 170 completed `SUCCESS` with Principal Disposition `GO_BOUNDED_IMPLEMENTATION`, no blockers, and two non-blocking implementation-completeness findings (`F-001`, `F-002`).
-- Product mainline advances from readiness to bounded Production implementation.
-- Task `NYRON-T-20260828-171` was initially assigned to Codex for `NODE FOUNDATION v0.1`, including the bounded Graph multi-instance/Edge publish extension, publish-time Graph validation, Product Node/Workflow persistence+compiler, and the pure/mock Text Input → Mock LLM → Text Output vertical slice.
-- Task 168 remains paused and Task 169 remains deferred; neither is a dependency of Task 171.
-- HIGH-risk independent exact-SHA review remains mandatory after Task 171 delivers.
-- `Last Accepted Production Commit` remains unchanged; Revision 124 is coordination/readiness transition only and does not pre-accept Task 171 Production.
+- Task 170 readiness completed GO; Task 171 bounded Production implementation opened.
 
 ### Revision 125 / Epoch 3
+- Claude/Codex role-neutral routing and session-based review independence clarified; Task 171 rebound from temporarily rate-limited Codex to Claude before implementation start.
 
-- CAS against `Epoch 3 / Revision 124` succeeded; Revision advances to `125` without changing Epoch.
-- Operator clarified that Claude and Codex have no permanent developer/reviewer split: both may perform Production development, Fix, Review and Re-Review according to availability, task suitability, write-surface isolation and independence.
-- Independent Review identity is clarified as session/execution-identity based by default, not model-family based; same-model cross-session Review is permitted when the reviewing session did not participate in implementation and the concrete Review Task does not impose a stricter cross-model requirement.
-- DeepSeek remains the preferred lane for simple/mechanical/low-risk implementation, schema/test consistency and targeted verification.
-- Codex is temporarily rate-limited; Task 171 had not started and is therefore rebound in place to Claude. Task ID, scope, Production fence/base, dependencies, write surfaces and mandatory Review requirement are unchanged.
-- Parallel implementation is authorized when dependencies and mutable write surfaces are genuinely disjoint or an explicit integration order exists; no speculative Task should be created merely to occupy free Agent capacity.
-- `coordination/REVIEW_PROTOCOL.md`, `coordination/AGENT_AVAILABILITY.md`, and Task 171 metadata are aligned to this routing policy.
-- `Last Accepted Production Commit` remains unchanged; Revision 125 is coordination/process-only and does not pre-accept Task 171 Production.
+### Revision 126 / Epoch 3
+
+- CAS against `Epoch 3 / Revision 125` succeeded; Revision advances to `126` without changing Epoch.
+- Task 171 delivered `SUCCESS` at exact remote SHA `30998e73f1471921ab9b1b201fa8ea6227dc71f6` with reported full-suite result `458 passed, 2 skipped, 380 subtests passed` and a persisted/restarted Product → Graph → Runtime E2E proof.
+- Task 171 Production is **not accepted or merged** by this transition; it enters `PENDING_INDEPENDENT_REVIEW`.
+- Task `NYRON-T-20260828-172` is created as the mandatory independent HIGH-risk exact-SHA Review, using a fresh Claude review session/identity and no Production mutation authority.
+- Task 172 must independently challenge cardinality derivation, pre-171 SQLite reopen compatibility, F-003 severity, F-001/F-002 closure, ownership/scope and complexity; test-green self-assertions are not sufficient.
+- Codex availability is changed to `RECHECK BEFORE ASSIGNMENT` because the previous temporary-rate-limit estimate has aged; no unverified restoration is asserted.
+- Task 168 remains paused and Task 169 remains deferred.
+- `Last Accepted Production Commit` remains unchanged until review + Director Acceptance/integration decisions.
 
 Historical Revision 108–121 decisions remain available in Git history and are not invalidated by this compact current-state snapshot.
 
 ## Repository-Result Protocol
-
-Formal Agent handoff remains file-based:
 
 - Task instruction: `coordination/tasks/<TaskID>.md`
 - Agent result: `coordination/results/<TaskID>.md`
 - Review / Re-Review result follows `coordination/OUTPUT_FORMAT.md`
 - Checkpoint: `coordination/checkpoints/<TaskID>-<CheckpointID>.md`
 - Development Director reads Repository evidence directly; chat/session is trigger/status only.
-- Agents must not update this STATUS file unless a Task explicitly grants authority.
+- Agents must not update STATUS unless a Task explicitly grants authority.
 
 ## State Update Rule
 
