@@ -91,33 +91,33 @@ class ExecutionAdmissionGate:
                 graph_reason_code=graph.reason_code,
             )
 
-        instance = graph.module_instance_revision
-        if self._registry.resolve(instance.module_ref, instance.module_version) is None:
-            raise AdmissionError(
-                "UNRESOLVED_MODULE_REFERENCE",
-                module_ref=instance.module_ref,
-                module_version=instance.module_version,
-            )
-        if not self._resolve_config(instance.config_ref, instance.config_hash):
-            raise AdmissionError(
-                "UNRESOLVED_CONFIG_REFERENCE",
-                config_ref=instance.config_ref,
-                config_hash=instance.config_hash,
-            )
         if not self._resolve_runtime_policy(runtime_policy_ref):
             raise AdmissionError(
                 "UNRESOLVED_RUNTIME_POLICY_REFERENCE",
                 runtime_policy_ref=runtime_policy_ref,
             )
 
-        try:
-            self._accounting.resolve(
-                instance.static_accounting_scope_ref,
-                graph.graph_revision_ref,
-                instance.module_instance_revision_ref,
-            )
-        except AccountingScopeError as error:
-            raise AdmissionError(error.code, **error.context) from error
+        for instance in graph.module_instance_revisions:
+            if self._registry.resolve(instance.module_ref, instance.module_version) is None:
+                raise AdmissionError(
+                    "UNRESOLVED_MODULE_REFERENCE",
+                    module_ref=instance.module_ref,
+                    module_version=instance.module_version,
+                )
+            if not self._resolve_config(instance.config_ref, instance.config_hash):
+                raise AdmissionError(
+                    "UNRESOLVED_CONFIG_REFERENCE",
+                    config_ref=instance.config_ref,
+                    config_hash=instance.config_hash,
+                )
+            try:
+                self._accounting.resolve(
+                    instance.static_accounting_scope_ref,
+                    graph.graph_revision_ref,
+                    instance.module_instance_revision_ref,
+                )
+            except AccountingScopeError as error:
+                raise AdmissionError(error.code, **error.context) from error
 
         try:
             with self._store.transaction() as connection:
