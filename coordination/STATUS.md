@@ -7,15 +7,15 @@
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Development Director: `ACTIVE — Global Development Coordination Authority`
 - Coordination Epoch: `3`
-- Coordination Revision: `135`
-- Revision CAS Basis: `Expected Epoch 3 / Expected Revision 134 — MATCHED`
+- Coordination Revision: `136`
+- Revision CAS Basis: `Expected Epoch 3 / Expected Revision 135 — MATCHED`
 - Last Accepted Production Commit: `1a741c5c7370f50f9efbc3087c67359cebdd8b27`
 - Canonical Repository Finalization Merge: `8962743bfbc6385bf58ebb31a63f5e5442c5f391`
 - Foundation Wave 2 Accepted Downstream Base: `fa12ad2ba51a010786ac307e8efd683bc1be832b`
 - Accepted Product Foundation: `NODE FOUNDATION v0.1 @ 1a741c5c7370f50f9efbc3087c67359cebdd8b27`
 - Development Gate: `PRODUCT NODE / VISUAL WORKFLOW DEVELOPMENT — OPEN`
-- Current Gate: `LLM PRODUCT NODE SUPPORT — PRODUCT + TRACK-D FOUNDATION CONVERGENCE`
-- Current Mode: `TASK 181 P0 INTEGRATION / LATER SUPPORT TASKS DEPENDENCY-GATED`
+- Current Gate: `LLM PRODUCT NODE SUPPORT — PARALLEL CONVERGENCE + EFFECT CONTRACT VERIFICATION`
+- Current Mode: `TASK 181 P0 INTEGRATION + TASK 182 P1 READ-ONLY CONTRACT VERIFICATION IN PARALLEL`
 - Primary Milestone: `USER-FACING PRODUCT NODE VERTICAL SLICES`
 - Current Target: `LLM PRODUCT NODE v0.1 — REAL-PROVIDER-CAPABLE SUPPORT CHAIN`
 - Latest Handoff Pointer: `coordination/handoffs/LATEST.md`
@@ -35,8 +35,8 @@ fetch latest main
 
 ## Agent Routing
 
-- `Claude`: AVAILABLE for development/review.
-- `Codex`: AVAILABLE for development/review.
+- `Claude`: AVAILABLE for development/review/architecture verification.
+- `Codex`: AVAILABLE for development/review/integration.
 - `DeepSeek`: AVAILABLE for simple/mechanical/low-risk implementation, regression, schema consistency and targeted verification.
 - `GPT / Web GPT`: orchestration only by default.
 
@@ -81,14 +81,15 @@ return to Product Node
 | `Track A — PWP / Context Backbone` | `STABLE / DOWNSTREAM USABLE` | Support Product/Runtime admission context on concrete demand. |
 | `Track B — Distribution / Module Ecosystem` | `STABLE / DOWNSTREAM USABLE` | Exact module identity/resolution available; Import/Install/Enable remains Product-demand driven. |
 | `Track C — Human Interaction / Approval` | `STABLE CORE / SUPPORT DEFERRED` | Suspension/resume and external HumanResponse ingress remain deferred until a Human Approval Node requires them. |
-| `Track D — External Interfaces / Workspace Boundary` | `BOUNDED FOUNDATIONS ACCEPTED / CONSEQUENTIAL PRODUCTION CLOSED` | Provider/Credential/Network foundations exist on accepted sibling lineage `276432c1...`; Task 181 converges them with Product. |
-| `Track E — Product / Visual Workflow` | `PRIMARY / NODE FOUNDATION ACCEPTED` | `NODE FOUNDATION v0.1` accepted; LLM node now drives bounded support work identified by Task 180. |
+| `Track D — External Interfaces / Workspace Boundary` | `BOUNDED FOUNDATIONS ACCEPTED / CONSEQUENTIAL PRODUCTION CLOSED` | Provider/Credential/Network foundations exist on sibling lineage; Task 181 converges them while Task 182 verifies frozen Effect extension authority. |
+| `Track E — Product / Visual Workflow` | `PRIMARY / NODE FOUNDATION ACCEPTED` | `NODE FOUNDATION v0.1` accepted; LLM node drives bounded support work identified by Task 180. |
 
 ## Current Live Task Table
 
 | State | Task | Meaning |
 |---|---|---|
 | `ACTIVE / READY` | `NYRON-T-20260828-181` | Codex HIGH-risk integration of Product foundation `1a741c5c...` with accepted Provider+Credential+Network tip `276432c1...`. Owns Task-180 F-001 only. |
+| `ACTIVE / READY` | `NYRON-T-20260828-182` | Claude read-only frozen Effect-contract verification for Task-180 F-005. May run in parallel with 181; no Production mutation. |
 | `COMPLETED / GO_BOUNDED_SUPPORT_TASKS` | `NYRON-T-20260828-180` | LLM Product Node v0.1 readiness/gap analysis. No Production mutation. |
 | `COMPLETED / PASS` | `NYRON-T-20260828-179` | Final integrated exact-SHA Review PASS; Findings NONE. |
 | `ACCEPTED` | `NYRON-T-20260828-178` | Node Foundation v0.1 at `1a741c5c7370f50f9efbc3087c67359cebdd8b27`. |
@@ -121,7 +122,7 @@ Principal Disposition:
 
 `GO_BOUNDED_SUPPORT_TASKS`
 
-Task 180 proved the smallest truthful first LLM slice is a single-turn text path:
+Task 180 proved the smallest truthful first LLM slice is:
 
 `Text Input → LLM Product Node → Text Output`
 
@@ -129,13 +130,7 @@ with no streaming, retry, tool calling, multimodal, Human, Browser or Filesystem
 
 ### Central dependency fact
 
-The accepted Product base `1a741c5c7370f50f9efbc3087c67359cebdd8b27` does **not** contain the accepted Provider/Credential/Network implementation tree. The accepted Track-D tip is:
-
-`276432c1706d6f41900ef6d5cebcf5fc1e36cf5f`
-
-These are sibling lineages with common ancestor:
-
-`e1f910d411857ab4a348b87297074f717d9ff54c`
+The accepted Product base `1a741c5c7370f50f9efbc3087c67359cebdd8b27` does not contain the accepted Provider/Credential/Network implementation tree. The accepted Track-D tip is `276432c1706d6f41900ef6d5cebcf5fc1e36cf5f`; common ancestor is `e1f910d411857ab4a348b87297074f717d9ff54c`.
 
 Known overlapping files since divergence:
 
@@ -154,9 +149,9 @@ Therefore Product LLM implementation cannot begin before explicit convergence + 
 
 ### `NYRON-T-20260828-180-F-002`
 - Type: `ARCHITECTURE / NON_BLOCKING`.
-- State: `OPEN / DEPENDS ON 181 REVIEW ACCEPTANCE`.
+- State: `OPEN / DEPENDS ON 181 REVIEW ACCEPTANCE + 182 CONTRACT DISPOSITION`.
 - Issue: `AttemptExecutor.execute()` always passes `runtime_context=None`; `RuntimeContext` / `BoundedWriteEffectBroker` is dead/unreachable for live Module effects.
-- Future owner: bounded Runtime/Effect support task only after Task 181 convergence is accepted.
+- Future owner: bounded Runtime/Effect support task after the lineage convergence is accepted and Effect authority is verified.
 
 ### `NYRON-T-20260828-180-F-003`
 - Type: `SECURITY / NON_BLOCKING` carrying existing Task-136 F01.
@@ -171,10 +166,13 @@ Therefore Product LLM implementation cannot begin before explicit convergence + 
 
 ### `NYRON-T-20260828-180-F-005`
 - Type: `CONTRACT / NON_BLOCKING`.
-- State: `OPEN / VERIFY BEFORE EFFECT EXTENSION`.
-- Issue: `EffectAuthority.EFFECT_CLASS` is currently single-class/filesystem-shaped; full frozen Effect authority must be re-read before adding any `MODEL_INVOKE` Effect class. If frozen authority does not already permit it, escalate rather than invent semantics.
+- State: `OPEN / OWNED BY TASK 182 VERIFICATION`.
+- Issue: `EffectAuthority.EFFECT_CLASS` is currently single-class/filesystem-shaped; frozen Effect authority must be verified before any `MODEL_INVOKE` Effect extension.
+- Task 182 must return `GO_BOUNDED_MODEL_INVOKE_EFFECT_IMPLEMENTATION`, `ESCALATION_REQUIRED_EFFECT_CONTRACT`, or `NO_GO_MODEL_INVOKE_EFFECT_NOT_PERMITTED` without modifying Production or frozen design.
 
-## Task 181 — Product + Track-D Foundation Convergence
+## Parallel Work Now Authorized
+
+### Task 181 — Product + Track-D Foundation Convergence
 
 - Type: `HIGH-RISK PRODUCTION INTEGRATION / CONVERGENCE`.
 - Assigned Agent: `Codex — Cross-Track Integration Session`.
@@ -183,27 +181,32 @@ Therefore Product LLM implementation cannot begin before explicit convergence + 
 - Required branch: `integration/NYRON-T-20260828-181-product-trackd-convergence`.
 - Production mutation: `INTEGRATION ONLY`.
 - Scope owner: Task-180 F-001 only.
-- Real Network/Provider dispatch remains CLOSED.
-- RuntimeContext live wiring remains out of scope.
-- EffectAuthority extension remains out of scope.
 - Any conflict requiring a new semantic choice => `TASK BLOCKED`.
 - Mandatory independent exact-SHA Review after delivery.
 
+### Task 182 — Effect Contract Verification
+
+- Type: `READ-ONLY ARCHITECTURE / CONTRACT VERIFICATION`.
+- Assigned Agent: `Claude — Independent Effect Contract Verification Session`.
+- Production mutation: `DENIED`.
+- Scope owner: Task-180 F-005 verification only.
+- Reads complete frozen D-008 Effect authority and determines whether a second `MODEL_INVOKE` effect class is already permitted or requires escalation.
+- May execute concurrently with Task 181 because it has no mutable Production write surface and no dependency on Task 181's merge result.
+
 ## Dependency-Ordered LLM Support Chain
 
-Task 180 recommends this order; only Task 181 is currently opened:
+1. Task 181 Product + Provider/Credential/Network convergence — **ACTIVE**.
+2. Task 182 Effect frozen-contract verification — **ACTIVE IN PARALLEL**.
+3. Independent exact-SHA Review of Task 181 — create only after exact delivery SHA exists.
+4. Bounded Runtime/Effect execution-seam support — only after Task 181 is accepted and Task 182 returns a permissive disposition; otherwise escalate/no-go.
+5. Independent Review of Runtime/Effect slice.
+6. Real Provider transport + real Network dispatch + explicit credential backend — only with explicit Director gate-opening authorization and Task-136 security closure.
+7. Independent adversarial security Review.
+8. Real single-turn LLM Product Node implementation.
+9. Independent Product Review.
+10. Persisted/restarted real-provider E2E integration proof.
 
-1. Product + Provider/Credential/Network convergence — Task 181.
-2. Independent exact-SHA Review of Task 181 — create only after exact delivery SHA exists.
-3. Bounded Runtime/Effect execution-seam support; first re-confirm Task-180 F-005 against full frozen Effect authority.
-4. Independent Review of that Runtime/Effect slice.
-5. Real Provider transport + real Network dispatch + explicit credential backend; only with explicit Director gate-opening authorization and Task-136 security closure.
-6. Independent adversarial security Review.
-7. Real single-turn LLM Product Node implementation.
-8. Independent Product Review.
-9. Persisted/restarted real-provider E2E integration proof.
-
-Do not skip dependencies or pre-create speculative downstream Production tasks.
+Do not skip dependencies. Parallelize only work whose evidence base and mutable write surfaces are independent.
 
 ## Product Guardrails
 
@@ -244,7 +247,7 @@ Task-136 status remains:
 - `NYRON-T-20260828-180-F-002` — dead RuntimeContext/Effect execution seam.
 - `NYRON-T-20260828-180-F-003` / Task-136 F01 — unrestricted raw network bypass posture.
 - `NYRON-T-20260828-180-F-004` — Network Effect-class validation gap before real dispatch.
-- `NYRON-T-20260828-180-F-005` — Effect MODEL_INVOKE contract verification.
+- `NYRON-T-20260828-180-F-005` — frozen Effect MODEL_INVOKE authority verification; Task 182.
 - `NYRON-T-20260828-173-F-001` — real-connection-origin reuse evidence absent until real transport exists.
 - `NYRON-T-20260826-078-F-001` — Accounting DELETE immutability guard debt.
 - `NYRON-T-20260826-078-F-002` — reservation dimension replay identity order-sensitive.
@@ -257,17 +260,18 @@ Task-136 status remains:
 
 ## Revision Decisions
 
-### Revision 134 / Epoch 3
-- Task 180 opened as Product-mainline LLM readiness analysis.
-
 ### Revision 135 / Epoch 3
-- CAS against `Epoch 3 / Revision 134` succeeded.
-- Task 180 completed `SUCCESS` with Principal Disposition `GO_BOUNDED_SUPPORT_TASKS`.
-- Five non-blocking findings were recorded; no Product implementation is authorized yet.
-- Task 181 opened as the first dependency: high-risk convergence of accepted Product and accepted Provider/Credential/Network lineages.
-- Only Task-180 F-001 is owned by Task 181; F-002 through F-005 remain open and must not be silently absorbed.
+- Task 180 completed `GO_BOUNDED_SUPPORT_TASKS`.
+- Task 181 opened for Product + Track-D convergence.
+
+### Revision 136 / Epoch 3
+- CAS against `Epoch 3 / Revision 135` succeeded.
+- Task 181 remains P0 integration and owns Task-180 F-001 only.
+- Task 182 opened in parallel as read-only Effect-contract verification for Task-180 F-005.
+- This parallelization is dependency-safe: Task 182 has no Production mutation and does not depend on Task 181 output; its result directly determines whether the post-181 Runtime/Effect implementation may proceed or must escalate.
+- Downstream Production Tasks remain dependency-gated and are not pre-created.
 - No real consequential external-effect gate changes in this revision.
-- Last Accepted Production Commit remains `1a741c5c7370f50f9efbc3087c67359cebdd8b27` until Task 181 delivery is independently reviewed and accepted.
+- Last Accepted Production Commit remains `1a741c5c7370f50f9efbc3087c67359cebdd8b27`.
 
 Historical decisions remain available in Git history.
 
