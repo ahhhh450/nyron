@@ -6,249 +6,206 @@
 
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Development Director: `ACTIVE — Global Development Coordination Authority`
-- Coordination Epoch: `2`
-- Coordination Revision: `121`
+- Coordination Epoch: `3`
+- Coordination Revision: `122`
+- Handoff CAS Basis: `Expected Epoch 2 / Expected Revision 121 — MATCHED`
 - Last Accepted Production Commit: `e47511aef987cd9fa5c171e319971f90ab549bd2`
 - Canonical Repository Finalization Merge: `8962743bfbc6385bf58ebb31a63f5e5442c5f391`
-- Development Gate: `SYSTEM FOUNDATION IMPLEMENTATION — OPEN`
-- Current Gate: `FOUNDATION WAVE 2 — PHASE 3 / CONSERVATION CLOSEOUT + EXACT-SHA REVIEW`
-- Current Mode: `TRACK A + B + C ACCEPTED FOR DEPENDENCY USE / TRACK D GO_BOUNDED / CODEX CONSERVATION + CLOSEOUT ACTIVE`
-- Orchestration Plan: `coordination/plans/FOUNDATION_WAVE_2_Plan_v0.1.md`
-- Track Board: `coordination/plans/FOUNDATION_WAVE_2_Track_Board_v0.1.md`
-- Track Orchestrator Protocol: `coordination/TRACK_ORCHESTRATOR_PROTOCOL.md`
+- Foundation Wave 2 Accepted Downstream Base: `fa12ad2ba51a010786ac307e8efd683bc1be832b`
+- Development Gate: `PRODUCT NODE / VISUAL WORKFLOW DEVELOPMENT — OPEN`
+- Current Gate: `TRACK E — MODULE ASSEMBLY NODE FOUNDATION READINESS`
+- Current Mode: `TRACK E PRIMARY / TRACK A+B+C+D SUPPORT ON CONCRETE PRODUCT NEED`
+- Primary Milestone: `MODULE ASSEMBLY NODE FOUNDATION`
 - Agent Availability: `coordination/AGENT_AVAILABILITY.md`
 - Parallelism Policy: `DYNAMIC / DEPENDENCY + WRITE-SURFACE + REVIEW + INTEGRATION CAPACITY DRIVEN`
-- Track Coordination Mode Policy: `COMPLEXITY-DRIVEN — SMALL FEW-TASK TRACKS MAY BE DIRECTLY SCHEDULED BY DEVELOPMENT DIRECTOR; DEDICATED TRACK ORCHESTRATOR ONLY WHEN WARRANTED`
+- Track Coordination Mode Policy: `PRODUCT-VERTICAL-SLICE DRIVEN — SUPPORT TRACKS OPEN ONLY WHEN A CONCRETE PRODUCT NODE REQUIRES A MISSING CAPABILITY`
 
 ## Current Agent Availability
 
-- `Claude`: `UNAVAILABLE`.
-- `Codex`: `CONSERVATION / CLOSEOUT WINDOW`; existing active Tasks may finish, but freed lanes are not automatically refilled. New Codex work is reserved for mandatory exact-SHA review/re-review, blocking fixes needed to close already-open gates, and final integration/regression verification.
-- `DeepSeek`: `AVAILABLE`; preferred lane for bounded non-production contract tracing, low-risk implementation, mechanical/schema consistency, regression and targeted verification where risk permits.
+Operational availability is authoritative in `coordination/AGENT_AVAILABILITY.md`.
+
+Current repository state records:
+
+- `Claude`: `AVAILABLE — OPERATOR-CONFIRMED RESTORED / HIGH-VALUE PRIORITY`.
+- `Codex`: `AVAILABLE — FULL WEEKLY WINDOW / CONTROLLED PARALLELISM`.
+- `DeepSeek`: `AVAILABLE` for bounded low-risk/mechanical work.
 - `GPT / Web GPT`: `AVAILABLE FOR ORCHESTRATION`; not default Production implementation.
 
-High-risk `Implementation Agent != Independent Reviewer` remains mandatory. Capacity pressure never authorizes weakening review, architecture, security or Owner-boundary requirements.
+High-risk `Implementation Agent != Independent Reviewer` remains mandatory. Restored capacity does not authorize speculative infrastructure expansion.
 
-Execution-mode failover remains active per `coordination/AGENT_AVAILABILITY.md`: Chat-mode tool/workspace/repository-write failure without durable technical blocker evidence may continue under the same Task ID/Scope in Work mode; mode change is not a new Task and does not waive Repository evidence requirements.
+## Product Direction — Current Scheduling Authority
 
-Conservation rule: do not open new broad exploratory/specialist lanes merely because a Codex slot becomes free. Finish active Tasks, complete mandatory reviews, perform only required fixes/re-reviews, and checkpoint/close the current wave before opening optional next-slice work.
-
-## Foundation Wave 2 Track Board
-
-| Track | State | Coordination Mode | Current Dependency / Gate |
-|---|---|---|---|
-| `Track A — PWP / Context Backbone` | `STABLE / DEPENDENCY EXTENSION DELIVERED` | `Development Director direct scheduling for bounded extension` | PWP Core accepted at `f3b6b0d022111dfc854f537c361ca5eb46516584`; Task 142 delivered PWP-owned IngressRoute/IngressRouteRevision at `91d8fa230be3261f51e72df12b74f7dffd0462c7`, pending mandatory independent exact-SHA review |
-| `Track B — Distribution / Module Ecosystem` | `STABLE / IDLE` | `Dedicated Orchestrator used for Foundation slice` | Distribution identity / exact-resolution accepted at `b2ec8e2e79745fee75a9dfdde7d6ab4cebe5f863`; later stages deferred |
-| `Track C — Human Interaction / Approval` | `STABLE / IDLE` | `Dedicated Orchestrator used for Foundation slice` | Human Interaction Owner Core accepted at `a85507b9b74e0f6b68a65460d9e5a4f19aa79f93`; Runtime resume/ingress deferred |
-| `Track D — External Interfaces / Workspace Boundary` | `GO_BOUNDED / CLOSEOUT ACTIVE` | `Development Director direct scheduling` | Task 138 SUCCESS pending Task 146 exact-SHA review; Task 140 PASS_WITH_FINDINGS; Task 144 bounded Effect historical-outcome foundation remains active; consequential external-effect families remain closed |
-| `Track E — Product / Visual Workflow` | `DEFERRED` | `UNASSIGNED` | Foundation readiness |
-
-Cross-track Foundation convergence Task `NYRON-T-20260827-141` delivered candidate `ccb607b4d84b5f1154427e027170c55e787f9b87` and is pending independent Task 145 review. Runtime ingress-fact Task `NYRON-T-20260827-143` delivered `96386f366e2f4f2dbb137ff484bf551def0dbd1d` and is pending independent Task 147 review. Task 142 review will use the next available mandatory-review Codex slot rather than increasing concurrency.
-
-## Mandatory File-Based Coordination Protocol
-
-Formal chain:
+Nyron's Product target is:
 
 ```text
-Task
-→ Result
-→ Review / Re-Review Result
-→ Checkpoint / Stable Candidate evidence
+Module
+  ↓
+ProductNodeDefinition
+  ↓
+NodeInstance + Input/Output Ports + Connections
+  ↓
+VisualWorkflowRevision
+  ↓ deterministic compile/project
+GraphRevision
+  ↓
+Execution Runtime
 ```
 
-Repository files are authoritative. Chat is trigger / notification / concise status only. Operator does not forward formal Results between Agents and coordinators.
+The user-facing canvas is a module assembly system similar in interaction model to ComfyUI / Langflow / Flowise. Runtime/canonical objects are internal mechanisms and MUST NOT automatically become Product Nodes.
 
-A dedicated Track Orchestrator is not mandatory for every Track. Small bounded Tracks or slices may be directly scheduled by the Development Director while preserving all Task/Result, exact-SHA, review-independence, Owner-boundary and frozen-architecture rules.
+Examples:
 
-## Current Track-Level State
+```text
+LLM Node
+→ Provider + Credential + Network + Accounting + Effect
 
-### Track A — PWP Core
+Human Approval Node
+→ HumanRequest + HumanResponse + HumanDecisionEvidence + Runtime suspension/resume
 
-- Stable Candidate: `f3b6b0d022111dfc854f537c361ca5eb46516584`.
-- Independent Re-Review Task 119: `PASS`.
-- Open Findings: `NONE`.
-- Validation: `436 passed, 2 skipped, 380 subtests passed`.
-- Director disposition: `ACCEPTED FOR DOWNSTREAM DEPENDENCY USE / NOT GLOBAL PRODUCTION ACCEPTANCE`.
-- Bounded dependency extension Task `NYRON-T-20260827-142`: `SUCCESS` at exact delivery SHA `91d8fa230be3261f51e72df12b74f7dffd0462c7`; focused PWP suite `25 passed`; full regression `441 passed, 2 skipped, 380 subtests passed`; Findings/Blockers `NONE`. Mandatory independent exact-SHA review remains required before downstream acceptance.
+Filesystem Node
+→ Workspace boundary + Capability + Resource/Lease
+```
 
-### Track B — Distribution / Module Ecosystem
+Development ordering is now Product-driven:
 
-- State: `STABLE / IDLE` for the current bounded Distribution identity / exact-resolution Foundation slice.
-- Frozen authority: `NYRON-D-007`.
-- Task 120 initial delivery: `04c6e7de6e654e0a5ce851085ed02572e65ea9b5`.
-- Independent Review Task 124: `FAIL` with `NYRON-T-20260827-124-F-001` and `NYRON-T-20260827-124-F-002`.
-- Fix Task 126: `159dc4a1a14761aa1e04f1a5e8aee451dbe6997e`.
-- Targeted Re-Review Task 127: F-001 closed; F-002 remained blocking.
-- Residual Fix Task 129 exact delivery-content SHA: `b2ec8e2e79745fee75a9dfdde7d6ab4cebe5f863`.
-- Final independent Targeted Re-Review Task 130: `PASS` on exact SHA `b2ec8e2e79745fee75a9dfdde7d6ab4cebe5f863`.
-- `NYRON-T-20260827-124-F-001`: `CLOSED`.
-- `NYRON-T-20260827-124-F-002`: `CLOSED`.
-- Open Findings: `NONE`.
-- New Findings: `NONE`.
-- Validation: `31 passed` Distribution targeted; `467 passed, 2 skipped, 380 subtests passed` full kernel.
-- Stable-candidate evidence: `coordination/checkpoints/NYRON-T-20260827-120-STABLE-CANDIDATE.md`.
-- Director acceptance evidence: `coordination/checkpoints/NYRON-T-20260827-120-DIRECTOR-ACCEPTANCE.md`.
-- Development Director disposition: `ACCEPTED FOR DOWNSTREAM DEPENDENCY USE / NOT GLOBAL PRODUCTION ACCEPTANCE`.
-- Deferred: Import workflow, Registry networking/discovery, dependency closure, Install, Trust, Enable, CapabilityGrant ownership and Runtime integration.
+```text
+Product requirement
+      ↓
+Product Node abstraction / vertical slice
+      ↓
+identify exact missing system capability
+      ↓
+resume/open smallest Track A/B/C/D support slice
+      ↓
+return to Product Node
+```
 
-### Track C — Human Interaction / Approval
+Do not return to the old scheduling model of completing every low-level subsystem before Product work begins.
 
-- Stable Candidate: `a85507b9b74e0f6b68a65460d9e5a4f19aa79f93`.
-- Targeted Re-Review Task 128: `PASS`.
-- Open Findings: `NONE`.
-- Validation: `457 passed, 2 skipped, 380 subtests passed`.
-- Director disposition: `ACCEPTED FOR DOWNSTREAM DEPENDENCY USE / NOT GLOBAL PRODUCTION ACCEPTANCE`.
-- Runtime suspension/resume integration and concrete external ingress/provider adapters remain deferred.
+## Current Track Board
 
-### Track D — External Interfaces / Workspace Boundary
+| Track | State | Current Role / Gate |
+|---|---|---|
+| `Track A — PWP / Context Backbone` | `STABLE / DOWNSTREAM USABLE` | Support Product/Runtime admission context when a concrete node needs an extension. |
+| `Track B — Distribution / Module Ecosystem` | `STABLE / DOWNSTREAM USABLE` | Exact module identity/resolution foundation is available; later Import/Install/Enable work is Product-demand driven. |
+| `Track C — Human Interaction / Approval` | `STABLE CORE / SUPPORT DEFERRED` | Human Interaction core remains valid. Suspension/resume and external HumanResponse ingress are deferred until Human Approval Node requires them. |
+| `Track D — External Interfaces / Workspace Boundary` | `BOUNDED SUPPORT / CONSEQUENTIAL PRODUCTION CLOSED` | Provider/Credential and other accepted foundations remain usable where accepted. Network/Filesystem/Browser/etc. resume only for concrete Product Node needs and only under their own gates. |
+| `Track E — Product / Visual Workflow` | `PRIMARY / ACTIVE READINESS` | Task `NYRON-T-20260828-170` is the primary next Task: Module Assembly Node / Visual Workflow Core Readiness. |
 
-- Frozen authority: `NYRON-D-008` Frozen Baseline + named Lead clarifications + `External_Interfaces_Amendment_001_Fenced_Retry_Semantics.md`.
-- Task 131 was superseded after a chat-only `TASK BLOCKED` without durable blocker evidence; no technical blocker was accepted.
-- Task 132 delivered a remotely reviewable factual audit Result at `cf594fedc71b38a871f688d633cde6823755ce68`, but its accepted-dependency inventory contained material omissions.
-- Task 133 targeted correction: `PASS`; confirms accepted PWP, Distribution and Human Interaction production surfaces exist at their exact accepted SHAs. Residual dependency gaps are PWP-owned `IngressRoute/IngressRouteRevision`, Runtime-owned `ExecutionIngressFact`, and concrete external-family adapters / IsolationProfile / credential boundary.
-- Development Director disposition: `GO_BOUNDED` only for implementation slices that do not prematurely claim consequential external-effect safety.
-- Task 134 Filesystem specialist review: `PASS_WITH_FINDINGS`. A narrow future Workspace READ slice is implementable, but acceptance must satisfy handle-continuous resolution/use, no-link/reparse traversal, no mount crossing for the claimed profile, special-file rejection, live PWP/Resource/Lease/Capability/Attempt compatibility, output bounds, and truthful IsolationProfile claims.
-- Task 135 Process specialist review: `PASS_WITH_FINDINGS`. Architecture is implementable without redesign, but Process Production remains `CLOSED`; enforceable descendant containment and kill-confirm evidence are mandatory, with `UNKNOWN` on unprovable history/fencing.
-- Task 136 Network specialist review: `PASS_WITH_FINDINGS`. Architecture is implementable without redesign, but Network Production remains `CLOSED`; a non-bypassable mediated path, effective-destination boundary-time authority admission, and consequential network Effect/UNKNOWN/idempotency/retry semantics are required first.
-- Task 137 Provider/Model specialist review: `FAIL`. Blocking gaps are Provider durable external/idempotency identity with orthogonal historical outcome, authoritative lookup/cancellation/continuation semantics, and billable Provider ambiguity-to-Accounting closure. Provider Production remains `CLOSED`; no architecture escalation was required.
-- Task 138 IsolationProfile implementation: `SUCCESS` at exact delivery SHA `5b8cd1bee1b1d37c1231043043cfa7f993525a38`; the prior Chat-mode validation blocker was resolved in Work mode. Targeted validation: `24 passed, 14 subtests`; full kernel: `421 passed, 2 skipped, 386 subtests passed`; Findings/Blockers: `NONE`. Independent exact-SHA review Task 146 is required before acceptance.
-- Task 139 Browser / Remote Worker specialist review: `PASS_WITH_FINDINGS`. Frozen architecture is sufficient for bounded future slices, but consequential Browser/Remote dispatch remains `CLOSED` until Effect active-state vs historical-outcome semantics and dedicated actual-boundary brokers are implemented and reviewed.
-- Task 140 Ingress / Credential specialist review: `PASS_WITH_FINDINGS`. External ingress Production remains closed until PWP-owned IngressRoute/IngressRouteRevision is accepted; generic workflow-start ingress also requires accepted Runtime-owned ExecutionIngressFact. Credential-consuming adapters require trusted value injection/resolution, reference-only durability, redaction and authority-subordination; no generic secret-store implementation is required by D-008.
-- Task 143 Runtime-owned `ExecutionIngressFact` foundation: `SUCCESS` at exact delivery SHA `96386f366e2f4f2dbb137ff484bf551def0dbd1d`; focused `9 passed`, full kernel `425 passed, 2 skipped, 380 subtests passed`, Findings/Blockers `NONE`. Independent exact-SHA review Task 147 is required before downstream acceptance.
-- Task 144 bounded Effect historical-outcome foundation remains active. It is authorized to add the owner-local orthogonal historical-consequence dimension required by frozen `EIW-INV-32`, without adding Provider/Browser/Remote adapters or changing Accounting ownership.
+## Active / Paused / Deferred Tasks
 
-Process, Network, Browser, Provider/Model, Remote Worker and general consequential external-effect Production remain closed until their own evidence/review gates are satisfied. `GO_BOUNDED` is not a blanket Track D production authorization.
+### `NYRON-T-20260828-170` — PRIMARY
 
-## Foundation Integration
+- Track: `E — Product / Visual Workflow`.
+- Assigned Agent: `Claude — Product Node / Visual Workflow Architecture Readiness Session`.
+- State: `ASSIGNED / READY`.
+- Priority: `P0`.
+- Objective: determine the smallest frozen-authority-compatible Product Node foundation and deterministic `VisualWorkflowRevision -> GraphRevision` projection seam.
+- Production mutation: `DENIED`; Result/evidence only.
+- Required principal disposition: `GO_BOUNDED_IMPLEMENTATION | BLOCKED_BY_DEPENDENCY | ESCALATION_REQUIRED`.
 
-- Task `NYRON-T-20260827-141` delivered exact Integration SHA `ccb607b4d84b5f1154427e027170c55e787f9b87` containing the exact accepted Track A/B/C Foundation content.
-- Integration applied cleanly with no semantic conflict; affected A/B/C tests: `72 passed`; full kernel: `488 passed, 2 skipped, 380 subtests passed`; content-preservation audit: `PASS`; Findings/Blockers: `NONE`.
-- Independent exact-SHA review Task `NYRON-T-20260827-145` is mandatory before acceptance or merge.
-- The integration candidate does not change `Last Accepted Production Commit` by itself.
+### `NYRON-T-20260828-168` — PAUSED SUPPORT
 
-## Director-Accepted Foundation Dependencies
+- Track: `D — Network`.
+- State: `PAUSED — PRODUCT-VERTICAL-SLICE HOLD / DO NOT DUPLICATE`.
+- Current Agent availability is restored; the pause is scheduling/product-priority based, not a current quota blocker.
+- Resume the same Task ID only when a concrete Product Node requires the bounded Network foundation or the Development Director explicitly reopens it.
+- Real Network/Provider consequential Production remains closed.
 
-- Track A PWP Core: `f3b6b0d022111dfc854f537c361ca5eb46516584`.
-- Track B Distribution identity/exact-resolution: `b2ec8e2e79745fee75a9dfdde7d6ab4cebe5f863`.
-- Track C Human Interaction Owner Core: `a85507b9b74e0f6b68a65460d9e5a4f19aa79f93`.
+### `NYRON-T-20260828-169` — DEFERRED SUPPORT
 
-These are accepted for downstream dependency use only. `Last Accepted Production Commit` remains unchanged.
+- Track: `C — Human Interaction / Approval`.
+- State: `DEFERRED / NOT STARTED`.
+- Repository verification at defer time found no Final Result and no Task-scoped `CP-001` checkpoint.
+- Resume the same Task only when Human Approval Product Node creates the concrete need for suspension/resume + external response ingress readiness.
+- Do not let this speculative support slice delay Track E.
 
-## ARE-GATE-6 Final Acceptance
+## Accepted / Usable Foundation
 
-- State: `PASS / CLOSED`.
-- Exact accepted production SHA: `e47511aef987cd9fa5c171e319971f90ab549bd2`.
-- Canonical repository finalization merge: `8962743bfbc6385bf58ebb31a63f5e5442c5f391`.
-- State: `HISTORICAL ACCEPTED BACKBONE FOR WAVE 2`.
+The scheduling correction does not invalidate prior accepted work.
 
-## Task 108 Architecture Finding Closure
+Still valid for downstream Product consumption where their own acceptance/gates permit:
 
-- Finding: `CROSS_OWNER_RUNTIME_ACCOUNTING_STORAGE_BOUNDARY_UNFROZEN`.
-- Lead disposition: `VALID BLOCKER / CLOSED BY ARCHITECTURE AMENDMENT`.
-- Amendment: `design/amendments/Runtime_Accounting_Amendment_001_Cross_Owner_Identity_Persistence_Boundary.md`.
-- State: `CLOSED / IMPLEMENTED / INDEPENDENTLY ACCEPTED`.
+- PWP / Context backbone;
+- ModuleDefinition and Module architecture;
+- Graph / GraphRevision canonical execution semantics;
+- ExecutionAdmission;
+- Packet -> Delivery -> Activation -> Run / Attempt lifecycle;
+- Capability / Resource / Lease / Effect;
+- Recovery and Accounting foundations;
+- Distribution exact module identity/resolution;
+- Human Interaction core;
+- Provider foundation accepted ancestry used by later Credential/Network tasks;
+- Credential foundation ancestry used by Task 168;
+- IngressRoute / Runtime ingress accepted lineage where already reviewed;
+- IsolationProfile / Effect historical-outcome work where already independently accepted.
 
-## Revision Decisions
+The current Product milestone does **not** require all consequential external interfaces to be complete first.
 
-### Revision 108
+## Standing Cross-System Invariants
 
-- Foundation Wave 2 opened after ARE-GATE-6 closure; PWP selected as the Wave-2 backbone.
+```text
+Packet -> Delivery -> Activation -> Run / Attempt
+```
 
-### Revision 109
+No second direct-Activation execution path.
 
-- Development Director model and Foundation Wave 2 Track Board established; Task 116 assigned to Track A.
+```text
+CapabilityGrant != ResourceLease != EffectOperation != BudgetReservation
+```
 
-### Revision 110
+```text
+FENCED != no prior consequence != safe semantic replay
+```
 
-- File-based Task / Result / Review / Re-Review / Checkpoint protocol reaffirmed.
-- Production parallelism changed to dynamic/need-driven.
+```text
+unknown overlap -> conflicting
+```
 
-### Revision 111
+```text
+revoke/replacement wins authority-consumption race -> reject new use
+exact use admission wins -> durable pre-revoke in-flight work
+```
 
-- Track A PWP Core accepted for downstream dependency use at `f3b6b0d022111dfc854f537c361ca5eb46516584`.
+```text
+unresolved static_accounting_scope_ref -> execution admission denied
+```
 
-### Revision 112
+```text
+retained canonical history pins PWP revision -> exact revision remains resolvable
+```
 
-- Track Orchestrator protocol and Agent Availability made active coordination truth.
-- Claude marked unavailable.
+```text
+logical Owner != physical database placement
+cross-owner SQL FK != foreign Owner authority proof
+```
 
-### Revision 113
+Product-specific guardrails now also include:
 
-- Track C Human Interaction Owner Core accepted for downstream dependency use at `a85507b9b74e0f6b68a65460d9e5a4f19aa79f93`.
-- Complexity-driven direct Development Director scheduling authorized for small/few-Task Tracks.
+```text
+ModuleDefinition != ProductNodeDefinition
+ProductNodeDefinition != NodeInstance
+VisualWorkflowRevision != GraphRevision
+Product Port != Runtime Packet/Delivery canonical truth
+Product config != CapabilityGrant
+Product declaration != execution authority
+Product layout/UI metadata != Runtime canonical truth
+```
 
-### Revision 114
+## External / Consequential Production Gates
 
-- Track B Distribution identity / exact-resolution Stable Candidate `b2ec8e2e79745fee75a9dfdde7d6ab4cebe5f863` independently verified and accepted for downstream dependency use.
-- Task 130 final Targeted Re-Review is `PASS`; original Track B blocking Findings F-001 and F-002 are closed with no Open/New Findings.
-- Track B moves to `STABLE / IDLE` for the current Foundation slice.
-- Codex capacity is set `CONSTRAINED / NO NEW TRACK WORK`; Claude remains unavailable.
-- Track D begins non-production readiness/security audit work.
-- `Last Accepted Production Commit` remains unchanged.
+The Product-mainline correction does not open consequential external execution.
 
-### Revision 115
+Until their own accepted implementation/review gates say otherwise:
 
-- Task 131 chat returned `TASK BLOCKED`, but no durable Task-scoped blocker Result/checkpoint existed; no substantive Track-D blocker was accepted.
-- Task 131 was superseded for audit execution; Task 132 was created as bounded non-production evidence collection.
-- DeepSeek was not assigned final Track-D readiness authority.
+- real Network dispatch: `CLOSED`;
+- Browser consequential dispatch: `CLOSED`;
+- general Filesystem mutation / less-trusted namespace mutation: `CLOSED / SECURITY-GATED`;
+- real Provider network dispatch: `CLOSED`;
+- concrete external HumanResponse adapters: `CLOSED`;
+- speculative suspension/resume integration: `DEFERRED`.
 
-### Revision 116
-
-- Task 132 remote Result was accepted as delivered evidence but not as sufficient readiness evidence.
-- Development Director verified material accepted-dependency omissions and created Task 133 for targeted factual correction.
-
-### Revision 117
-
-- Operator explicitly restored Codex for a temporary parallel-capacity window.
-- Four independent read-only Track D specialist Tasks opened in parallel: 134 Filesystem, 135 Process, 136 Network, 137 Provider/Model.
-- High-risk review independence and write-surface separation remain mandatory.
-
-### Revision 118
-
-- Task 133 targeted accepted-dependency correction is `PASS`; PWP/Distribution/Human Interaction accepted production surfaces are confirmed at their exact accepted SHAs.
-- Task 134 Filesystem, Task 135 Process and Task 136 Network specialist reviews completed `PASS_WITH_FINDINGS`.
-- Director sets Track D to `GO_BOUNDED`, explicitly not blanket Production authorization.
-- Process and Network Production remain closed on their blocking security prerequisites; Filesystem Workspace READ may only open later under the mandatory constraints recorded by Task 134.
-- Bounded IsolationProfile truthful-claim Production Task 138 is authorized; Browser/Remote and Ingress/Credential specialist Tasks 139/140 remain non-production.
-- New parallel Tasks: 141 accepted A/B/C Foundation convergence integration; 142 PWP-owned IngressRoute/IngressRouteRevision foundation; 143 Runtime-owned ExecutionIngressFact foundation.
-- Operator establishes Chat → Work execution-mode failover for tooling/workspace/repository-write failures lacking durable technical blocker evidence; same Task ID/Scope continues.
-- `Last Accepted Production Commit` remains `e47511aef987cd9fa5c171e319971f90ab549bd2`; Revision 118 does not declare `GLOBAL ACCEPTED`.
-
-### Revision 119
-
-- Task 137 Provider/Model readiness review completes `FAIL` with three substantive implementation-entry blockers; Provider Production remains closed and no architecture escalation is required.
-- Task 138 produced candidate IsolationProfile code but formal delivery is blocked only by Chat-mode DNS/checkout/test/git-object verification failure. Under the active failover rule, the same Task 138 must continue in Work mode; no new Task ID is created.
-- Task 139 Browser/Remote review completes `PASS_WITH_FINDINGS`; consequential Browser/Remote dispatch remains closed on the shared Effect historical-outcome and broker gaps.
-- Task 140 is routed to an available Codex lane for the remaining Ingress/Credential specialist review.
-- Task 144 is opened as a bounded high-risk Production implementation of Effect historical-outcome orthogonality required by frozen EIW-INV-32. It may not implement Provider/Browser/Remote adapters or alter Accounting ownership.
-- Tasks 141–143 continue independently; parallel write surfaces remain separated.
-- `Last Accepted Production Commit` remains unchanged; Revision 119 does not declare `GLOBAL ACCEPTED`.
-
-### Revision 120
-
-- Task 141 Foundation A/B/C integration delivery is `SUCCESS` at exact SHA `ccb607b4d84b5f1154427e027170c55e787f9b87`; Task 145 opens as mandatory independent exact-SHA review.
-- Task 138 Work-mode continuation resolves the prior Chat tooling blocker and formally delivers `SUCCESS` at exact SHA `5b8cd1bee1b1d37c1231043043cfa7f993525a38`; Task 146 opens as mandatory independent security review.
-- Task 140 Ingress/Credential specialist review completes `PASS_WITH_FINDINGS`; its two canonical dependency gaps map to active PWP Task 142 and successfully delivered Runtime Task 143, while credential value use remains adapter-TCB/reference-only and authority-subordinate.
-- Task 143 Runtime ExecutionIngressFact delivery is `SUCCESS` at exact SHA `96386f366e2f4f2dbb137ff484bf551def0dbd1d`; Task 147 opens as mandatory independent cross-owner exact-SHA review.
-- Task 142 and Task 144 remain active unless later Repository evidence says otherwise.
-- No new durable Task-144 Result is accepted from chat/window numbering alone.
-- `Last Accepted Production Commit` remains unchanged; Revision 120 does not declare `GLOBAL ACCEPTED`.
-
-### Revision 121
-
-- Operator reports the temporary Codex quota has fallen to approximately 30% and explicitly requests gradual tightening rather than continued parallel saturation.
-- Codex availability changes to `CONSERVATION / CLOSEOUT WINDOW`.
-- Existing active Tasks may finish, but freed Codex lanes are no longer automatically refilled.
-- New Codex work is reserved for mandatory exact-SHA review/re-review, blocking fixes required to close already-open gates, and final integration/regression verification.
-- Task 142 is now `SUCCESS` at exact delivery SHA `91d8fa230be3261f51e72df12b74f7dffd0462c7`; its mandatory independent review is queued for the next freed review slot rather than increasing current concurrency.
-- Tasks 144, 145, 146 and 147 remain the active Codex closeout set unless later Repository evidence changes their state.
-- Broad new Track D implementation, optional hardening, and exploratory specialist work are deferred until Codex capacity is explicitly restored.
-- `Last Accepted Production Commit` remains unchanged; Revision 121 does not declare `GLOBAL ACCEPTED`.
-
-## Gate-6A Closure
-
-- `ARE-GATE-6A — BudgetReservation foundation`: `PASS / CLOSED`.
-- Exact accepted integration commit: `84156a5be8d77dc69fd21b02ffa2cf49f5154a8b`.
+Product Nodes may initially use pure/mock behavior that truthfully avoids these consequential boundaries.
 
 ## Open Non-Blocking Findings / Debt
 
@@ -282,17 +239,35 @@ These are accepted for downstream dependency use only. `Last Accepted Production
 - `NYRON-T-20260826-043-F-001` — ARCHITECTURE / NON_BLOCKING / OPEN; synchronous SQLite single-writer assumption remains mandatory. Genuine concurrency/pools/raw writers/process-distributed authority trigger revalidation.
 - `NYRON-T-20260826-048-F-001` — IMPLEMENTATION / NON_BLOCKING / OPEN; Effect recovery caller ergonomics, out of current scope.
 - `NYRON-T-20260826-056-F-001` — IMPLEMENTATION / NON_BLOCKING / OPEN; cross-version schema migration/rebuild debt, unaffected.
+- `NYRON-T-20260828-166-F-001` — SECURITY / NON_BLOCKING / STANDING; `ResolvedCredentialHandle` itself must never cross into low-trust plugin/module/network-facing code.
+
+## Revision Decisions
+
+### Revision 122 / Epoch 3
+
+- New Development Director session accepted the repository-backed handoff using CAS against `Epoch 2 / Revision 121`; Coordination Epoch advances to `3`, Revision to `122`.
+- Repository `AGENT_AVAILABILITY.md` supersedes the older handoff quota snapshot: Claude and Codex are currently available under controlled parallelism.
+- Product scheduling correction is adopted: `Track E — Product / Visual Workflow` becomes the primary Product development track.
+- Prior accepted Foundation is preserved; this is a development-order correction, not architecture invalidation.
+- Task `NYRON-T-20260828-168` is paused behind concrete Product demand and must not be duplicated.
+- Task `NYRON-T-20260828-169` is deferred/not started; it will be resumed only when Human Approval Node requires the Track-C slice.
+- New primary Task `NYRON-T-20260828-170` is assigned to Claude for Module Assembly Node / Visual Workflow Core Readiness.
+- The intended Product/Runtime relationship is tested, not assumed, by Task 170: `VisualWorkflowRevision -> deterministic compile/project -> GraphRevision`, while Graph retains canonical executable ownership.
+- First Product implementation, if readiness returns GO, should remain external-effect-free and should prove the Product Node abstraction before HTTP/Browser/Filesystem/Approval/TTS/Avatar or real Provider work.
+- Consequential external Production gates remain unchanged/closed unless their own accepted evidence says otherwise.
+- `Last Accepted Production Commit` is unchanged by this coordination revision.
+
+Historical Revision 108–121 decisions remain available in Git history and their accepted outcomes/findings are not invalidated by this compact current-state snapshot.
 
 ## Repository-Result Protocol
 
-Formal Agent handoff is file-based:
+Formal Agent handoff remains file-based:
 
 - Task instruction: `coordination/tasks/<TaskID>.md`
-- Agent result: `coordination/results/<TaskID>.md` on the Agent task/result branch
+- Agent result: `coordination/results/<TaskID>.md`
 - Review / Re-Review result follows `coordination/OUTPUT_FORMAT.md`
 - Checkpoint: `coordination/checkpoints/<TaskID>-<CheckpointID>.md`
-- Development Director / Track Orchestrator reads Repository evidence directly; user only receives concise routing/status when needed.
-- Chat/session is trigger/status only, not the durable handoff channel.
+- Development Director reads Repository evidence directly; chat/session is trigger/status only.
 - Agents must not update this STATUS file unless a Task explicitly grants authority.
 
 ## State Update Rule
