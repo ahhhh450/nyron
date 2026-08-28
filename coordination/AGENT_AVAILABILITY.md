@@ -10,9 +10,9 @@ This file records current operational availability and routing only. It does not
 
 | Agent | Availability | Default Use While State Applies |
 |---|---|---|
-| `Claude` | `AVAILABLE — ACTIVE PRIMARY / REVIEW LANE` | May perform complex/core Production implementation, architecture/readiness, blocking fixes, integration, regression, exact-SHA review and re-review. No fixed "review-only" role. |
-| `Codex` | `RECHECK BEFORE ASSIGNMENT — previous operator-reported temporary rate limit may have elapsed` | When confirmed available, may perform the same classes of core implementation and independent review work as Claude. Do not assume either restored or still blocked without a fresh signal. |
-| `DeepSeek` | `AVAILABLE` | Preferred for simple/mechanical/low-risk implementation, schema consistency, test/regression work, bounded tracing, localization and targeted verification. May provide supplementary review evidence; use Claude/Codex-class review where the Task/risk requires it. |
+| `Claude` | `AVAILABLE — ACTIVE DEVELOPMENT / REVIEW LANE` | May perform complex/core Production implementation, architecture/readiness, blocking fixes, integration, regression, exact-SHA review and re-review. No fixed role. |
+| `Codex` | `AVAILABLE — OPERATOR-CONFIRMED RESTORED` | May perform core implementation, exact-SHA review, fixes, integration/regression and replay/recovery/persistence verification. No fixed role. |
+| `DeepSeek` | `AVAILABLE` | Preferred for simple/mechanical/low-risk implementation, schema consistency, test/regression work, bounded tracing, localization and targeted verification. May provide supplementary review evidence; use Claude/Codex-class review where Task/risk requires it. |
 | `GPT / Web GPT` | `AVAILABLE FOR ORCHESTRATION` | Development Director / Track coordination; not default Production implementation or substitute final reviewer. |
 
 ## Role-Neutral Claude / Codex Rule
@@ -79,10 +79,10 @@ For a Task that is still unstarted, the Development Director may rebind the same
 
 ## Current Controlled Priority
 
-1. `NYRON-T-20260828-171` has delivered `SUCCESS` at exact SHA `30998e73f1471921ab9b1b201fa8ea6227dc71f6`; Production is **PENDING_INDEPENDENT_REVIEW** and must not be treated as accepted or merged merely from implementer self-check.
-2. `NYRON-T-20260828-172` is the current P0 Product-mainline gate: independent exact-SHA Review of Task 171, assigned to a fresh Claude review session/identity.
+1. `NYRON-T-20260828-171` delivered `SUCCESS` at exact SHA `30998e73f1471921ab9b1b201fa8ea6227dc71f6`; Production remains **PENDING_INDEPENDENT_REVIEW**.
+2. `NYRON-T-20260828-172` is the current P0 Product-mainline gate: independent exact-SHA Review of Task 171, now assigned to a fresh Codex review session after operator-confirmed Codex restoration and before review execution started.
 3. Task 172 must explicitly challenge cardinality semantics, old-SQLite-schema/restart compatibility, Task-171 Finding F-003 severity, Graph F-001/F-002 closure, scope/ownership and complexity.
-4. Codex availability must be rechecked before assignment; when confirmed available it may take a disjoint implementation or independent review/fix lane. It is not reserved to either role.
+4. Claude remains fully eligible for independent development/review work; Codex restoration does not reserve either model to one role.
 5. `NYRON-T-20260828-168` remains `PAUSED — PRODUCT-VERTICAL-SLICE HOLD`; capacity restoration alone does not resume it.
 6. `NYRON-T-20260828-169` remains `DEFERRED / NOT STARTED`; resume only when Human Approval Product Node creates the concrete need.
 7. Lower Track A/B/C/D work opens or resumes only when a concrete Product Node requires a missing capability or a true blocker demands it.
