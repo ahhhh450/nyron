@@ -7,15 +7,15 @@
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Development Director: `ACTIVE — Global Development Coordination Authority`
 - Coordination Epoch: `3`
-- Coordination Revision: `136`
-- Revision CAS Basis: `Expected Epoch 3 / Expected Revision 135 — MATCHED`
+- Coordination Revision: `137`
+- Revision CAS Basis: `Expected Epoch 3 / Expected Revision 136 — MATCHED`; intervening Task-181 re-fence commit was coordination-only and did not alter STATUS revision.
 - Last Accepted Production Commit: `1a741c5c7370f50f9efbc3087c67359cebdd8b27`
 - Canonical Repository Finalization Merge: `8962743bfbc6385bf58ebb31a63f5e5442c5f391`
 - Foundation Wave 2 Accepted Downstream Base: `fa12ad2ba51a010786ac307e8efd683bc1be832b`
 - Accepted Product Foundation: `NODE FOUNDATION v0.1 @ 1a741c5c7370f50f9efbc3087c67359cebdd8b27`
 - Development Gate: `PRODUCT NODE / VISUAL WORKFLOW DEVELOPMENT — OPEN`
-- Current Gate: `LLM PRODUCT NODE SUPPORT — PARALLEL CONVERGENCE + EFFECT CONTRACT VERIFICATION`
-- Current Mode: `TASK 181 P0 INTEGRATION + TASK 182 P1 READ-ONLY CONTRACT VERIFICATION IN PARALLEL`
+- Current Gate: `LLM PRODUCT NODE SUPPORT — RE-FENCED CONVERGENCE + EFFECT CONTRACT VERIFICATION`
+- Current Mode: `TASK 181 P0 RESUME + TASK 182 P1 READ-ONLY CONTRACT VERIFICATION IN PARALLEL`
 - Primary Milestone: `USER-FACING PRODUCT NODE VERTICAL SLICES`
 - Current Target: `LLM PRODUCT NODE v0.1 — REAL-PROVIDER-CAPABLE SUPPORT CHAIN`
 - Latest Handoff Pointer: `coordination/handoffs/LATEST.md`
@@ -88,7 +88,7 @@ return to Product Node
 
 | State | Task | Meaning |
 |---|---|---|
-| `ACTIVE / READY` | `NYRON-T-20260828-181` | Codex HIGH-risk integration of Product foundation `1a741c5c...` with accepted Provider+Credential+Network tip `276432c1...`. Owns Task-180 F-001 only. |
+| `RE-FENCED / READY TO RESUME` | `NYRON-T-20260828-181` | Codex HIGH-risk integration of Product foundation `1a741c5c...` with accepted Provider+Credential+Network tip `276432c1...`. First attempt blocked before merge solely on stale coordination context; same Task now re-fenced with explicit Stale Policy and clean R2 branch. |
 | `ACTIVE / READY` | `NYRON-T-20260828-182` | Claude read-only frozen Effect-contract verification for Task-180 F-005. May run in parallel with 181; no Production mutation. |
 | `COMPLETED / GO_BOUNDED_SUPPORT_TASKS` | `NYRON-T-20260828-180` | LLM Product Node v0.1 readiness/gap analysis. No Production mutation. |
 | `COMPLETED / PASS` | `NYRON-T-20260828-179` | Final integrated exact-SHA Review PASS; Findings NONE. |
@@ -178,9 +178,12 @@ Therefore Product LLM implementation cannot begin before explicit convergence + 
 - Assigned Agent: `Codex — Cross-Track Integration Session`.
 - Product parent: `1a741c5c7370f50f9efbc3087c67359cebdd8b27`.
 - Track-D parent: `276432c1706d6f41900ef6d5cebcf5fc1e36cf5f`.
-- Required branch: `integration/NYRON-T-20260828-181-product-trackd-convergence`.
+- Current required branch: `integration/NYRON-T-20260828-181-product-trackd-convergence-r2`.
 - Production mutation: `INTEGRATION ONLY`.
 - Scope owner: Task-180 F-001 only.
+- Stale Policy: `RECHECK_AND_CONTINUE_IF_UNAFFECTED`.
+- First execution returned `BLOCKED` before any merge/Production mutation solely because the original Task lacked Stale Policy after coordination advanced from Revision 134.
+- The same Task is now re-fenced against Revision 136; Revision 135/136 changes are coordination/read-only work only and do not alter the exact integration parents or technical scope.
 - Any conflict requiring a new semantic choice => `TASK BLOCKED`.
 - Mandatory independent exact-SHA Review after delivery.
 
@@ -195,7 +198,7 @@ Therefore Product LLM implementation cannot begin before explicit convergence + 
 
 ## Dependency-Ordered LLM Support Chain
 
-1. Task 181 Product + Provider/Credential/Network convergence — **ACTIVE**.
+1. Task 181 Product + Provider/Credential/Network convergence — **RE-FENCED / RESUME AUTHORIZED**.
 2. Task 182 Effect frozen-contract verification — **ACTIVE IN PARALLEL**.
 3. Independent exact-SHA Review of Task 181 — create only after exact delivery SHA exists.
 4. Bounded Runtime/Effect execution-seam support — only after Task 181 is accepted and Task 182 returns a permissive disposition; otherwise escalate/no-go.
@@ -266,10 +269,15 @@ Task-136 status remains:
 
 ### Revision 136 / Epoch 3
 - CAS against `Epoch 3 / Revision 135` succeeded.
-- Task 181 remains P0 integration and owns Task-180 F-001 only.
-- Task 182 opened in parallel as read-only Effect-contract verification for Task-180 F-005.
-- This parallelization is dependency-safe: Task 182 has no Production mutation and does not depend on Task 181 output; its result directly determines whether the post-181 Runtime/Effect implementation may proceed or must escalate.
-- Downstream Production Tasks remain dependency-gated and are not pre-created.
+- Task 181 remained P0 integration and Task 182 opened in parallel as read-only Effect-contract verification.
+
+### Revision 137 / Epoch 3
+- CAS against `Epoch 3 / Revision 136` succeeded.
+- Task 181's first execution is recorded `BLOCKED` solely on `STALE_COORDINATION_CONTEXT`; no merge or Production/test mutation occurred.
+- The blocker is procedural, not technical: the original Task was based on Revision 134 and omitted Stale Policy while coordination had advanced.
+- The same Task 181 is re-fenced against Revision 136 with `RECHECK_AND_CONTINUE_IF_UNAFFECTED`; no new technical Task is created and scope/exact parents remain unchanged.
+- A clean R2 integration branch is created directly from the accepted Product SHA: `integration/NYRON-T-20260828-181-product-trackd-convergence-r2`.
+- Task 182 continues independently in parallel.
 - No real consequential external-effect gate changes in this revision.
 - Last Accepted Production Commit remains `1a741c5c7370f50f9efbc3087c67359cebdd8b27`.
 
