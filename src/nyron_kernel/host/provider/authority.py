@@ -38,11 +38,13 @@ class ProviderRepository:
             int(profile.cancellation_request),
             int(profile.terminal_cancel_confirmation),
             int(profile.external_identity_recovery),
+            int(profile.authoritative_usage),
+            int(profile.authoritative_no_usage_no_charge),
             int(profile.continuation_resume), int(profile.streaming),
         )
         try:
             with self._store.transaction() as connection:
-                connection.execute("INSERT INTO provider_profile_revisions VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", values)
+                connection.execute("INSERT INTO provider_profile_revisions VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", values)
         except sqlite3.IntegrityError as error:
             raise ProviderFoundationError("PROVIDER_PROFILE_IDENTITY_CONFLICT") from error
         return profile
@@ -59,12 +61,13 @@ class ProviderRepository:
         profile = self._require_profile(request.profile_revision_ref)
         if profile.idempotent_same_key and request.idempotency_key is None:
             raise ProviderFoundationError("PROVIDER_IDEMPOTENCY_KEY_REQUIRED")
+        protected_scope_ref = self._protected_idempotency_scope_ref(profile)
         now = self._now()
         try:
             with self._store.transaction() as connection:
                 connection.execute(
-                    "INSERT INTO provider_operations VALUES (?,?,?,?,?,?,?,?,?,?,?,NULL,?)",
-                    astuple(request) + (profile.usage_source_namespace, now),
+                    "INSERT INTO provider_operations VALUES (?,?,?,?,?,?,?,?,?,?,?,?,NULL,?)",
+                    astuple(request) + (profile.usage_source_namespace, protected_scope_ref, now),
                 )
         except sqlite3.IntegrityError as error:
             raise ProviderFoundationError("PROVIDER_OPERATION_IDENTITY_CONFLICT") from error
@@ -87,25 +90,12 @@ class ProviderRepository:
                         evidence_semantics: str, authoritative: bool,
                         historical_outcome: str) -> ProviderEvidence:
         for value in (evidence_ref, operation_ref, evidence_kind, evidence_semantics, historical_outcome): self._require_nonempty(value)
-        if evidence_kind not in {"ACKNOWLEDGEMENT","LOOKUP","CANCEL_REQUEST","CANCEL_CONFIRMATION"} or historical_outcome not in {"UNKNOWN","PARTIAL","KNOWN"} or type(authoritative) is not bool:
+        if evidence_kind not in {"ACKNOWLEDGEMENT","LOOKUP","CANCEL_REQUEST","CANCEL_CONFIRMATION","USAGE"} or historical_outcome not in {"UNKNOWN","PARTIAL","KNOWN"} or type(authoritative) is not bool:
             raise ProviderFoundationError("PROVIDER_EVIDENCE_INVALID")
         operation = self._require_operation(operation_ref); profile = self._require_profile(operation.profile_revision_ref)
-        if evidence_kind == "LOOKUP" and not profile.authoritative_lookup:
-            if authoritative: raise ProviderFoundationError("PROVIDER_LOOKUP_CLAIM_UNSUPPORTED")
-            historical_outcome = "UNKNOWN"
-        if (
-            evidence_kind == "LOOKUP"
-            and evidence_semantics == "NOT_FOUND"
-            and not profile.lookup_not_found_proves_absence
-        ):
-            historical_outcome = "UNKNOWN"
-        if evidence_kind == "CANCEL_REQUEST" and not profile.cancellation_request:
-            raise ProviderFoundationError("PROVIDER_CANCEL_CLAIM_UNSUPPORTED")
-        if evidence_kind == "CANCEL_REQUEST":
-            historical_outcome = "UNKNOWN"
-        if evidence_kind == "CANCEL_CONFIRMATION":
-            if not profile.terminal_cancel_confirmation or not authoritative:
-                raise ProviderFoundationError("PROVIDER_CANCEL_CONFIRMATION_UNSUPPORTED")
+        historical_outcome = self._derive_historical_outcome(
+            profile, evidence_kind, evidence_semantics, authoritative
+        )
         existing = self.resolve_evidence(evidence_ref)
         if existing is not None:
             candidate = ProviderEvidence(evidence_ref, operation_ref, evidence_kind, evidence_semantics, authoritative, historical_outcome, existing.recorded_at)
@@ -124,9 +114,48 @@ class ProviderRepository:
         digest = hashlib.sha256(f"{operation.usage_source_namespace}\\0{operation_ref}\\0{provider_line_item_ref}".encode()).hexdigest()
         return operation.usage_source_namespace, f"provider-usage:{digest}"
 
+    def bind_usage_source(self, *, operation_ref: str, provider_line_item_ref: str,
+                          evidence_ref: str, dimension_ref: str, quantity: int,
+                          unit: str) -> tuple[str, str]:
+        operation = self._require_operation(operation_ref)
+        self._require_nonempty(provider_line_item_ref); self._require_nonempty(evidence_ref)
+        self._require_nonempty(dimension_ref); self._require_nonempty(unit)
+        if type(quantity) is not int or quantity < 0:
+            raise ProviderFoundationError("PROVIDER_USAGE_QUANTITY_INVALID")
+        evidence = self.resolve_evidence(evidence_ref)
+        if evidence is None or evidence.operation_ref != operation_ref or not evidence.authoritative \
+                or evidence.evidence_kind != "USAGE" \
+                or evidence.evidence_semantics not in {"ACTUAL_USAGE", "NO_USAGE_NO_CHARGE"} \
+                or evidence.historical_outcome != "KNOWN":
+            raise ProviderFoundationError("PROVIDER_USAGE_EVIDENCE_INVALID")
+        if evidence.evidence_semantics == "NO_USAGE_NO_CHARGE" and quantity != 0:
+            raise ProviderFoundationError("PROVIDER_NO_USAGE_QUANTITY_INVALID")
+        authority_ref, source_fact_id = self.usage_source_identity(
+            operation_ref, provider_line_item_ref
+        )
+        values = (authority_ref, source_fact_id, operation_ref, provider_line_item_ref,
+                  evidence_ref, evidence.evidence_semantics, dimension_ref, quantity,
+                  unit, self._now())
+        existing = self._store.connection.execute(
+            "SELECT * FROM provider_usage_source_bindings WHERE source_authority_ref=? AND source_fact_id=?",
+            (authority_ref, source_fact_id),
+        ).fetchone()
+        if existing is not None:
+            if tuple(existing) == values:
+                return authority_ref, source_fact_id
+            raise ProviderFoundationError("PROVIDER_USAGE_SOURCE_IDENTITY_CONFLICT")
+        try:
+            with self._store.transaction() as connection:
+                connection.execute(
+                    "INSERT INTO provider_usage_source_bindings VALUES (?,?,?,?,?,?,?,?,?,?)", values
+                )
+        except sqlite3.IntegrityError as error:
+            raise ProviderFoundationError("PROVIDER_USAGE_SOURCE_IDENTITY_CONFLICT") from error
+        return authority_ref, source_fact_id
+
     def resolve_profile(self, ref: str) -> ProviderProfileRevision | None:
         row = self._store.connection.execute("SELECT * FROM provider_profile_revisions WHERE profile_revision_ref=?", (ref,)).fetchone()
-        return ProviderProfileRevision(**{**dict(row), **{k: bool(row[k]) for k in ('idempotent_same_key','authoritative_lookup','lookup_not_found_proves_absence','cancellation_request','terminal_cancel_confirmation','external_identity_recovery','continuation_resume','streaming')}}) if row else None
+        return ProviderProfileRevision(**{**dict(row), **{k: bool(row[k]) for k in ('idempotent_same_key','authoritative_lookup','lookup_not_found_proves_absence','cancellation_request','terminal_cancel_confirmation','external_identity_recovery','authoritative_usage','authoritative_no_usage_no_charge','continuation_resume','streaming')}}) if row else None
     def resolve(self, ref: str) -> ProviderOperation | None:
         row = self._store.connection.execute("SELECT * FROM provider_operations WHERE operation_ref=?", (ref,)).fetchone()
         return ProviderOperation(**dict(row)) if row else None
@@ -155,6 +184,50 @@ class ProviderRepository:
         if p.streaming or p.continuation_resume: raise ProviderFoundationError("PROVIDER_PROFILE_FEATURE_UNSUPPORTED")
         if p.lookup_not_found_proves_absence and not p.authoritative_lookup: raise ProviderFoundationError("PROVIDER_PROFILE_CLAIM_INVALID")
         if p.terminal_cancel_confirmation and not p.cancellation_request: raise ProviderFoundationError("PROVIDER_PROFILE_CLAIM_INVALID")
+    @staticmethod
+    def _protected_idempotency_scope_ref(profile: ProviderProfileRevision) -> str:
+        material = "\0".join((profile.provider_scope_ref, profile.account_scope_ref,
+                               profile.endpoint_scope_ref, profile.model_scope_ref))
+        return "provider-idempotency-scope:" + hashlib.sha256(material.encode()).hexdigest()
+    @staticmethod
+    def _derive_historical_outcome(profile: ProviderProfileRevision, kind: str,
+                                   semantics: str, authoritative: bool) -> str:
+        if kind == "ACKNOWLEDGEMENT":
+            if semantics in {"ACCEPTED", "AMBIGUOUS", "billable-ambiguity", "accepted"}:
+                return "UNKNOWN"
+            if semantics == "PARTIAL_CONSEQUENCE" and authoritative:
+                return "PARTIAL"
+        elif kind == "LOOKUP":
+            if authoritative and not profile.authoritative_lookup:
+                raise ProviderFoundationError("PROVIDER_LOOKUP_CLAIM_UNSUPPORTED")
+            if not authoritative:
+                return "UNKNOWN"
+            if semantics == "NOT_FOUND":
+                return "KNOWN" if profile.lookup_not_found_proves_absence else "UNKNOWN"
+            if semantics == "COMPLETED":
+                return "KNOWN"
+            if semantics == "PARTIAL_CONSEQUENCE":
+                return "PARTIAL"
+        elif kind == "CANCEL_REQUEST":
+            if not profile.cancellation_request:
+                raise ProviderFoundationError("PROVIDER_CANCEL_CLAIM_UNSUPPORTED")
+            if semantics in {"REQUESTED", "ACCEPTED", "accepted"}:
+                return "UNKNOWN"
+        elif kind == "CANCEL_CONFIRMATION":
+            if not profile.terminal_cancel_confirmation or not authoritative:
+                raise ProviderFoundationError("PROVIDER_CANCEL_CONFIRMATION_UNSUPPORTED")
+            if semantics in {"TERMINAL_NO_CONSEQUENCE", "TERMINAL_AFTER_PARTIAL"}:
+                return "KNOWN"
+        elif kind == "USAGE":
+            if semantics == "ACTUAL_USAGE" and authoritative and profile.authoritative_usage:
+                return "KNOWN"
+            if semantics == "NO_USAGE_NO_CHARGE" and authoritative and profile.authoritative_no_usage_no_charge:
+                return "KNOWN"
+            if semantics in {"ACTUAL_USAGE", "NO_USAGE_NO_CHARGE"} and not authoritative:
+                return "UNKNOWN"
+        if authoritative:
+            raise ProviderFoundationError("PROVIDER_EVIDENCE_SEMANTICS_UNSUPPORTED")
+        return "UNKNOWN"
     @classmethod
     def _validate_request(cls, r: ProviderOperationRequest) -> None:
         if not isinstance(r, ProviderOperationRequest) or type(r.attempt_seq) is not int or r.attempt_seq <= 0: raise ProviderFoundationError("PROVIDER_OPERATION_INVALID")

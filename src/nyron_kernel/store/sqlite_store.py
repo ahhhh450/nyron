@@ -1108,6 +1108,8 @@ class SQLiteStore:
                 cancellation_request INTEGER NOT NULL CHECK (cancellation_request IN (0,1)),
                 terminal_cancel_confirmation INTEGER NOT NULL CHECK (terminal_cancel_confirmation IN (0,1)),
                 external_identity_recovery INTEGER NOT NULL CHECK (external_identity_recovery IN (0,1)),
+                authoritative_usage INTEGER NOT NULL CHECK (authoritative_usage IN (0,1)),
+                authoritative_no_usage_no_charge INTEGER NOT NULL CHECK (authoritative_no_usage_no_charge IN (0,1)),
                 continuation_resume INTEGER NOT NULL CHECK (continuation_resume = 0),
                 streaming INTEGER NOT NULL CHECK (streaming = 0),
                 UNIQUE (profile_ref, profile_revision_ref)
@@ -1133,9 +1135,10 @@ class SQLiteStore:
                 resource_lease_ref TEXT NOT NULL,
                 reservation_ref TEXT NOT NULL,
                 usage_source_namespace TEXT NOT NULL,
+                protected_idempotency_scope_ref TEXT NOT NULL,
                 external_request_id TEXT,
                 created_at INTEGER NOT NULL,
-                UNIQUE (profile_revision_ref, usage_source_namespace, idempotency_key),
+                UNIQUE (protected_idempotency_scope_ref, idempotency_key),
                 FOREIGN KEY (profile_revision_ref) REFERENCES provider_profile_revisions(profile_revision_ref),
                 FOREIGN KEY (operation_ref) REFERENCES effect_operations(operation_ref),
                 FOREIGN KEY (reservation_ref) REFERENCES budget_reservations(reservation_ref)
@@ -1152,6 +1155,7 @@ class SQLiteStore:
               OR NEW.resource_lease_ref != OLD.resource_lease_ref
               OR NEW.reservation_ref != OLD.reservation_ref
               OR NEW.usage_source_namespace != OLD.usage_source_namespace
+              OR NEW.protected_idempotency_scope_ref != OLD.protected_idempotency_scope_ref
               OR NEW.created_at != OLD.created_at
               OR (OLD.external_request_id IS NOT NULL AND NEW.external_request_id IS NOT OLD.external_request_id)
             BEGIN SELECT RAISE(ABORT, 'provider operation identity is immutable'); END;
@@ -1164,7 +1168,7 @@ class SQLiteStore:
                 evidence_ref TEXT PRIMARY KEY,
                 operation_ref TEXT NOT NULL,
                 evidence_kind TEXT NOT NULL CHECK (evidence_kind IN (
-                    'ACKNOWLEDGEMENT','LOOKUP','CANCEL_REQUEST','CANCEL_CONFIRMATION'
+                    'ACKNOWLEDGEMENT','LOOKUP','CANCEL_REQUEST','CANCEL_CONFIRMATION','USAGE'
                 )),
                 evidence_semantics TEXT NOT NULL,
                 authoritative INTEGER NOT NULL CHECK (authoritative IN (0,1)),
@@ -1179,6 +1183,31 @@ class SQLiteStore:
             CREATE TRIGGER IF NOT EXISTS provider_evidence_no_delete
             BEFORE DELETE ON provider_evidence BEGIN
                 SELECT RAISE(ABORT, 'provider evidence is immutable');
+            END;
+
+            CREATE TABLE IF NOT EXISTS provider_usage_source_bindings (
+                source_authority_ref TEXT NOT NULL,
+                source_fact_id TEXT NOT NULL,
+                operation_ref TEXT NOT NULL,
+                provider_line_item_ref TEXT NOT NULL,
+                evidence_ref TEXT NOT NULL UNIQUE,
+                evidence_semantics TEXT NOT NULL CHECK (evidence_semantics IN ('ACTUAL_USAGE','NO_USAGE_NO_CHARGE')),
+                dimension_ref TEXT NOT NULL,
+                quantity INTEGER NOT NULL CHECK (quantity >= 0),
+                unit TEXT NOT NULL,
+                bound_at INTEGER NOT NULL,
+                PRIMARY KEY (source_authority_ref, source_fact_id),
+                UNIQUE (operation_ref, provider_line_item_ref),
+                FOREIGN KEY (operation_ref) REFERENCES provider_operations(operation_ref),
+                FOREIGN KEY (evidence_ref) REFERENCES provider_evidence(evidence_ref)
+            );
+            CREATE TRIGGER IF NOT EXISTS provider_usage_source_bindings_immutable
+            BEFORE UPDATE ON provider_usage_source_bindings BEGIN
+                SELECT RAISE(ABORT, 'provider usage source binding is immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS provider_usage_source_bindings_no_delete
+            BEFORE DELETE ON provider_usage_source_bindings BEGIN
+                SELECT RAISE(ABORT, 'provider usage source binding is immutable');
             END;
             """
         )

@@ -38,6 +38,7 @@ class ProviderFoundationTest(unittest.TestCase):
             idempotent_same_key=True, authoritative_lookup=False,
             lookup_not_found_proves_absence=False, cancellation_request=True,
             terminal_cancel_confirmation=False, external_identity_recovery=False,
+            authoritative_usage=True, authoritative_no_usage_no_charge=True,
             continuation_resume=False, streaming=False)
         values.update(changes); return ProviderProfileRevision(**values)
     @staticmethod
@@ -64,6 +65,25 @@ class ProviderFoundationTest(unittest.TestCase):
         with self.assertRaises(ProviderFoundationError) as raised:
             self.repo.prepare(replace(self.request,operation_ref="effect:provider/2",reservation_ref="reservation:provider/2"))
         self.assertEqual("PROVIDER_OPERATION_IDENTITY_CONFLICT",raised.exception.code)
+    def test_protected_key_scope_survives_profile_revision_and_restart(self):
+        self.repo.prepare(self.request); self._clone_effect_and_reservation("effect:provider/2","reservation:provider/2")
+        revision="provider-profile:test@2"
+        self.repo.register_profile(self._profile(profile_revision_ref=revision))
+        with self.assertRaises(ProviderFoundationError):
+            self.repo.prepare(replace(self.request, operation_ref="effect:provider/2",
+                reservation_ref="reservation:provider/2", profile_revision_ref=revision))
+        self.store.close(); self.store=SQLiteStore(self.db); self.repo=ProviderRepository(self.store,lambda:self.now)
+        with self.assertRaises(ProviderFoundationError):
+            self.repo.prepare(replace(self.request, operation_ref="effect:provider/2",
+                reservation_ref="reservation:provider/2", profile_revision_ref=revision))
+    def test_same_key_is_allowed_only_in_different_declared_scope(self):
+        self.repo.prepare(self.request); self._clone_effect_and_reservation("effect:provider/2","reservation:provider/2")
+        revision="provider-profile:other@1"
+        self.repo.register_profile(self._profile(profile_ref="provider-profile:other",
+            profile_revision_ref=revision, account_scope_ref="provider-account:other"))
+        other=self.repo.prepare(replace(self.request, operation_ref="effect:provider/2",
+            reservation_ref="reservation:provider/2", profile_revision_ref=revision))
+        self.assertEqual("effect:provider/2",other.operation_ref)
     def test_external_request_id_is_set_once(self):
         self.repo.prepare(self.request); first=self.repo.bind_external_request_id(OP,"external:req-1")
         self.assertEqual(first,self.repo.bind_external_request_id(OP,"external:req-1"))
@@ -77,6 +97,46 @@ class ProviderFoundationTest(unittest.TestCase):
         cancel=self.repo.record_evidence(evidence_ref="e:cancel",operation_ref=OP,evidence_kind="CANCEL_REQUEST",evidence_semantics="accepted",authoritative=False,historical_outcome="KNOWN")
         self.assertEqual("UNKNOWN",cancel.historical_outcome)
         with self.assertRaises(ProviderFoundationError): self.repo.record_evidence(evidence_ref="e:terminal",operation_ref=OP,evidence_kind="CANCEL_CONFIRMATION",evidence_semantics="terminal",authoritative=True,historical_outcome="KNOWN")
+    def test_evidence_outcome_is_owner_derived_and_profile_bound(self):
+        self.repo.prepare(self.request)
+        ack=self.repo.record_evidence(evidence_ref="e:arbitrary",operation_ref=OP,
+            evidence_kind="ACKNOWLEDGEMENT",evidence_semantics="accepted",
+            authoritative=True,historical_outcome="KNOWN")
+        self.assertEqual("UNKNOWN",ack.historical_outcome)
+        with self.assertRaises(ProviderFoundationError):
+            self.repo.record_evidence(evidence_ref="e:unsupported",operation_ref=OP,
+                evidence_kind="ACKNOWLEDGEMENT",evidence_semantics="arbitrary",
+                authoritative=True,historical_outcome="KNOWN")
+        absent=self.repo.record_evidence(evidence_ref="e:absence",operation_ref=OP,
+            evidence_kind="LOOKUP",evidence_semantics="NOT_FOUND",
+            authoritative=False,historical_outcome="KNOWN")
+        self.assertEqual("UNKNOWN",absent.historical_outcome)
+        revision="provider-profile:lookup@1"
+        self.repo.register_profile(self._profile(profile_ref="provider-profile:lookup",
+            profile_revision_ref=revision, authoritative_lookup=True,
+            lookup_not_found_proves_absence=True))
+        self._clone_effect_and_reservation("effect:provider/2","reservation:provider/2")
+        self.repo.prepare(replace(self.request,operation_ref="effect:provider/2",
+            reservation_ref="reservation:provider/2",profile_revision_ref=revision,
+            idempotency_key="idem:2"))
+        absent=self.repo.record_evidence(evidence_ref="e:absence-proved",
+            operation_ref="effect:provider/2",evidence_kind="LOOKUP",
+            evidence_semantics="NOT_FOUND",authoritative=True,historical_outcome="UNKNOWN")
+        self.assertEqual("KNOWN",absent.historical_outcome)
+    def test_terminal_cancel_is_claim_bound_and_preserves_partial_evidence(self):
+        revision="provider-profile:cancel@1"
+        self.repo.register_profile(self._profile(profile_ref="provider-profile:cancel",
+            profile_revision_ref=revision,terminal_cancel_confirmation=True))
+        self.repo.prepare(replace(self.request,profile_revision_ref=revision))
+        partial=self.repo.record_evidence(evidence_ref="e:partial",operation_ref=OP,
+            evidence_kind="ACKNOWLEDGEMENT",evidence_semantics="PARTIAL_CONSEQUENCE",
+            authoritative=True,historical_outcome="KNOWN")
+        terminal=self.repo.record_evidence(evidence_ref="e:terminal",operation_ref=OP,
+            evidence_kind="CANCEL_CONFIRMATION",evidence_semantics="TERMINAL_AFTER_PARTIAL",
+            authoritative=True,historical_outcome="UNKNOWN")
+        self.assertEqual("PARTIAL",partial.historical_outcome)
+        self.assertEqual("KNOWN",terminal.historical_outcome)
+        self.assertEqual("PARTIAL",self.repo.resolve_evidence("e:partial").historical_outcome)
     def test_boundary_revalidates_reservation_grant_lease_and_attempt(self):
         self.repo.prepare(self.request); broker=TrustedUnaryProviderBroker(self.store,self.repo); broker.admit_simulated_dispatch(OP)
         for table,key in (("capability_grants","grant_ref"),("resource_leases","lease_ref")):
@@ -117,16 +177,42 @@ class ProviderFoundationTest(unittest.TestCase):
         with self.assertRaises(UsageLedgerError): ledger.record_usage(replace(req,quantity=41))
     def test_authoritative_usage_resolves_reconciliation_without_rewriting_ambiguity(self):
         self.repo.prepare(self.request); self._record_ambiguity("UNKNOWN"); AccountingReconciliationAuthority(self.store,lambda:self.now).enter_provider_ambiguity(self._reconciliation("UNKNOWN"))
-        authority,source=self.repo.usage_source_identity(OP,"line:known"); UsageLedger(self.store,lambda:self.now).record_usage(UsageFactRequest(authority,source,"METERED_USAGE","tokens","accounting:provider",40,"TOKEN","evidence:known","event:known",reservation_ref=RES,operation_ref=OP))
+        self._record_usage_evidence("evidence:known","ACTUAL_USAGE")
+        authority,source=self.repo.bind_usage_source(operation_ref=OP,provider_line_item_ref="line:known",evidence_ref="evidence:known",dimension_ref="tokens",quantity=40,unit="TOKEN"); UsageLedger(self.store,lambda:self.now).record_usage(UsageFactRequest(authority,source,"METERED_USAGE","tokens","accounting:provider",40,"TOKEN","evidence:known","event:known",reservation_ref=RES,operation_ref=OP))
         settlement=SettlementAuthority(self.store,lambda:self.now).settle(SettlementRequest("settle:provider",RES,"evidence:known"))
         self.assertEqual("COMMITTED",settlement.resulting_state)
         ambiguity=self.store.connection.execute("SELECT ambiguity_outcome FROM provider_accounting_reconciliations").fetchone()[0]
         self.assertEqual("UNKNOWN",ambiguity); self.assertEqual(1,self.store.connection.execute("SELECT COUNT(*) FROM provider_accounting_reconciliation_resolutions").fetchone()[0])
-    def test_zero_requires_explicit_usage_fact_and_can_release(self):
+    def test_zero_requires_authoritative_no_usage_evidence_to_release(self):
         self.repo.prepare(self.request); self._record_ambiguity("UNKNOWN"); AccountingReconciliationAuthority(self.store,lambda:self.now).enter_provider_ambiguity(self._reconciliation("UNKNOWN"))
         with self.assertRaises(SettlementAuthorityError): SettlementAuthority(self.store,lambda:self.now).settle(SettlementRequest("settle:none",RES,"e:none"))
         authority,source="provider-usage:test@1","provider-usage:explicit-zero"; UsageLedger(self.store,lambda:self.now).record_usage(UsageFactRequest(authority,source,"METERED_USAGE","tokens","accounting:provider",0,"TOKEN","evidence:zero","event:zero",reservation_ref=RES,operation_ref=OP))
-        self.assertEqual("RELEASED",SettlementAuthority(self.store,lambda:self.now).settle(SettlementRequest("settle:zero",RES,"e:zero")).resulting_state)
+        with self.assertRaises(SettlementAuthorityError): SettlementAuthority(self.store,lambda:self.now).settle(SettlementRequest("settle:forged",RES,"e:zero"))
+    def test_authoritative_no_usage_binding_releases_and_replays_after_restart(self):
+        self.repo.prepare(self.request); self._record_ambiguity("UNKNOWN"); AccountingReconciliationAuthority(self.store,lambda:self.now).enter_provider_ambiguity(self._reconciliation("UNKNOWN"))
+        self._record_usage_evidence("evidence:no-usage","NO_USAGE_NO_CHARGE")
+        authority,source=self.repo.bind_usage_source(operation_ref=OP,provider_line_item_ref="line:no-usage",evidence_ref="evidence:no-usage",dimension_ref="tokens",quantity=0,unit="TOKEN")
+        UsageLedger(self.store,lambda:self.now).record_usage(UsageFactRequest(authority,source,"METERED_USAGE","tokens","accounting:provider",0,"TOKEN","evidence:no-usage","event:no-usage",reservation_ref=RES,operation_ref=OP))
+        request=SettlementRequest("settle:no-usage",RES,"evidence:no-usage")
+        expected=SettlementAuthority(self.store,lambda:self.now).settle(request)
+        self.assertEqual("RELEASED",expected.resulting_state)
+        self.store.close(); self.store=SQLiteStore(self.db)
+        self.assertEqual(expected,SettlementAuthority(self.store,lambda:self.now).settle(request))
+    def test_usage_source_binding_conflict_and_raw_mutation_fail_closed(self):
+        self.repo.prepare(self.request)
+        self._record_usage_evidence("evidence:usage-1","ACTUAL_USAGE")
+        expected=self.repo.bind_usage_source(operation_ref=OP,provider_line_item_ref="line:one",
+            evidence_ref="evidence:usage-1",dimension_ref="tokens",quantity=1,unit="TOKEN")
+        self.assertEqual(expected,self.repo.bind_usage_source(operation_ref=OP,
+            provider_line_item_ref="line:one",evidence_ref="evidence:usage-1",
+            dimension_ref="tokens",quantity=1,unit="TOKEN"))
+        self._record_usage_evidence("evidence:usage-2","ACTUAL_USAGE")
+        with self.assertRaises(ProviderFoundationError):
+            self.repo.bind_usage_source(operation_ref=OP,provider_line_item_ref="line:one",
+                evidence_ref="evidence:usage-2",dimension_ref="tokens",quantity=1,unit="TOKEN")
+        for sql in ("UPDATE provider_usage_source_bindings SET quantity=0",
+                    "DELETE FROM provider_usage_source_bindings"):
+            with self.assertRaises(sqlite3.IntegrityError): self.store.connection.execute(sql)
     def test_raw_provider_identity_and_evidence_are_immutable(self):
         self.repo.prepare(self.request); self.repo.record_evidence(evidence_ref="e:ack",operation_ref=OP,evidence_kind="ACKNOWLEDGEMENT",evidence_semantics="accepted",authoritative=True,historical_outcome="PARTIAL")
         for sql in ("UPDATE provider_operations SET semantic_request_hash='x'","DELETE FROM provider_operations","UPDATE provider_evidence SET evidence_semantics='x'","DELETE FROM provider_evidence"):
@@ -135,7 +221,12 @@ class ProviderFoundationTest(unittest.TestCase):
     @staticmethod
     def _reconciliation(outcome): return ProviderReconciliationRequest("reconcile:provider/1",RES,OP,"provider-usage:test@1",outcome,"evidence:ambiguous","effect-history:ambiguous")
     def _record_ambiguity(self, outcome):
-        return self.repo.record_evidence(evidence_ref="evidence:ambiguous",operation_ref=OP,evidence_kind="ACKNOWLEDGEMENT",evidence_semantics="billable-ambiguity",authoritative=True,historical_outcome=outcome)
+        semantics="PARTIAL_CONSEQUENCE" if outcome == "PARTIAL" else "billable-ambiguity"
+        return self.repo.record_evidence(evidence_ref="evidence:ambiguous",operation_ref=OP,evidence_kind="ACKNOWLEDGEMENT",evidence_semantics=semantics,authoritative=True,historical_outcome=outcome)
+    def _record_usage_evidence(self, evidence_ref, semantics):
+        return self.repo.record_evidence(evidence_ref=evidence_ref,operation_ref=OP,
+            evidence_kind="USAGE",evidence_semantics=semantics,authoritative=True,
+            historical_outcome="UNKNOWN")
     def _clone_effect_and_reservation(self,op,res):
         self.store.connection.execute("INSERT INTO effect_operations SELECT ?,effect_class,execution_ref,activation_ref,run_ref,attempt_seq,fencing_token||'-2',fencing_generation,capability_grant_ref,resource_ref,resource_lease_ref,target_ref||'-2',payload_json,payload_hash,caused_by_ref,state,prepared_at,dispatch_admission_ref||'-2',dispatch_admitted_at,completion_evidence_json,fence_evidence_json,historical_outcome,historical_outcome_evidence_json FROM effect_operations WHERE operation_ref=?",(op,OP))
         self.store.connection.execute("INSERT INTO budget_reservations SELECT ?,request_ref||'-2',activation_ref,run_ref,attempt_seq,accounting_scope_ref,graph_revision_ref,definition_anchor_ref,ancestry_snapshot_json,policy_revision_refs_json,estimate_ref,requested_dimensions_json,reserved_dimensions_json,committed_dimensions_json,released_dimensions_json,state,deny_reason_code,subject_refs_json,created_at,updated_at,caused_by_ref FROM budget_reservations WHERE reservation_ref=?",(res,RES))

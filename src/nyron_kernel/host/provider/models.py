@@ -20,6 +20,8 @@ class ProviderProfileRevision:
     cancellation_request: bool
     terminal_cancel_confirmation: bool
     external_identity_recovery: bool
+    authoritative_usage: bool = False
+    authoritative_no_usage_no_charge: bool = False
     continuation_resume: bool = False
     streaming: bool = False
 
@@ -51,6 +53,7 @@ class ProviderOperation:
     resource_lease_ref: str
     reservation_ref: str
     usage_source_namespace: str
+    protected_idempotency_scope_ref: str
     external_request_id: str | None
     created_at: int
 

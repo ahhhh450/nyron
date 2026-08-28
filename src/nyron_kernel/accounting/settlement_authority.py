@@ -225,6 +225,10 @@ class SettlementAuthority:
                         raise SettlementAuthorityError(
                             "SETTLEMENT_RECONCILIATION_EVIDENCE_REQUIRED"
                         )
+                    if adjustment_rows:
+                        raise SettlementAuthorityError(
+                            "SETTLEMENT_PROVIDER_ADJUSTMENT_UNBOUND"
+                        )
                     if any(
                         row["source_authority_ref"]
                         != reconciliation["provider_usage_source_ref"]
@@ -233,6 +237,26 @@ class SettlementAuthority:
                     ):
                         raise SettlementAuthorityError(
                             "SETTLEMENT_PROVIDER_USAGE_BINDING_CONFLICT"
+                        )
+                    usage_bindings = tuple(connection.execute(
+                        "SELECT * FROM provider_usage_source_bindings "
+                        "WHERE operation_ref=? ORDER BY source_fact_id",
+                        (reconciliation["operation_ref"],),
+                    ).fetchall())
+                    binding_by_source = {
+                        (row["source_authority_ref"], row["source_fact_id"]): row
+                        for row in usage_bindings
+                    }
+                    if any(
+                        (binding := binding_by_source.get(
+                            (row["source_authority_ref"], row["source_fact_id"])
+                        )) is None
+                        or (row["external_evidence_ref"], row["dimension_ref"], row["quantity"], row["unit"])
+                        != (binding["evidence_ref"], binding["dimension_ref"], binding["quantity"], binding["unit"])
+                        for row in usage_rows
+                    ):
+                        raise SettlementAuthorityError(
+                            "SETTLEMENT_PROVIDER_USAGE_SOURCE_UNBOUND"
                         )
 
                 actual = self._actual_dimensions(
@@ -254,6 +278,15 @@ class SettlementAuthority:
                 released = {key: value for key, value in released.items() if value}
                 overrun = {key: value for key, value in overrun.items() if value}
                 actual = {key: value for key, value in actual.items() if value}
+                if reconciliation is not None and not actual:
+                    if any(
+                        binding_by_source[(row["source_authority_ref"], row["source_fact_id"])]["evidence_semantics"]
+                        != "NO_USAGE_NO_CHARGE"
+                        for row in usage_rows
+                    ):
+                        raise SettlementAuthorityError(
+                            "SETTLEMENT_PROVIDER_NO_USAGE_EVIDENCE_REQUIRED"
+                        )
 
                 ancestry = tuple(json.loads(reservation["ancestry_snapshot_json"]))
                 for scope_ref in ancestry:
