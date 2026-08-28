@@ -24,7 +24,12 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from nyron_kernel.definitions import ModuleRegistry
-from nyron_kernel.modules import builtin_text_concat
+from nyron_kernel.modules import (
+    builtin_mock_llm_echo,
+    builtin_text_concat,
+    builtin_text_constant,
+    builtin_text_identity,
+)
 
 if TYPE_CHECKING:
     from .runtime_context import RuntimeContext
@@ -63,6 +68,18 @@ _TRUSTED_IMPLEMENTATIONS: dict[tuple[str, str], Any] = {
         builtin_text_concat.MODULE_REF,
         builtin_text_concat.MODULE_VERSION,
     ): builtin_text_concat.execute,
+    (
+        builtin_text_constant.MODULE_REF,
+        builtin_text_constant.MODULE_VERSION,
+    ): builtin_text_constant.execute,
+    (
+        builtin_mock_llm_echo.MODULE_REF,
+        builtin_mock_llm_echo.MODULE_VERSION,
+    ): builtin_mock_llm_echo.execute,
+    (
+        builtin_text_identity.MODULE_REF,
+        builtin_text_identity.MODULE_VERSION,
+    ): builtin_text_identity.execute,
 }
 
 _TRUSTED_DEFINITIONS: dict[tuple[str, str], Any] = {
@@ -70,6 +87,18 @@ _TRUSTED_DEFINITIONS: dict[tuple[str, str], Any] = {
         builtin_text_concat.MODULE_REF,
         builtin_text_concat.MODULE_VERSION,
     ): builtin_text_concat.definition,
+    (
+        builtin_text_constant.MODULE_REF,
+        builtin_text_constant.MODULE_VERSION,
+    ): builtin_text_constant.definition,
+    (
+        builtin_mock_llm_echo.MODULE_REF,
+        builtin_mock_llm_echo.MODULE_VERSION,
+    ): builtin_mock_llm_echo.definition,
+    (
+        builtin_text_identity.MODULE_REF,
+        builtin_text_identity.MODULE_VERSION,
+    ): builtin_text_identity.definition,
 }
 
 

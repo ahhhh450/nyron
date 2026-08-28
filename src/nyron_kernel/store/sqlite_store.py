@@ -61,6 +61,8 @@ class SQLiteStore:
                 edge_ordinal INTEGER NOT NULL CHECK (edge_ordinal >= 0),
                 target_port_ordinal INTEGER NOT NULL
                     CHECK (target_port_ordinal >= 0),
+                role TEXT NOT NULL DEFAULT 'NORMAL'
+                    CHECK (role IN ('NORMAL', 'FEEDBACK')),
                 PRIMARY KEY (graph_revision_ref, edge_ref),
                 UNIQUE (graph_revision_ref, edge_ordinal),
                 FOREIGN KEY (graph_revision_ref)
@@ -627,6 +629,44 @@ class SQLiteStore:
             BEGIN
                 SELECT RAISE(ABORT, 'active effect requires dispatch admission');
             END;
+            """
+        )
+
+    def create_product_schema(self) -> None:
+        """Install NYRON-T-20260828-171 Product Node Foundation tables.
+
+        Product objects are stored the same way ``module_definitions`` and
+        ``graph_revisions`` already are: one immutable canonical
+        ``contract_json`` blob per identity, plus a separate mutable
+        presentation table for layout, kept out of workflow/Graph truth.
+        """
+
+        self.connection.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS product_node_definitions (
+                product_node_type_ref TEXT NOT NULL,
+                product_node_version TEXT NOT NULL,
+                contract_json TEXT NOT NULL,
+                PRIMARY KEY (product_node_type_ref, product_node_version)
+            );
+
+            CREATE TABLE IF NOT EXISTS visual_workflow_revisions (
+                workflow_revision_ref TEXT PRIMARY KEY,
+                workflow_ref TEXT NOT NULL,
+                predecessor_workflow_revision_ref TEXT,
+                contract_json TEXT NOT NULL,
+                FOREIGN KEY (predecessor_workflow_revision_ref)
+                    REFERENCES visual_workflow_revisions(workflow_revision_ref)
+            );
+
+            CREATE TABLE IF NOT EXISTS workflow_layout_records (
+                workflow_revision_ref TEXT NOT NULL,
+                node_instance_ref TEXT NOT NULL,
+                layout_json TEXT NOT NULL,
+                PRIMARY KEY (workflow_revision_ref, node_instance_ref),
+                FOREIGN KEY (workflow_revision_ref)
+                    REFERENCES visual_workflow_revisions(workflow_revision_ref)
+            );
             """
         )
 

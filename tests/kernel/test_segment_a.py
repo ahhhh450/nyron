@@ -179,12 +179,16 @@ class SegmentATest(unittest.TestCase):
         self.assertEqual(published, self.graphs.resolve("graph:text-flow@1"))
 
     def test_graph_revision_identity_cannot_be_republished_or_mutated(self) -> None:
+        # NYRON-T-20260828-171: identical replay is now idempotent (required
+        # for deterministic Product recompile); only conflicting content
+        # under the same immutable revision identity fails closed.
         self.registry.register(concat_definition())
-        self.graphs.publish("graph:text-flow@1", module_instance())
+        first = self.graphs.publish("graph:text-flow@1", module_instance())
 
-        with self.assertRaises(GraphError) as same:
-            self.graphs.publish("graph:text-flow@1", module_instance())
-        self.assertEqual("GRAPH_REVISION_IMMUTABLE", same.exception.code)
+        identical_replay = self.graphs.publish(
+            "graph:text-flow@1", module_instance()
+        )
+        self.assertEqual(first, identical_replay)
 
         with self.assertRaises(GraphError) as changed:
             self.graphs.publish(
