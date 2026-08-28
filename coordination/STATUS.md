@@ -7,8 +7,8 @@
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Development Director: `ACTIVE — Global Development Coordination Authority`
 - Coordination Epoch: `3`
-- Coordination Revision: `126`
-- Revision CAS Basis: `Expected Epoch 3 / Expected Revision 125 — MATCHED`
+- Coordination Revision: `127`
+- Revision CAS Basis: `Expected Epoch 3 / Expected Revision 126 — MATCHED`
 - Last Accepted Production Commit: `e47511aef987cd9fa5c171e319971f90ab549bd2`
 - Canonical Repository Finalization Merge: `8962743bfbc6385bf58ebb31a63f5e5442c5f391`
 - Foundation Wave 2 Accepted Downstream Base: `fa12ad2ba51a010786ac307e8efd683bc1be832b`
@@ -42,8 +42,8 @@ Current handoff:
 
 Operational availability is authoritative in `coordination/AGENT_AVAILABILITY.md`.
 
-- `Claude`: `AVAILABLE — ACTIVE PRIMARY / REVIEW LANE`.
-- `Codex`: `RECHECK BEFORE ASSIGNMENT`; previous temporary rate-limit window may have elapsed, but no fresh operator confirmation is recorded.
+- `Claude`: `AVAILABLE — ACTIVE DEVELOPMENT / REVIEW LANE`.
+- `Codex`: `AVAILABLE — OPERATOR-CONFIRMED RESTORED`.
 - `DeepSeek`: `AVAILABLE` for simple/mechanical/low-risk implementation and targeted verification.
 - `GPT / Web GPT`: `AVAILABLE FOR ORCHESTRATION`; not default Production implementation.
 
@@ -95,7 +95,7 @@ return to Product Node
 
 | State | Task | Meaning |
 |---|---|---|
-| `ACTIVE / READY` | `NYRON-T-20260828-172` | Independent HIGH-risk exact-SHA Review of Task 171 delivery `30998e73f1471921ab9b1b201fa8ea6227dc71f6`. |
+| `ACTIVE / READY` | `NYRON-T-20260828-172` | Codex independent HIGH-risk exact-SHA Review of Task 171 delivery `30998e73f1471921ab9b1b201fa8ea6227dc71f6`. |
 | `DELIVERED / PENDING INDEPENDENT REVIEW` | `NYRON-T-20260828-171` | Claude implementation SUCCESS; 458 passed, 2 skipped; not yet accepted or merged as Production. |
 | `COMPLETED / GO` | `NYRON-T-20260828-170` | Readiness SUCCESS; Principal Disposition `GO_BOUNDED_IMPLEMENTATION`. |
 | `PAUSED` | `NYRON-T-20260828-168` | Network foundation paused by Product scheduling hold; do not duplicate. |
@@ -113,8 +113,10 @@ return to Product Node
 
 ### Task 172 Review Gate
 
-- Assigned Reviewer: `Claude — Independent Node Foundation Exact-SHA Review Session`.
-- Review Independence: `REQUIRED`; fresh session/identity, no implementation participation.
+- Assigned Reviewer: `Codex — Independent Node Foundation Exact-SHA Review Session`.
+- Original Implementation Session: `Claude — Product Node Foundation Implementation Session`.
+- Review Independence: `REQUIRED / CROSS-MODEL`; Codex did not participate in Task 171 implementation.
+- Reassignment: `Revision 127 operator-confirmed Codex restoration before review execution start; no Result or review branch existed; Task ID/scope/exact target unchanged`.
 - Exact Review Target: `30998e73f1471921ab9b1b201fa8ea6227dc71f6`.
 - Production mutation: `DENIED`.
 - Mandatory adversarial focus includes:
@@ -261,14 +263,19 @@ Product Nodes may initially use pure/mock behavior that truthfully avoids these 
 
 ### Revision 126 / Epoch 3
 
-- CAS against `Epoch 3 / Revision 125` succeeded; Revision advances to `126` without changing Epoch.
 - Task 171 delivered `SUCCESS` at exact remote SHA `30998e73f1471921ab9b1b201fa8ea6227dc71f6` with reported full-suite result `458 passed, 2 skipped, 380 subtests passed` and a persisted/restarted Product → Graph → Runtime E2E proof.
-- Task 171 Production is **not accepted or merged** by this transition; it enters `PENDING_INDEPENDENT_REVIEW`.
-- Task `NYRON-T-20260828-172` is created as the mandatory independent HIGH-risk exact-SHA Review, using a fresh Claude review session/identity and no Production mutation authority.
-- Task 172 must independently challenge cardinality derivation, pre-171 SQLite reopen compatibility, F-003 severity, F-001/F-002 closure, ownership/scope and complexity; test-green self-assertions are not sufficient.
-- Codex availability is changed to `RECHECK BEFORE ASSIGNMENT` because the previous temporary-rate-limit estimate has aged; no unverified restoration is asserted.
+- Task 171 Production entered `PENDING_INDEPENDENT_REVIEW`; Task 172 was created as the mandatory exact-SHA Review.
+- Task 172 was initially assigned to a fresh Claude review session while Codex availability remained unconfirmed.
+
+### Revision 127 / Epoch 3
+
+- CAS against `Epoch 3 / Revision 126` succeeded; Revision advances to `127` without changing Epoch.
+- Operator explicitly confirmed Codex availability restored.
+- Before Task 172 execution began, Repository contained no Task-172 Result and no `review/NYRON-T-20260828-172` branch; therefore the same Task was safely rebound from Claude to Codex without changing Task ID, scope, exact review target or Production mutation authority.
+- Task 172 now uses cross-model independence: Claude implemented Task 171; a fresh Codex session independently reviews exact SHA `30998e73f1471921ab9b1b201fa8ea6227dc71f6`.
+- Claude remains fully eligible for development and independent review on other Tasks; no permanent model-role split is introduced.
 - Task 168 remains paused and Task 169 remains deferred.
-- `Last Accepted Production Commit` remains unchanged until review + Director Acceptance/integration decisions.
+- `Last Accepted Production Commit` remains unchanged pending Task 172 Review and later Director Acceptance/integration decisions.
 
 Historical Revision 108–121 decisions remain available in Git history and are not invalidated by this compact current-state snapshot.
 
