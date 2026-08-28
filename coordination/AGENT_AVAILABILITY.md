@@ -2,7 +2,7 @@
 
 Status: `ACTIVE OPERATIONAL COORDINATION STATE`
 Authority: `Development Director / Global Development Coordination Authority`
-Date: `2026-08-27`
+Date: `2026-08-28`
 
 This file records current operational availability only. It does not define permanent model capability and does not amend architecture.
 
@@ -10,22 +10,23 @@ This file records current operational availability only. It does not define perm
 
 | Agent | Availability | Default Use While State Applies |
 |---|---|---|
-| `Claude` | `UNAVAILABLE` | Do not assign new implementation, fix, review, re-review, or specialist work. Do not request a new Claude window. |
-| `Codex` | `AVAILABLE — CLOSEOUT ONLY / LIMITED WEEKLY CAPACITY` | Operator has restored Codex capacity, but remaining weekly quota is limited. Use only for mandatory high-risk exact-SHA review/re-review, blocking fixes required by those reviews, and final closeout verification. Do not reopen broad parallel development. |
+| `Claude` | `UNAVAILABLE — PENDING OPERATOR CONFIRMATION OF RESET` | Do not assign new implementation, fix, review, re-review, or specialist work until the Operator confirms reset/availability. |
+| `Codex` | `AVAILABLE — FULL WEEKLY WINDOW / CONTROLLED PARALLELISM` | Weekly quota has been operator-confirmed reset. May be used for high-risk review, core implementation, blocking fixes, integration/regression, and selected bounded next-slice work. Do not saturate all lanes merely because capacity exists. |
 | `DeepSeek` | `AVAILABLE` | Preferred lane for bounded non-production contract tracing, low-risk implementation, localization work, mechanical/schema consistency, regression and targeted verification where risk permits. DeepSeek may provide supplementary/pre-review evidence for high-risk work, but does not by itself satisfy final high-risk acceptance review where `REVIEW_PROTOCOL.md` requires Codex/Claude-class review. |
 | `GPT / Web GPT` | `AVAILABLE FOR ORCHESTRATION` | Development Director / Track coordination; not default production implementation or substitute high-risk final reviewer. |
 
 ## Mandatory Routing Rule
 
-While Claude is `UNAVAILABLE` and Codex is restored with limited weekly capacity:
+While Claude is still pending reset confirmation and Codex has a fresh weekly window:
 
-- do not create or dispatch new Claude assignments;
-- do not reopen broad Codex parallelism;
-- preserve already-delivered candidates and their exact-SHA review targets;
+- do not create or dispatch new Claude assignments until Operator confirmation;
+- controlled parallelism is authorized where dependencies and write surfaces are disjoint;
+- finish already-open mandatory exact-SHA reviews and closeout gates before allowing their unresolved dependencies to contaminate later integration;
 - high-risk `Implementation Agent != Independent Reviewer` remains mandatory;
-- reserve Codex for mandatory high-risk exact-SHA review/re-review, any blocking fix needed to close those reviews, and final closeout verification;
-- DeepSeek may perform bounded low-risk/mechanical work, localization work, targeted verification, or supplementary pre-review where useful, but such work does not close a high-risk independent-review gate by itself;
-- capacity pressure never authorizes weakening architecture, security, Owner boundaries, stale-check rules, exact-SHA requirements, or independent review.
+- Codex may take high-risk review/core implementation/integration work when appropriate;
+- DeepSeek remains preferred for Language/Localization and other low-risk/mechanical work;
+- avoid filling every available lane with speculative work; each concurrent lane must have a clear dependency/write-surface reason;
+- architecture/security/Owner-boundary/stale/exact-SHA/independent-review requirements are unchanged.
 
 ## Execution Mode Failover
 
@@ -33,21 +34,26 @@ Codex assignments may begin in Chat mode. If a Codex session encounters tool exe
 
 The Operator may continue the **same Task ID and Scope** in Work mode. A Chat → Work mode switch does not create a new Task, does not reset the required base/SHA, and does not waive Result/checkpoint/review requirements. Only durable Repository evidence may establish a substantive blocker.
 
-## Closeout Priority
+## Current Controlled-Parallelism Priority
 
-Current closeout priority is deliberately sequential to conserve weekly Codex capacity:
+1. complete mandatory exact-SHA Task `NYRON-T-20260827-148` for PWP IngressRoute/IngressRouteRevision;
+2. after 148 disposition, perform the smallest required Foundation convergence/closeout integration and independent verification;
+3. in parallel, allow clearly disjoint low-risk work such as Language/Localization through DeepSeek;
+4. once Claude reset is explicitly confirmed, reserve Claude primarily for the highest-value complex architecture/core implementation or adversarial review lane rather than routine work;
+5. next Track-D consequential external-effect slices should open only with explicit Task scoping and accepted dependency basis.
 
-1. complete Task `NYRON-T-20260827-149` — independent exact-SHA review of Task 144 Effect historical-outcome orthogonality;
-2. if Task 149 is PASS or otherwise does not consume a blocking-fix cycle, complete Task `NYRON-T-20260827-148` — independent exact-SHA review of Task 142 PWP IngressRoute/IngressRouteRevision;
-3. perform only blocking fixes/re-reviews required by those reviews;
-4. perform the smallest required final convergence/closeout verification;
-5. leave optional next-slice implementation for a later capacity window.
+## Parallelism Rule
 
-Do not run Tasks 148 and 149 in parallel by default while weekly capacity is limited. Task 149 is first because Effect/replay/recovery semantics carry the higher correctness risk.
+A fresh quota window permits multiple lanes, but concurrency remains dependency-driven:
+
+- `Review lane` may run alongside disjoint low-risk Product-support work;
+- `Implementation lane` may run alongside review only when it does not mutate the exact SHA under review and has a disjoint write surface;
+- final integration/convergence must wait for all required dependency reviews whose content is intended to be included;
+- avoid simultaneous high-risk edits to shared persistence/authority surfaces unless separately isolated and integration order is explicit.
 
 ## Temporary Window Rule
 
-This limited-capacity restoration is operator-authorized operational truth for the current quota window. It does not restore the prior broad parallel-capacity mode. Broader Codex use requires a later explicit Operator / Development Director decision.
+Codex is fully available for the current weekly window, but this does not imply unlimited useful parallelism. The Development Director may expand or reduce active lanes according to dependency and integration load. Claude remains unavailable until explicitly confirmed restored by the Operator.
 
 ## Change Rule
 
