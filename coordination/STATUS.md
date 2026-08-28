@@ -7,8 +7,8 @@
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Development Director: `ACTIVE — Global Development Coordination Authority`
 - Coordination Epoch: `3`
-- Coordination Revision: `122`
-- Handoff CAS Basis: `Expected Epoch 2 / Expected Revision 121 — MATCHED`
+- Coordination Revision: `123`
+- Revision CAS Basis: `Expected Epoch 3 / Expected Revision 122 — MATCHED`
 - Last Accepted Production Commit: `e47511aef987cd9fa5c171e319971f90ab549bd2`
 - Canonical Repository Finalization Merge: `8962743bfbc6385bf58ebb31a63f5e5442c5f391`
 - Foundation Wave 2 Accepted Downstream Base: `fa12ad2ba51a010786ac307e8efd683bc1be832b`
@@ -16,22 +16,41 @@
 - Current Gate: `TRACK E — MODULE ASSEMBLY NODE FOUNDATION READINESS`
 - Current Mode: `TRACK E PRIMARY / TRACK A+B+C+D SUPPORT ON CONCRETE PRODUCT NEED`
 - Primary Milestone: `MODULE ASSEMBLY NODE FOUNDATION`
+- Target Acceptance Milestone: `NODE FOUNDATION v0.1`
+- Latest Handoff Pointer: `coordination/handoffs/LATEST.md`
 - Agent Availability: `coordination/AGENT_AVAILABILITY.md`
 - Parallelism Policy: `DYNAMIC / DEPENDENCY + WRITE-SURFACE + REVIEW + INTEGRATION CAPACITY DRIVEN`
 - Track Coordination Mode Policy: `PRODUCT-VERTICAL-SLICE DRIVEN — SUPPORT TRACKS OPEN ONLY WHEN A CONCRETE PRODUCT NODE REQUIRES A MISSING CAPABILITY`
 
+## Repository Truth / Handoff Rule
+
+A Handoff is a recovery aid, not canonical state.
+
+New Director startup order:
+
+```text
+fetch latest main
+→ read STATUS
+→ read AGENT_AVAILABILITY
+→ inspect current tasks/results/checkpoints
+→ compare with Handoff
+→ Repository wins on any mismatch
+```
+
+Current handoff:
+
+`coordination/handoffs/NYRON_DEVELOPMENT_HANDOFF_2026-08-28_R2.md`
+
 ## Current Agent Availability
 
 Operational availability is authoritative in `coordination/AGENT_AVAILABILITY.md`.
-
-Current repository state records:
 
 - `Claude`: `AVAILABLE — OPERATOR-CONFIRMED RESTORED / HIGH-VALUE PRIORITY`.
 - `Codex`: `AVAILABLE — FULL WEEKLY WINDOW / CONTROLLED PARALLELISM`.
 - `DeepSeek`: `AVAILABLE` for bounded low-risk/mechanical work.
 - `GPT / Web GPT`: `AVAILABLE FOR ORCHESTRATION`; not default Production implementation.
 
-High-risk `Implementation Agent != Independent Reviewer` remains mandatory. Restored capacity does not authorize speculative infrastructure expansion.
+High-risk `Implementation Agent != Independent Reviewer` remains mandatory. Available capacity does not authorize speculative infrastructure expansion.
 
 ## Product Direction — Current Scheduling Authority
 
@@ -51,22 +70,11 @@ GraphRevision
 Execution Runtime
 ```
 
-The user-facing canvas is a module assembly system similar in interaction model to ComfyUI / Langflow / Flowise. Runtime/canonical objects are internal mechanisms and MUST NOT automatically become Product Nodes.
+The user-facing canvas is a module assembly system similar in interaction model to ComfyUI / Langflow / Flowise.
 
-Examples:
+**Product Node is not Runtime-object visualization.** Runtime/canonical objects such as `Attempt`, `EffectOperation`, `HumanResponse`, `CapabilityGrant`, `BudgetReservation`, `CredentialBinding` and similar authority/evidence records remain internal mechanisms unless a future Product requirement explicitly justifies a user-facing abstraction.
 
-```text
-LLM Node
-→ Provider + Credential + Network + Accounting + Effect
-
-Human Approval Node
-→ HumanRequest + HumanResponse + HumanDecisionEvidence + Runtime suspension/resume
-
-Filesystem Node
-→ Workspace boundary + Capability + Resource/Lease
-```
-
-Development ordering is now Product-driven:
+Development ordering:
 
 ```text
 Product requirement
@@ -80,8 +88,6 @@ resume/open smallest Track A/B/C/D support slice
 return to Product Node
 ```
 
-Do not return to the old scheduling model of completing every low-level subsystem before Product work begins.
-
 ## Current Track Board
 
 | Track | State | Current Role / Gate |
@@ -89,98 +95,67 @@ Do not return to the old scheduling model of completing every low-level subsyste
 | `Track A — PWP / Context Backbone` | `STABLE / DOWNSTREAM USABLE` | Support Product/Runtime admission context when a concrete node needs an extension. |
 | `Track B — Distribution / Module Ecosystem` | `STABLE / DOWNSTREAM USABLE` | Exact module identity/resolution foundation is available; later Import/Install/Enable work is Product-demand driven. |
 | `Track C — Human Interaction / Approval` | `STABLE CORE / SUPPORT DEFERRED` | Human Interaction core remains valid. Suspension/resume and external HumanResponse ingress are deferred until Human Approval Node requires them. |
-| `Track D — External Interfaces / Workspace Boundary` | `BOUNDED SUPPORT / CONSEQUENTIAL PRODUCTION CLOSED` | Provider/Credential and other accepted foundations remain usable where accepted. Network/Filesystem/Browser/etc. resume only for concrete Product Node needs and only under their own gates. |
-| `Track E — Product / Visual Workflow` | `PRIMARY / ACTIVE READINESS` | Task `NYRON-T-20260828-170` is the primary next Task: Module Assembly Node / Visual Workflow Core Readiness. |
+| `Track D — External Interfaces / Workspace Boundary` | `BOUNDED SUPPORT / CONSEQUENTIAL PRODUCTION CLOSED` | Provider/Credential and accepted foundations remain usable where accepted. Network/Filesystem/Browser/etc. resume only for concrete Product Node needs and under their own gates. |
+| `Track E — Product / Visual Workflow` | `PRIMARY / ACTIVE READINESS` | Task `NYRON-T-20260828-170` is the P0 Module Assembly Node / Visual Workflow Core Readiness Task. |
 
-## Active / Paused / Deferred Tasks
+## Current Live Task Table
 
-### `NYRON-T-20260828-170` — PRIMARY
+| State | Task | Meaning |
+|---|---|---|
+| `ACTIVE / READY` | `NYRON-T-20260828-170` | Claude Track-E readiness. Primary Product mainline. |
+| `PAUSED` | `NYRON-T-20260828-168` | Network foundation paused by Product scheduling hold; do not duplicate. Current pause is not a quota blocker. |
+| `DEFERRED / NOT STARTED` | `NYRON-T-20260828-169` | Human suspension/resume + response ingress readiness; resume only for Human Approval Node need. |
+| `WAITING REVIEW` | `NONE in current Product-mainline snapshot` | A HIGH-risk Product implementation will require independent exact-SHA Review after delivery. |
 
-- Track: `E — Product / Visual Workflow`.
+### Task 170
+
 - Assigned Agent: `Claude — Product Node / Visual Workflow Architecture Readiness Session`.
 - State: `ASSIGNED / READY`.
 - Priority: `P0`.
-- Objective: determine the smallest frozen-authority-compatible Product Node foundation and deterministic `VisualWorkflowRevision -> GraphRevision` projection seam.
-- Production mutation: `DENIED`; Result/evidence only.
-- Required principal disposition: `GO_BOUNDED_IMPLEMENTATION | BLOCKED_BY_DEPENDENCY | ESCALATION_REQUIRED`.
+- Production mutation: `DENIED`.
+- Principal disposition: `GO_BOUNDED_IMPLEMENTATION | BLOCKED_BY_DEPENDENCY | ESCALATION_REQUIRED`.
 
-### `NYRON-T-20260828-168` — PAUSED SUPPORT
+### Task 168
 
-- Track: `D — Network`.
 - State: `PAUSED — PRODUCT-VERTICAL-SLICE HOLD / DO NOT DUPLICATE`.
-- Current Agent availability is restored; the pause is scheduling/product-priority based, not a current quota blocker.
-- Resume the same Task ID only when a concrete Product Node requires the bounded Network foundation or the Development Director explicitly reopens it.
+- Resume the same Task ID only when a concrete Product Node needs bounded Network foundation or the Development Director explicitly reopens it.
 - Real Network/Provider consequential Production remains closed.
 
-### `NYRON-T-20260828-169` — DEFERRED SUPPORT
+### Task 169
 
-- Track: `C — Human Interaction / Approval`.
 - State: `DEFERRED / NOT STARTED`.
-- Repository verification at defer time found no Final Result and no Task-scoped `CP-001` checkpoint.
-- Resume the same Task only when Human Approval Product Node creates the concrete need for suspension/resume + external response ingress readiness.
-- Do not let this speculative support slice delay Track E.
+- No Result / task-scoped checkpoint existed at defer time.
+- Resume the same Task only when Human Approval Product Node needs this Track-C slice.
 
 ## Accepted / Usable Foundation
 
-The scheduling correction does not invalidate prior accepted work.
+The Product scheduling correction does not invalidate prior accepted work.
 
-Still valid for downstream Product consumption where their own acceptance/gates permit:
+Important accepted/downstream-usable foundation includes:
 
-- PWP / Context backbone;
-- ModuleDefinition and Module architecture;
-- Graph / GraphRevision canonical execution semantics;
-- ExecutionAdmission;
-- Packet -> Delivery -> Activation -> Run / Attempt lifecycle;
-- Capability / Resource / Lease / Effect;
-- Recovery and Accounting foundations;
-- Distribution exact module identity/resolution;
-- Human Interaction core;
-- Provider foundation accepted ancestry used by later Credential/Network tasks;
-- Credential foundation ancestry used by Task 168;
-- IngressRoute / Runtime ingress accepted lineage where already reviewed;
-- IsolationProfile / Effect historical-outcome work where already independently accepted.
+- PWP core: `f3b6b0d022111dfc854f537c361ca5eb46516584`;
+- Distribution identity/exact-resolution: `b2ec8e2e79745fee75a9dfdde7d6ab4cebe5f863`;
+- Human Interaction core: `a85507b9b74e0f6b68a65460d9e5a4f19aa79f93`;
+- Provider foundation: `fdf6e78061d57039a6e59813b76877ab2d7e2bf6`;
+- Credential foundation: `d1fd31b1770871f1b96ec1a76250874c8b69ec11`;
+- Module / Graph / Runtime / Capability / Resource / Effect / Recovery / Accounting foundations already accepted in the Foundation lineage;
+- IngressRoute / Runtime ingress / IsolationProfile / Effect historical-outcome work where their own independent acceptance evidence applies.
 
-The current Product milestone does **not** require all consequential external interfaces to be complete first.
+Accepted for downstream dependency use does not itself mean merged to main, Last Accepted Production, release, or Global Accepted.
 
-## Standing Cross-System Invariants
+## Acceptance / Integration Distinction
 
 ```text
-Packet -> Delivery -> Activation -> Run / Attempt
+Implementation Result SUCCESS
+!= Review PASS
+!= Director Acceptance
+!= Integration
+!= Global Accepted
 ```
 
-No second direct-Activation execution path.
+Parallel accepted SHAs converge only through an explicit Integration Task when convergence is required.
 
-```text
-CapabilityGrant != ResourceLease != EffectOperation != BudgetReservation
-```
-
-```text
-FENCED != no prior consequence != safe semantic replay
-```
-
-```text
-unknown overlap -> conflicting
-```
-
-```text
-revoke/replacement wins authority-consumption race -> reject new use
-exact use admission wins -> durable pre-revoke in-flight work
-```
-
-```text
-unresolved static_accounting_scope_ref -> execution admission denied
-```
-
-```text
-retained canonical history pins PWP revision -> exact revision remains resolvable
-```
-
-```text
-logical Owner != physical database placement
-cross-owner SQL FK != foreign Owner authority proof
-```
-
-Product-specific guardrails now also include:
+## Product-Specific Guardrails
 
 ```text
 ModuleDefinition != ProductNodeDefinition
@@ -192,9 +167,67 @@ Product declaration != execution authority
 Product layout/UI metadata != Runtime canonical truth
 ```
 
-## External / Consequential Production Gates
+## NODE FOUNDATION v0.1 Acceptance Intent
 
-The Product-mainline correction does not open consequential external execution.
+If Task 170 returns `GO_BOUNDED_IMPLEMENTATION`, the next Product implementation should be scoped so that `NODE FOUNDATION v0.1` proves at least:
+
+- Module → ProductNodeDefinition exact binding;
+- stable input/output ports;
+- persistent/restart-restorable NodeInstance;
+- fail-closed Edge validation;
+- immutable VisualWorkflowRevision;
+- exact node/module version pinning;
+- deterministic workflow compile/project;
+- compile output enters existing Graph abstraction;
+- restart reproduces the exact workflow;
+- Product layer does not re-own Runtime canonical truth;
+- one complete pure/mock Runtime execution path.
+
+Preferred first end-to-end Product proof:
+
+```text
+Text Input
+   ↓
+Mock LLM
+   ↓
+Text Output
+```
+
+Exercise:
+
+```text
+Module → Node → Workflow → Graph → Runtime → Result
+```
+
+No real Network/Provider/Credential value/Browser/external effect in this first slice.
+
+## Standard Review / Finding Decision Tree
+
+```text
+Implementation SUCCESS
+        ↓
+Independent Review
+        ├─ PASS → Director Acceptance decision
+        ├─ PASS_WITH_FINDINGS → classify blocking/non-blocking
+        ├─ FAIL → Targeted Fix → Targeted Re-Review
+        └─ ESCALATION_REQUIRED → Lead Design Authority
+```
+
+## Pause / Resume Rule
+
+Temporary quota/auth/workspace/tooling failure:
+
+```text
+PAUSE SAME TASK
+→ same Task ID
+→ same scope
+→ HANDOFF checkpoint where required
+→ resume same Task later
+```
+
+Do not create a replacement technical Task merely because an Agent/tool temporarily failed.
+
+## External / Consequential Production Gates
 
 Until their own accepted implementation/review gates say otherwise:
 
@@ -203,7 +236,7 @@ Until their own accepted implementation/review gates say otherwise:
 - general Filesystem mutation / less-trusted namespace mutation: `CLOSED / SECURITY-GATED`;
 - real Provider network dispatch: `CLOSED`;
 - concrete external HumanResponse adapters: `CLOSED`;
-- speculative suspension/resume integration: `DEFERRED`.
+- Human suspension/resume integration: `DEFERRED` until Approval Node needs it.
 
 Product Nodes may initially use pure/mock behavior that truthfully avoids these consequential boundaries.
 
@@ -245,19 +278,23 @@ Product Nodes may initially use pure/mock behavior that truthfully avoids these 
 
 ### Revision 122 / Epoch 3
 
-- New Development Director session accepted the repository-backed handoff using CAS against `Epoch 2 / Revision 121`; Coordination Epoch advances to `3`, Revision to `122`.
-- Repository `AGENT_AVAILABILITY.md` supersedes the older handoff quota snapshot: Claude and Codex are currently available under controlled parallelism.
-- Product scheduling correction is adopted: `Track E — Product / Visual Workflow` becomes the primary Product development track.
-- Prior accepted Foundation is preserved; this is a development-order correction, not architecture invalidation.
-- Task `NYRON-T-20260828-168` is paused behind concrete Product demand and must not be duplicated.
-- Task `NYRON-T-20260828-169` is deferred/not started; it will be resumed only when Human Approval Node requires the Track-C slice.
-- New primary Task `NYRON-T-20260828-170` is assigned to Claude for Module Assembly Node / Visual Workflow Core Readiness.
-- The intended Product/Runtime relationship is tested, not assumed, by Task 170: `VisualWorkflowRevision -> deterministic compile/project -> GraphRevision`, while Graph retains canonical executable ownership.
-- First Product implementation, if readiness returns GO, should remain external-effect-free and should prove the Product Node abstraction before HTTP/Browser/Filesystem/Approval/TTS/Avatar or real Provider work.
-- Consequential external Production gates remain unchanged/closed unless their own accepted evidence says otherwise.
-- `Last Accepted Production Commit` is unchanged by this coordination revision.
+- Development Director handoff CAS advanced the Coordination Epoch from 2 to 3 and Revision from 121 to 122.
+- Track E became the primary Product development track.
+- Task 168 moved to Product-demand pause; Task 169 moved to deferred/not-started; Task 170 was created for Track-E readiness.
+- Claude/Codex restored availability superseded the older quota snapshot.
 
-Historical Revision 108–121 decisions remain available in Git history and their accepted outcomes/findings are not invalidated by this compact current-state snapshot.
+### Revision 123 / Epoch 3
+
+- CAS against `Epoch 3 / Revision 122` succeeded; Revision advances to `123` without changing Epoch.
+- Robust recovery Handoff is added at `coordination/handoffs/NYRON_DEVELOPMENT_HANDOFF_2026-08-28_R2.md`; `handoffs/LATEST.md` provides a stable pointer.
+- Handoff is explicitly non-canonical and must be checked against current Repository state on every new Director startup.
+- `coordination/AGENT_AVAILABILITY.md` is aligned with the Product-mainline priority and no longer points new work at the historical Provider closeout chain.
+- Current live task classification is made explicit: 170 active/ready, 168 paused, 169 deferred, no current Product-mainline waiting-review Task.
+- `NODE FOUNDATION v0.1` acceptance intent and the first Text Input → Mock LLM → Text Output vertical slice are recorded as the next implementation target if Task 170 returns GO.
+- Pause/resume, Acceptance-vs-Integration, Product non-goals, and lower-level Track Pull Rule are preserved in the Handoff.
+- `Last Accepted Production Commit` remains unchanged; Revision 123 is coordination-only and does not declare Product implementation accepted.
+
+Historical Revision 108–121 decisions remain available in Git history and are not invalidated by this compact current-state snapshot.
 
 ## Repository-Result Protocol
 
