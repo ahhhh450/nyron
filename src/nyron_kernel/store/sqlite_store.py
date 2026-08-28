@@ -1257,6 +1257,74 @@ class SQLiteStore:
             """
         )
 
+    def create_credential_schema(self) -> None:
+        """Install reference-only credential binding and request history."""
+
+        self.create_provider_schema()
+        self.connection.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS credential_binding_revisions (
+                credential_binding_ref TEXT PRIMARY KEY,
+                workspace_secret_ref TEXT NOT NULL,
+                profile_ref TEXT NOT NULL,
+                profile_revision_ref TEXT NOT NULL,
+                binding_class TEXT NOT NULL,
+                revision_seq INTEGER NOT NULL CHECK (revision_seq > 0),
+                predecessor_binding_ref TEXT UNIQUE,
+                creation_evidence_ref TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                UNIQUE (workspace_secret_ref, profile_ref, binding_class, revision_seq),
+                FOREIGN KEY (profile_revision_ref) REFERENCES provider_profile_revisions(profile_revision_ref),
+                FOREIGN KEY (predecessor_binding_ref) REFERENCES credential_binding_revisions(credential_binding_ref)
+            );
+            CREATE TRIGGER IF NOT EXISTS credential_binding_revisions_immutable
+            BEFORE UPDATE ON credential_binding_revisions BEGIN
+                SELECT RAISE(ABORT, 'credential binding revision is immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS credential_binding_revisions_no_delete
+            BEFORE DELETE ON credential_binding_revisions BEGIN
+                SELECT RAISE(ABORT, 'credential binding revision is immutable');
+            END;
+
+            CREATE TABLE IF NOT EXISTS credential_binding_revocations (
+                credential_binding_ref TEXT PRIMARY KEY,
+                evidence_ref TEXT NOT NULL,
+                revoked_at INTEGER NOT NULL,
+                FOREIGN KEY (credential_binding_ref) REFERENCES credential_binding_revisions(credential_binding_ref)
+            );
+            CREATE TRIGGER IF NOT EXISTS credential_binding_revocations_immutable
+            BEFORE UPDATE ON credential_binding_revocations BEGIN
+                SELECT RAISE(ABORT, 'credential binding revocation is immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS credential_binding_revocations_no_delete
+            BEFORE DELETE ON credential_binding_revocations BEGIN
+                SELECT RAISE(ABORT, 'credential binding revocation is immutable');
+            END;
+
+            CREATE TABLE IF NOT EXISTS credential_resolution_requests (
+                resolution_request_ref TEXT PRIMARY KEY,
+                credential_binding_ref TEXT NOT NULL,
+                operation_ref TEXT NOT NULL,
+                run_ref TEXT NOT NULL,
+                attempt_seq INTEGER NOT NULL CHECK (attempt_seq > 0),
+                capability_grant_ref TEXT NOT NULL,
+                resource_lease_ref TEXT NOT NULL,
+                profile_revision_ref TEXT NOT NULL,
+                requested_at INTEGER NOT NULL,
+                FOREIGN KEY (credential_binding_ref) REFERENCES credential_binding_revisions(credential_binding_ref),
+                FOREIGN KEY (operation_ref) REFERENCES provider_operations(operation_ref)
+            );
+            CREATE TRIGGER IF NOT EXISTS credential_resolution_requests_immutable
+            BEFORE UPDATE ON credential_resolution_requests BEGIN
+                SELECT RAISE(ABORT, 'credential resolution request is immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS credential_resolution_requests_no_delete
+            BEFORE DELETE ON credential_resolution_requests BEGIN
+                SELECT RAISE(ABORT, 'credential resolution request is immutable');
+            END;
+            """
+        )
+
     def create_pwp_schema(self) -> None:
         """Install only PWP-owned identity and immutable revision tables."""
 

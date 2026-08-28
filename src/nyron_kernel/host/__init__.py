@@ -25,6 +25,17 @@ from .provider import (
     ProviderRepository,
     TrustedUnaryProviderBroker,
 )
+from .credential import (
+    CredentialBindingRevision,
+    CredentialBoundaryError,
+    CredentialRepository,
+    CredentialResolutionAuthority,
+    CredentialResolutionRecord,
+    CredentialResolutionRequest,
+    CredentialResolver,
+    ResolvedCredentialHandle,
+    UnconfiguredCredentialResolver,
+)
 
 _RUNTIME_EXPORTS = frozenset(
     {
@@ -52,6 +63,15 @@ def __getattr__(name: str):
 
 
 __all__ = [
+    "CredentialBindingRevision",
+    "CredentialBoundaryError",
+    "CredentialRepository",
+    "CredentialResolutionAuthority",
+    "CredentialResolutionRecord",
+    "CredentialResolutionRequest",
+    "CredentialResolver",
+    "ResolvedCredentialHandle",
+    "UnconfiguredCredentialResolver",
     "ProviderDispatchAdmission",
     "ProviderEvidence",
     "ProviderFoundationError",
