@@ -7,13 +7,13 @@
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Development Director: `ACTIVE — Global Development Coordination Authority`
 - Coordination Epoch: `3`
-- Coordination Revision: `123`
-- Revision CAS Basis: `Expected Epoch 3 / Expected Revision 122 — MATCHED`
+- Coordination Revision: `124`
+- Revision CAS Basis: `Expected Epoch 3 / Expected Revision 123 — MATCHED`
 - Last Accepted Production Commit: `e47511aef987cd9fa5c171e319971f90ab549bd2`
 - Canonical Repository Finalization Merge: `8962743bfbc6385bf58ebb31a63f5e5442c5f391`
 - Foundation Wave 2 Accepted Downstream Base: `fa12ad2ba51a010786ac307e8efd683bc1be832b`
 - Development Gate: `PRODUCT NODE / VISUAL WORKFLOW DEVELOPMENT — OPEN`
-- Current Gate: `TRACK E — MODULE ASSEMBLY NODE FOUNDATION READINESS`
+- Current Gate: `TRACK E — NODE FOUNDATION v0.1 BOUNDED IMPLEMENTATION`
 - Current Mode: `TRACK E PRIMARY / TRACK A+B+C+D SUPPORT ON CONCRETE PRODUCT NEED`
 - Primary Milestone: `MODULE ASSEMBLY NODE FOUNDATION`
 - Target Acceptance Milestone: `NODE FOUNDATION v0.1`
@@ -96,24 +96,37 @@ return to Product Node
 | `Track B — Distribution / Module Ecosystem` | `STABLE / DOWNSTREAM USABLE` | Exact module identity/resolution foundation is available; later Import/Install/Enable work is Product-demand driven. |
 | `Track C — Human Interaction / Approval` | `STABLE CORE / SUPPORT DEFERRED` | Human Interaction core remains valid. Suspension/resume and external HumanResponse ingress are deferred until Human Approval Node requires them. |
 | `Track D — External Interfaces / Workspace Boundary` | `BOUNDED SUPPORT / CONSEQUENTIAL PRODUCTION CLOSED` | Provider/Credential and accepted foundations remain usable where accepted. Network/Filesystem/Browser/etc. resume only for concrete Product Node needs and under their own gates. |
-| `Track E — Product / Visual Workflow` | `PRIMARY / ACTIVE READINESS` | Task `NYRON-T-20260828-170` is the P0 Module Assembly Node / Visual Workflow Core Readiness Task. |
+| `Track E — Product / Visual Workflow` | `PRIMARY / ACTIVE IMPLEMENTATION` | Task `NYRON-T-20260828-171` is the P0 Node Foundation v0.1 bounded implementation. |
 
 ## Current Live Task Table
 
 | State | Task | Meaning |
 |---|---|---|
-| `ACTIVE / READY` | `NYRON-T-20260828-170` | Claude Track-E readiness. Primary Product mainline. |
+| `ACTIVE / READY` | `NYRON-T-20260828-171` | Codex Track-E Node Foundation v0.1 bounded Production implementation. |
+| `COMPLETED / GO` | `NYRON-T-20260828-170` | Claude readiness completed successfully; Principal Disposition `GO_BOUNDED_IMPLEMENTATION`. |
 | `PAUSED` | `NYRON-T-20260828-168` | Network foundation paused by Product scheduling hold; do not duplicate. Current pause is not a quota blocker. |
 | `DEFERRED / NOT STARTED` | `NYRON-T-20260828-169` | Human suspension/resume + response ingress readiness; resume only for Human Approval Node need. |
-| `WAITING REVIEW` | `NONE in current Product-mainline snapshot` | A HIGH-risk Product implementation will require independent exact-SHA Review after delivery. |
+| `WAITING REVIEW` | `NONE until Task 171 delivers an exact Production SHA` | Task 171 is HIGH-risk and must receive independent exact-SHA Review after delivery. |
 
 ### Task 170
 
 - Assigned Agent: `Claude — Product Node / Visual Workflow Architecture Readiness Session`.
+- State: `COMPLETED / SUCCESS`.
+- Principal Disposition: `GO_BOUNDED_IMPLEMENTATION`.
+- Result: `coordination/results/NYRON-T-20260828-170.md`.
+- Delivery Commit: `ec74ce73762337560567d4dde97621e82c97abcb`.
+- Result was fast-forwarded to `main` after verifying it was exactly one coordination Result commit ahead of Revision-123 main and changed no Production file.
+- Findings `NYRON-T-20260828-170-F-001` and `NYRON-T-20260828-170-F-002` are NON_BLOCKING and are required implementation closure items inside Task 171.
+
+### Task 171
+
+- Assigned Agent: `Codex — Product Node Foundation Implementation Session`.
 - State: `ASSIGNED / READY`.
-- Priority: `P0`.
-- Production mutation: `DENIED`.
-- Principal disposition: `GO_BOUNDED_IMPLEMENTATION | BLOCKED_BY_DEPENDENCY | ESCALATION_REQUIRED`.
+- Priority: `P0 — PRIMARY PRODUCT DEVELOPMENT TRACK`.
+- Risk: `HIGH`.
+- Production mutation: `AUTHORIZED ONLY WITHIN TASK-SPECIFIED BOUNDED SURFACES`.
+- Target: `NODE FOUNDATION v0.1` and first pure/mock Product vertical slice `Text Input → Mock LLM → Text Output`.
+- Independent Review after delivery: `MANDATORY`; reviewer must not be the Task 171 implementation session.
 
 ### Task 168
 
@@ -169,7 +182,7 @@ Product layout/UI metadata != Runtime canonical truth
 
 ## NODE FOUNDATION v0.1 Acceptance Intent
 
-If Task 170 returns `GO_BOUNDED_IMPLEMENTATION`, the next Product implementation should be scoped so that `NODE FOUNDATION v0.1` proves at least:
+Task 171 must prove at least:
 
 - Module → ProductNodeDefinition exact binding;
 - stable input/output ports;
@@ -183,7 +196,7 @@ If Task 170 returns `GO_BOUNDED_IMPLEMENTATION`, the next Product implementation
 - Product layer does not re-own Runtime canonical truth;
 - one complete pure/mock Runtime execution path.
 
-Preferred first end-to-end Product proof:
+Required first end-to-end Product proof:
 
 ```text
 Text Input
@@ -196,7 +209,9 @@ Text Output
 Exercise:
 
 ```text
-Module → Node → Workflow → Graph → Runtime → Result
+Module → ProductNodeDefinition → NodeInstance / Ports / Connections
+→ VisualWorkflowRevision → deterministic compile
+→ GraphRevision → Runtime execution → Result
 ```
 
 No real Network/Provider/Credential value/Browser/external effect in this first slice.
@@ -241,6 +256,18 @@ Until their own accepted implementation/review gates say otherwise:
 Product Nodes may initially use pure/mock behavior that truthfully avoids these consequential boundaries.
 
 ## Open Non-Blocking Findings / Debt
+
+### `NYRON-T-20260828-170-F-001`
+- Type: `ARCHITECTURE / IMPLEMENTATION COMPLETENESS`
+- Severity: `NON_BLOCKING`
+- State: `OPEN / REQUIRED IN TASK 171`
+- Summary: current `GraphRepository.publish()` / `GraphRevision` Python surface supports only a single `ModuleInstanceRevision` and no published Edge set, so a real multi-node workflow cannot yet become a GraphRevision.
+
+### `NYRON-T-20260828-170-F-002`
+- Type: `IMPLEMENTATION`
+- Severity: `NON_BLOCKING`
+- State: `OPEN / REQUIRED IN TASK 171`
+- Summary: Graph edge/port/topology correctness is currently checked too late; Task 171 must add fail-closed publish-time validation for the frozen Graph rules in its bounded Graph extension.
 
 ### `NYRON-T-20260826-078-F-001`
 - Type: `IMPLEMENTATION`
@@ -293,6 +320,17 @@ Product Nodes may initially use pure/mock behavior that truthfully avoids these 
 - `NODE FOUNDATION v0.1` acceptance intent and the first Text Input → Mock LLM → Text Output vertical slice are recorded as the next implementation target if Task 170 returns GO.
 - Pause/resume, Acceptance-vs-Integration, Product non-goals, and lower-level Track Pull Rule are preserved in the Handoff.
 - `Last Accepted Production Commit` remains unchanged; Revision 123 is coordination-only and does not declare Product implementation accepted.
+
+### Revision 124 / Epoch 3
+
+- CAS against `Epoch 3 / Revision 123` succeeded; Revision advances to `124` without changing Epoch.
+- Task 170 Result was verified as exactly one Result-only commit ahead of Revision-123 main and fast-forwarded to `main` at `ec74ce73762337560567d4dde97621e82c97abcb`.
+- Task 170 completed `SUCCESS` with Principal Disposition `GO_BOUNDED_IMPLEMENTATION`, no blockers, and two non-blocking implementation-completeness findings (`F-001`, `F-002`).
+- Product mainline advances from readiness to bounded Production implementation.
+- Task `NYRON-T-20260828-171` is assigned to Codex for `NODE FOUNDATION v0.1`, including the bounded Graph multi-instance/Edge publish extension, publish-time Graph validation, Product Node/Workflow persistence+compiler, and the pure/mock Text Input → Mock LLM → Text Output vertical slice.
+- Task 168 remains paused and Task 169 remains deferred; neither is a dependency of Task 171.
+- HIGH-risk independent exact-SHA review remains mandatory after Task 171 delivers.
+- `Last Accepted Production Commit` remains unchanged; Revision 124 is coordination/readiness transition only and does not pre-accept Task 171 Production.
 
 Historical Revision 108–121 decisions remain available in Git history and are not invalidated by this compact current-state snapshot.
 
