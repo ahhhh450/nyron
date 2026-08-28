@@ -20,7 +20,6 @@ This file records current operational availability only. It does not define perm
 With Claude restored and Codex in a fresh weekly window:
 
 - controlled parallelism is authorized where dependencies and write surfaces are disjoint;
-- finish already-open mandatory exact-SHA reviews and closeout gates before allowing their unresolved dependencies to contaminate later integration;
 - high-risk `Implementation Agent != Independent Reviewer` remains mandatory;
 - prefer Claude for highest-value adversarial review, complex cross-owner/core work, or cases where architectural judgment materially improves confidence;
 - use Codex for core implementation, exact-SHA review, integration/regression, replay/recovery/persistence correctness, and bounded blocking fixes;
@@ -36,11 +35,12 @@ The Operator may continue the **same Task ID and Scope** in Work mode. A Chat â†
 
 ## Current Controlled-Parallelism Priority
 
-1. close the currently open Provider foundation blocking-fix chain from Task 161;
-2. use the existing Task `NYRON-T-20260828-162` for the targeted fix of the three blocking Provider findings;
-3. after Task 162 produces an exact delivery SHA, route a fresh independent targeted Re-Review, preferably to Claude while current restored capacity is available;
-4. only after that chain passes may Provider consequential next-slice work be considered;
-5. next Track-D consequential external-effect slices should open only with explicit Task scoping and accepted dependency basis.
+1. `NYRON-T-20260828-170` is the current P0 Product-mainline Task: Claude Track-E Module Assembly Node / Visual Workflow Core Readiness;
+2. `NYRON-T-20260828-168` remains `PAUSED â€” PRODUCT-VERTICAL-SLICE HOLD`; restored Codex capacity does not by itself authorize resuming it;
+3. `NYRON-T-20260828-169` remains `DEFERRED / NOT STARTED`; resume only when Human Approval Product Node creates the concrete need;
+4. if Task 170 returns `GO_BOUNDED_IMPLEMENTATION`, prefer Codex for the bounded Product Node foundation implementation unless the Development Director has a stronger reason to assign Claude;
+5. any HIGH-risk Product implementation must be followed by an independent exact-SHA review using an independent Claude/Codex session;
+6. lower-level Track A/B/C/D work opens or resumes only when a concrete Product Node requires a missing capability or a true blocker demands it.
 
 ## Parallelism Rule
 
@@ -49,7 +49,8 @@ A fresh quota window permits multiple lanes, but concurrency remains dependency-
 - `Review lane` may run alongside disjoint low-risk Product-support work;
 - `Implementation lane` may run alongside review only when it does not mutate the exact SHA under review and has a disjoint write surface;
 - final integration/convergence must wait for all required dependency reviews whose content is intended to be included;
-- avoid simultaneous high-risk edits to shared persistence/authority surfaces unless separately isolated and integration order is explicit.
+- avoid simultaneous high-risk edits to shared persistence/authority surfaces unless separately isolated and integration order is explicit;
+- do not create speculative work merely to occupy available Agent capacity.
 
 ## Temporary Window Rule
 
