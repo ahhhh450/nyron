@@ -523,6 +523,11 @@ class PWPAuthority:
                 raise PWPError("WORKSPACE_CONFIG_NOT_RESOLVABLE")
         if (revision.graph_ingress_binding_ref is None) != (revision.graph_revision_ref is None):
             raise PWPError("GRAPH_INGRESS_BINDING_INCOMPLETE")
+        if revision.graph_ingress_binding_ref is not None:
+            self._require_ref(
+                revision.graph_ingress_binding_ref, "graph_ingress_binding_ref"
+            )
+            self._require_ref(revision.graph_revision_ref, "graph_revision_ref")
         if revision.enabled_from is not None and revision.enabled_until is not None:
             if revision.enabled_until <= revision.enabled_from:
                 raise PWPError("INVALID_INGRESS_ROUTE_ENABLEMENT_WINDOW")

@@ -286,6 +286,70 @@ def test_ingress_route_exact_replay_conflict_and_pointer_progression(pwp) -> Non
     )
 
 
+def test_ingress_route_allows_absent_optional_graph_pair(pwp) -> None:
+    _, owner = pwp
+    prepare_ingress_route(owner)
+    revision = IngressRouteRevision(
+        **{
+            **ingress_revision("ingress-route-revision:no-graph", 1, None).__dict__,
+            "graph_ingress_binding_ref": None,
+            "graph_revision_ref": None,
+        }
+    )
+    assert owner.publish_ingress_route_revision(revision) == revision
+    assert owner.publish_ingress_route_revision(revision) == revision
+    assert (
+        owner.get_ingress_route_revision(revision.ingress_route_revision_ref)
+        == revision
+    )
+
+
+@pytest.mark.parametrize(
+    ("graph_binding_ref", "graph_revision_ref", "error_code"),
+    (
+        ("", "", "INVALID_REFERENCE"),
+        ("   ", "\t", "INVALID_REFERENCE"),
+        ("graph-ingress:2", "", "INVALID_REFERENCE"),
+        ("graph-ingress:2", None, "GRAPH_INGRESS_BINDING_INCOMPLETE"),
+        (None, "graph-revision:2", "GRAPH_INGRESS_BINDING_INCOMPLETE"),
+        (7, "graph-revision:2", "INVALID_REFERENCE"),
+    ),
+)
+def test_ingress_route_rejects_invalid_optional_graph_pairs_without_mutation(
+    pwp, graph_binding_ref, graph_revision_ref, error_code: str
+) -> None:
+    store, owner = pwp
+    prepare_ingress_route(owner)
+    current = ingress_revision("ingress-route-revision:current", 1, None)
+    owner.publish_ingress_route_revision(current)
+    before_count = store.connection.execute(
+        "SELECT COUNT(*) FROM pwp_ingress_route_revisions"
+    ).fetchone()[0]
+    invalid_ref = f"ingress-route-revision:invalid:{error_code}:{graph_binding_ref!r}"
+    invalid = IngressRouteRevision(
+        **{
+            **ingress_revision(
+                invalid_ref, 2, current.ingress_route_revision_ref
+            ).__dict__,
+            "graph_ingress_binding_ref": graph_binding_ref,
+            "graph_revision_ref": graph_revision_ref,
+        }
+    )
+
+    with pytest.raises(PWPError, match=error_code):
+        owner.publish_ingress_route_revision(invalid)
+
+    assert owner.get_ingress_route_revision(invalid_ref) is None
+    assert store.connection.execute(
+        "SELECT COUNT(*) FROM pwp_ingress_route_revisions"
+    ).fetchone()[0] == before_count
+    assert (
+        owner.get_ingress_route("ingress-route:1").current_ingress_route_revision_ref
+        == current.ingress_route_revision_ref
+    )
+    assert owner.publish_ingress_route_revision(current) == current
+
+
 def test_ingress_route_raw_pointer_rewind_and_revision_mutation_fail_closed(pwp) -> None:
     store, owner = pwp
     prepare_ingress_route(owner)
