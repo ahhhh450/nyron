@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sqlite3
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -150,6 +151,51 @@ class SQLiteStore:
                 FOREIGN KEY (admission_ref)
                     REFERENCES execution_admissions(admission_ref)
             );
+
+            CREATE TABLE IF NOT EXISTS execution_ingress_facts (
+                execution_ingress_ref TEXT PRIMARY KEY,
+                ingress_route_revision_ref TEXT NOT NULL,
+                external_source_identity_ref TEXT NOT NULL,
+                external_event_ref TEXT NOT NULL,
+                canonical_payload_ref TEXT NOT NULL,
+                payload_hash TEXT NOT NULL,
+                authentication_evidence_ref TEXT NOT NULL,
+                validation_evidence_ref TEXT NOT NULL,
+                canonical_target_owner_ref TEXT NOT NULL
+                    CHECK (canonical_target_owner_ref = 'RUNTIME_ORCHESTRATION'),
+                canonical_event_type TEXT NOT NULL
+                    CHECK (canonical_event_type = 'ExecutionIngressFact'),
+                project_ref TEXT NOT NULL,
+                workspace_ref TEXT,
+                project_config_revision_ref TEXT NOT NULL,
+                workspace_config_revision_ref TEXT,
+                policy_context_revision_ref TEXT NOT NULL,
+                environment_binding_revision_ref TEXT,
+                graph_revision_ref TEXT NOT NULL,
+                graph_ingress_binding_ref TEXT NOT NULL,
+                caused_by_ref TEXT NOT NULL,
+                admitted_at_owner_order INTEGER NOT NULL UNIQUE
+                    CHECK (admitted_at_owner_order > 0),
+                UNIQUE (
+                    ingress_route_revision_ref,
+                    external_source_identity_ref,
+                    external_event_ref
+                ),
+                FOREIGN KEY (graph_revision_ref)
+                    REFERENCES graph_revisions(graph_revision_ref)
+            );
+
+            CREATE TRIGGER IF NOT EXISTS execution_ingress_facts_no_update
+            BEFORE UPDATE ON execution_ingress_facts
+            BEGIN
+                SELECT RAISE(ABORT, 'execution ingress facts are immutable');
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS execution_ingress_facts_no_delete
+            BEFORE DELETE ON execution_ingress_facts
+            BEGIN
+                SELECT RAISE(ABORT, 'execution ingress facts are immutable');
+            END;
 
             """
         )
@@ -495,6 +541,40 @@ class SQLiteStore:
 
         self.create_capability_schema()
         self.create_resource_schema()
+        existing_effect_table = self.connection.execute(
+            """
+            SELECT 1 FROM sqlite_master
+            WHERE type = 'table' AND name = 'effect_operations'
+            """
+        ).fetchone()
+        migrated_historical_outcome = False
+        if existing_effect_table is not None:
+            columns = {
+                row["name"]
+                for row in self.connection.execute(
+                    "PRAGMA table_info(effect_operations)"
+                ).fetchall()
+            }
+            with self.transaction() as connection:
+                if "historical_outcome" not in columns:
+                    connection.execute(
+                        """
+                        ALTER TABLE effect_operations
+                        ADD COLUMN historical_outcome TEXT NOT NULL DEFAULT 'UNKNOWN'
+                            CHECK (historical_outcome IN (
+                                'UNKNOWN', 'PARTIAL', 'KNOWN'
+                            ))
+                        """
+                    )
+                    migrated_historical_outcome = True
+                if "historical_outcome_evidence_json" not in columns:
+                    connection.execute(
+                        """
+                        ALTER TABLE effect_operations
+                        ADD COLUMN historical_outcome_evidence_json TEXT
+                        """
+                    )
+                    migrated_historical_outcome = True
         self.connection.executescript(
             """
             CREATE TABLE IF NOT EXISTS effect_operations (
@@ -523,6 +603,10 @@ class SQLiteStore:
                 dispatch_admitted_at INTEGER,
                 completion_evidence_json TEXT,
                 fence_evidence_json TEXT,
+                historical_outcome TEXT NOT NULL DEFAULT 'UNKNOWN' CHECK (
+                    historical_outcome IN ('UNKNOWN', 'PARTIAL', 'KNOWN')
+                ),
+                historical_outcome_evidence_json TEXT,
                 FOREIGN KEY (capability_grant_ref)
                     REFERENCES capability_grants(grant_ref),
                 FOREIGN KEY (resource_ref) REFERENCES resources(resource_ref),
@@ -553,8 +637,39 @@ class SQLiteStore:
                     (state = 'FENCED' AND fence_evidence_json IS NOT NULL)
                     OR
                     (state != 'FENCED' AND fence_evidence_json IS NULL)
+                ),
+                CHECK (
+                    historical_outcome = 'UNKNOWN'
+                    OR historical_outcome_evidence_json IS NOT NULL
                 )
             );
+
+            CREATE TABLE IF NOT EXISTS effect_historical_outcome_refinements (
+                operation_ref TEXT NOT NULL,
+                historical_outcome TEXT NOT NULL CHECK (
+                    historical_outcome IN ('PARTIAL', 'KNOWN')
+                ),
+                evidence_json TEXT NOT NULL CHECK (length(evidence_json) > 0),
+                PRIMARY KEY (operation_ref, historical_outcome),
+                FOREIGN KEY (operation_ref)
+                    REFERENCES effect_operations(operation_ref) ON DELETE CASCADE
+            );
+
+            CREATE TRIGGER IF NOT EXISTS effect_historical_refinement_immutable
+            BEFORE UPDATE ON effect_historical_outcome_refinements
+            BEGIN
+                SELECT RAISE(ABORT, 'effect historical refinement immutable');
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS effect_historical_refinement_no_delete
+            BEFORE DELETE ON effect_historical_outcome_refinements
+            WHEN EXISTS (
+                SELECT 1 FROM effect_operations
+                WHERE operation_ref = OLD.operation_ref
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'effect historical refinement immutable');
+            END;
 
             CREATE TRIGGER IF NOT EXISTS effect_operation_immutable_fields
             BEFORE UPDATE ON effect_operations
@@ -632,6 +747,42 @@ class SQLiteStore:
                 SELECT RAISE(ABORT, 'invalid effect operation state transition');
             END;
 
+            CREATE TRIGGER IF NOT EXISTS effect_historical_outcome_transition
+            BEFORE UPDATE OF historical_outcome, historical_outcome_evidence_json
+            ON effect_operations
+            WHEN NOT (
+                (NEW.historical_outcome = OLD.historical_outcome
+                 AND NEW.historical_outcome_evidence_json
+                     IS OLD.historical_outcome_evidence_json)
+                OR (OLD.historical_outcome = 'UNKNOWN'
+                    AND NEW.historical_outcome IN ('PARTIAL', 'KNOWN')
+                    AND NEW.historical_outcome_evidence_json IS NOT NULL)
+                OR (OLD.historical_outcome = 'PARTIAL'
+                    AND NEW.historical_outcome = 'KNOWN'
+                    AND NEW.historical_outcome_evidence_json IS NOT NULL)
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'invalid effect historical outcome transition');
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS effect_historical_outcome_insert_guard
+            BEFORE INSERT ON effect_operations
+            WHEN NEW.historical_outcome NOT IN ('UNKNOWN', 'PARTIAL', 'KNOWN')
+              OR (NEW.historical_outcome != 'UNKNOWN'
+                  AND NEW.historical_outcome_evidence_json IS NULL)
+            BEGIN
+                SELECT RAISE(ABORT, 'invalid effect historical outcome');
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS effect_historical_outcome_update_guard
+            BEFORE UPDATE ON effect_operations
+            WHEN NEW.historical_outcome NOT IN ('UNKNOWN', 'PARTIAL', 'KNOWN')
+              OR (NEW.historical_outcome != 'UNKNOWN'
+                  AND NEW.historical_outcome_evidence_json IS NULL)
+            BEGIN
+                SELECT RAISE(ABORT, 'invalid effect historical outcome');
+            END;
+
             CREATE TRIGGER IF NOT EXISTS effect_active_requires_admission
             BEFORE UPDATE OF state ON effect_operations
             WHEN NEW.state = 'ACTIVE'
@@ -641,6 +792,76 @@ class SQLiteStore:
             END;
             """
         )
+        if migrated_historical_outcome:
+            rows = self.connection.execute(
+                """
+                SELECT operation_ref, state
+                FROM effect_operations
+                WHERE state IN ('COMPLETED', 'FENCED')
+                  AND historical_outcome = 'UNKNOWN'
+                  AND historical_outcome_evidence_json IS NULL
+                """
+            ).fetchall()
+            with self.transaction() as connection:
+                for row in rows:
+                    evidence_json = json.dumps(
+                        {
+                            "basis": "LEGACY_BOUNDED_EFFECT_TERMINAL_EVIDENCE",
+                            "operation_ref": row["operation_ref"],
+                            "schema": 1,
+                            "terminal_state": row["state"],
+                        },
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    )
+                    connection.execute(
+                        """
+                        UPDATE effect_operations
+                        SET historical_outcome = 'KNOWN',
+                            historical_outcome_evidence_json = ?
+                        WHERE operation_ref = ?
+                        """,
+                        (evidence_json, row["operation_ref"]),
+                    )
+        current_refinements = self.connection.execute(
+            """
+            SELECT operation_ref, historical_outcome,
+                   historical_outcome_evidence_json
+            FROM effect_operations
+            WHERE historical_outcome IN ('PARTIAL', 'KNOWN')
+              AND historical_outcome_evidence_json IS NOT NULL
+            """
+        ).fetchall()
+        with self.transaction() as connection:
+            for row in current_refinements:
+                existing = connection.execute(
+                    """
+                    SELECT evidence_json
+                    FROM effect_historical_outcome_refinements
+                    WHERE operation_ref = ? AND historical_outcome = ?
+                    """,
+                    (row["operation_ref"], row["historical_outcome"]),
+                ).fetchone()
+                if existing is None:
+                    connection.execute(
+                        """
+                        INSERT INTO effect_historical_outcome_refinements(
+                            operation_ref, historical_outcome, evidence_json
+                        ) VALUES (?, ?, ?)
+                        """,
+                        (
+                            row["operation_ref"],
+                            row["historical_outcome"],
+                            row["historical_outcome_evidence_json"],
+                        ),
+                    )
+                elif (
+                    existing["evidence_json"]
+                    != row["historical_outcome_evidence_json"]
+                ):
+                    raise sqlite3.IntegrityError(
+                        "effect historical refinement projection conflict"
+                    )
 
     def create_product_schema(self) -> None:
         """Install NYRON-T-20260828-171 Product Node Foundation tables.
@@ -911,6 +1132,565 @@ class SQLiteStore:
             BEGIN
                 SELECT RAISE(ABORT, 'budget settlement is immutable');
             END;
+            """
+        )
+
+    def create_provider_schema(self) -> None:
+        """Install immutable unary Provider identity/profile/evidence records."""
+
+        self.create_effect_schema()
+        self.create_budget_schema()
+        self.connection.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS provider_profile_revisions (
+                profile_revision_ref TEXT PRIMARY KEY,
+                profile_ref TEXT NOT NULL,
+                adapter_ref TEXT NOT NULL,
+                provider_scope_ref TEXT NOT NULL,
+                account_scope_ref TEXT NOT NULL,
+                endpoint_scope_ref TEXT NOT NULL,
+                model_scope_ref TEXT NOT NULL,
+                usage_source_namespace TEXT NOT NULL,
+                operation_class TEXT NOT NULL CHECK (operation_class = 'MODEL_INVOKE'),
+                idempotent_same_key INTEGER NOT NULL CHECK (idempotent_same_key IN (0,1)),
+                authoritative_lookup INTEGER NOT NULL CHECK (authoritative_lookup IN (0,1)),
+                lookup_not_found_proves_absence INTEGER NOT NULL CHECK (lookup_not_found_proves_absence IN (0,1)),
+                cancellation_request INTEGER NOT NULL CHECK (cancellation_request IN (0,1)),
+                terminal_cancel_confirmation INTEGER NOT NULL CHECK (terminal_cancel_confirmation IN (0,1)),
+                external_identity_recovery INTEGER NOT NULL CHECK (external_identity_recovery IN (0,1)),
+                authoritative_usage INTEGER NOT NULL CHECK (authoritative_usage IN (0,1)),
+                authoritative_no_usage_no_charge INTEGER NOT NULL CHECK (authoritative_no_usage_no_charge IN (0,1)),
+                continuation_resume INTEGER NOT NULL CHECK (continuation_resume = 0),
+                streaming INTEGER NOT NULL CHECK (streaming = 0),
+                UNIQUE (profile_ref, profile_revision_ref)
+            );
+            CREATE TRIGGER IF NOT EXISTS provider_profile_revisions_immutable
+            BEFORE UPDATE ON provider_profile_revisions BEGIN
+                SELECT RAISE(ABORT, 'provider profile revision is immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS provider_profile_revisions_no_delete
+            BEFORE DELETE ON provider_profile_revisions BEGIN
+                SELECT RAISE(ABORT, 'provider profile revision is immutable');
+            END;
+
+            CREATE TABLE IF NOT EXISTS provider_operations (
+                operation_ref TEXT PRIMARY KEY,
+                semantic_request_hash TEXT NOT NULL,
+                profile_revision_ref TEXT NOT NULL,
+                idempotency_key TEXT,
+                dispatch_admission_ref TEXT NOT NULL,
+                run_ref TEXT NOT NULL,
+                attempt_seq INTEGER NOT NULL CHECK (attempt_seq > 0),
+                capability_grant_ref TEXT NOT NULL,
+                resource_lease_ref TEXT NOT NULL,
+                reservation_ref TEXT NOT NULL,
+                usage_source_namespace TEXT NOT NULL,
+                protected_idempotency_scope_ref TEXT NOT NULL,
+                external_request_id TEXT,
+                created_at INTEGER NOT NULL,
+                UNIQUE (protected_idempotency_scope_ref, idempotency_key),
+                FOREIGN KEY (profile_revision_ref) REFERENCES provider_profile_revisions(profile_revision_ref),
+                FOREIGN KEY (operation_ref) REFERENCES effect_operations(operation_ref),
+                FOREIGN KEY (reservation_ref) REFERENCES budget_reservations(reservation_ref)
+            );
+            CREATE TRIGGER IF NOT EXISTS provider_operations_immutable
+            BEFORE UPDATE ON provider_operations
+            WHEN NEW.operation_ref != OLD.operation_ref
+              OR NEW.semantic_request_hash != OLD.semantic_request_hash
+              OR NEW.profile_revision_ref != OLD.profile_revision_ref
+              OR NEW.idempotency_key IS NOT OLD.idempotency_key
+              OR NEW.dispatch_admission_ref != OLD.dispatch_admission_ref
+              OR NEW.run_ref != OLD.run_ref OR NEW.attempt_seq != OLD.attempt_seq
+              OR NEW.capability_grant_ref != OLD.capability_grant_ref
+              OR NEW.resource_lease_ref != OLD.resource_lease_ref
+              OR NEW.reservation_ref != OLD.reservation_ref
+              OR NEW.usage_source_namespace != OLD.usage_source_namespace
+              OR NEW.protected_idempotency_scope_ref != OLD.protected_idempotency_scope_ref
+              OR NEW.created_at != OLD.created_at
+              OR (OLD.external_request_id IS NOT NULL AND NEW.external_request_id IS NOT OLD.external_request_id)
+            BEGIN SELECT RAISE(ABORT, 'provider operation identity is immutable'); END;
+            CREATE TRIGGER IF NOT EXISTS provider_operations_no_delete
+            BEFORE DELETE ON provider_operations BEGIN
+                SELECT RAISE(ABORT, 'provider operation is immutable');
+            END;
+
+            CREATE TABLE IF NOT EXISTS provider_evidence (
+                evidence_ref TEXT PRIMARY KEY,
+                operation_ref TEXT NOT NULL,
+                evidence_kind TEXT NOT NULL CHECK (evidence_kind IN (
+                    'ACKNOWLEDGEMENT','LOOKUP','CANCEL_REQUEST','CANCEL_CONFIRMATION','USAGE'
+                )),
+                evidence_semantics TEXT NOT NULL,
+                authoritative INTEGER NOT NULL CHECK (authoritative IN (0,1)),
+                historical_outcome TEXT NOT NULL CHECK (historical_outcome IN ('UNKNOWN','PARTIAL','KNOWN')),
+                recorded_at INTEGER NOT NULL,
+                FOREIGN KEY (operation_ref) REFERENCES provider_operations(operation_ref)
+            );
+            CREATE TRIGGER IF NOT EXISTS provider_evidence_immutable
+            BEFORE UPDATE ON provider_evidence BEGIN
+                SELECT RAISE(ABORT, 'provider evidence is immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS provider_evidence_no_delete
+            BEFORE DELETE ON provider_evidence BEGIN
+                SELECT RAISE(ABORT, 'provider evidence is immutable');
+            END;
+
+            CREATE TABLE IF NOT EXISTS provider_usage_source_bindings (
+                source_authority_ref TEXT NOT NULL,
+                source_fact_id TEXT NOT NULL,
+                operation_ref TEXT NOT NULL,
+                provider_line_item_ref TEXT NOT NULL,
+                evidence_ref TEXT NOT NULL UNIQUE,
+                evidence_semantics TEXT NOT NULL CHECK (evidence_semantics IN ('ACTUAL_USAGE','NO_USAGE_NO_CHARGE')),
+                dimension_ref TEXT NOT NULL,
+                quantity INTEGER NOT NULL CHECK (quantity >= 0),
+                unit TEXT NOT NULL,
+                bound_at INTEGER NOT NULL,
+                PRIMARY KEY (source_authority_ref, source_fact_id),
+                UNIQUE (operation_ref, provider_line_item_ref),
+                FOREIGN KEY (operation_ref) REFERENCES provider_operations(operation_ref),
+                FOREIGN KEY (evidence_ref) REFERENCES provider_evidence(evidence_ref)
+            );
+            CREATE TRIGGER IF NOT EXISTS provider_usage_source_bindings_immutable
+            BEFORE UPDATE ON provider_usage_source_bindings BEGIN
+                SELECT RAISE(ABORT, 'provider usage source binding is immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS provider_usage_source_bindings_no_delete
+            BEFORE DELETE ON provider_usage_source_bindings BEGIN
+                SELECT RAISE(ABORT, 'provider usage source binding is immutable');
+            END;
+            """
+        )
+
+    def create_provider_reconciliation_schema(self) -> None:
+        """Install Accounting-owned Provider ambiguity and resolution evidence."""
+
+        self.create_provider_schema()
+        self.create_budget_settlement_schema()
+        self.connection.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS provider_accounting_reconciliations (
+                reconciliation_ref TEXT PRIMARY KEY,
+                reservation_ref TEXT NOT NULL UNIQUE,
+                operation_ref TEXT NOT NULL,
+                provider_usage_source_ref TEXT NOT NULL,
+                ambiguity_outcome TEXT NOT NULL CHECK (ambiguity_outcome IN ('UNKNOWN','PARTIAL')),
+                evidence_ref TEXT NOT NULL,
+                caused_by_ref TEXT NOT NULL,
+                entered_at INTEGER NOT NULL,
+                FOREIGN KEY (reservation_ref) REFERENCES budget_reservations(reservation_ref)
+            );
+            CREATE TRIGGER IF NOT EXISTS provider_accounting_reconciliations_immutable
+            BEFORE UPDATE ON provider_accounting_reconciliations BEGIN
+                SELECT RAISE(ABORT, 'provider reconciliation is immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS provider_accounting_reconciliations_no_delete
+            BEFORE DELETE ON provider_accounting_reconciliations BEGIN
+                SELECT RAISE(ABORT, 'provider reconciliation is immutable');
+            END;
+            CREATE TABLE IF NOT EXISTS provider_accounting_reconciliation_resolutions (
+                reconciliation_ref TEXT PRIMARY KEY,
+                settlement_ref TEXT NOT NULL UNIQUE,
+                resulting_state TEXT NOT NULL CHECK (resulting_state IN ('COMMITTED','RELEASED')),
+                resolved_at INTEGER NOT NULL,
+                FOREIGN KEY (reconciliation_ref) REFERENCES provider_accounting_reconciliations(reconciliation_ref),
+                FOREIGN KEY (settlement_ref) REFERENCES budget_settlements(settlement_ref)
+            );
+            CREATE TRIGGER IF NOT EXISTS provider_accounting_reconciliation_resolutions_immutable
+            BEFORE UPDATE ON provider_accounting_reconciliation_resolutions BEGIN
+                SELECT RAISE(ABORT, 'provider reconciliation resolution is immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS provider_accounting_reconciliation_resolutions_no_delete
+            BEFORE DELETE ON provider_accounting_reconciliation_resolutions BEGIN
+                SELECT RAISE(ABORT, 'provider reconciliation resolution is immutable');
+            END;
+            """
+        )
+
+    def create_credential_schema(self) -> None:
+        """Install reference-only credential binding and request history."""
+
+        self.create_provider_schema()
+        self.connection.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS credential_binding_revisions (
+                credential_binding_ref TEXT PRIMARY KEY,
+                workspace_secret_ref TEXT NOT NULL,
+                profile_ref TEXT NOT NULL,
+                profile_revision_ref TEXT NOT NULL,
+                binding_class TEXT NOT NULL,
+                revision_seq INTEGER NOT NULL CHECK (revision_seq > 0),
+                predecessor_binding_ref TEXT UNIQUE,
+                creation_evidence_ref TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                UNIQUE (workspace_secret_ref, profile_ref, binding_class, revision_seq),
+                FOREIGN KEY (profile_revision_ref) REFERENCES provider_profile_revisions(profile_revision_ref),
+                FOREIGN KEY (predecessor_binding_ref) REFERENCES credential_binding_revisions(credential_binding_ref)
+            );
+            CREATE TRIGGER IF NOT EXISTS credential_binding_revisions_immutable
+            BEFORE UPDATE ON credential_binding_revisions BEGIN
+                SELECT RAISE(ABORT, 'credential binding revision is immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS credential_binding_revisions_no_delete
+            BEFORE DELETE ON credential_binding_revisions BEGIN
+                SELECT RAISE(ABORT, 'credential binding revision is immutable');
+            END;
+
+            CREATE TABLE IF NOT EXISTS credential_binding_revocations (
+                credential_binding_ref TEXT PRIMARY KEY,
+                evidence_ref TEXT NOT NULL,
+                revoked_at INTEGER NOT NULL,
+                FOREIGN KEY (credential_binding_ref) REFERENCES credential_binding_revisions(credential_binding_ref)
+            );
+            CREATE TRIGGER IF NOT EXISTS credential_binding_revocations_immutable
+            BEFORE UPDATE ON credential_binding_revocations BEGIN
+                SELECT RAISE(ABORT, 'credential binding revocation is immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS credential_binding_revocations_no_delete
+            BEFORE DELETE ON credential_binding_revocations BEGIN
+                SELECT RAISE(ABORT, 'credential binding revocation is immutable');
+            END;
+
+            CREATE TABLE IF NOT EXISTS credential_resolution_requests (
+                resolution_request_ref TEXT PRIMARY KEY,
+                credential_binding_ref TEXT NOT NULL,
+                operation_ref TEXT NOT NULL,
+                run_ref TEXT NOT NULL,
+                attempt_seq INTEGER NOT NULL CHECK (attempt_seq > 0),
+                capability_grant_ref TEXT NOT NULL,
+                resource_lease_ref TEXT NOT NULL,
+                profile_revision_ref TEXT NOT NULL,
+                requested_at INTEGER NOT NULL,
+                FOREIGN KEY (credential_binding_ref) REFERENCES credential_binding_revisions(credential_binding_ref),
+                FOREIGN KEY (operation_ref) REFERENCES provider_operations(operation_ref)
+            );
+            CREATE TRIGGER IF NOT EXISTS credential_resolution_requests_immutable
+            BEFORE UPDATE ON credential_resolution_requests BEGIN
+                SELECT RAISE(ABORT, 'credential resolution request is immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS credential_resolution_requests_no_delete
+            BEFORE DELETE ON credential_resolution_requests BEGIN
+                SELECT RAISE(ABORT, 'credential resolution request is immutable');
+            END;
+            """
+        )
+
+    def create_pwp_schema(self) -> None:
+        """Install only PWP-owned identity and immutable revision tables."""
+
+        self.connection.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS pwp_projects (
+                project_ref TEXT PRIMARY KEY,
+                state TEXT NOT NULL CHECK (state IN ('ACTIVE','DEPRECATED','ARCHIVED')),
+                created_at INTEGER NOT NULL,
+                archived_at INTEGER,
+                current_project_config_revision_ref TEXT,
+                current_policy_context_revision_ref TEXT,
+                CHECK ((state = 'ARCHIVED') = (archived_at IS NOT NULL)),
+                FOREIGN KEY (current_project_config_revision_ref)
+                    REFERENCES pwp_project_config_revisions(revision_ref),
+                FOREIGN KEY (current_policy_context_revision_ref)
+                    REFERENCES pwp_policy_context_revisions(revision_ref)
+            );
+
+            CREATE TABLE IF NOT EXISTS pwp_workspaces (
+                workspace_ref TEXT PRIMARY KEY,
+                project_ref TEXT NOT NULL,
+                parent_workspace_ref TEXT,
+                state TEXT NOT NULL CHECK (state IN ('ACTIVE','DEPRECATED','ARCHIVED')),
+                created_at INTEGER NOT NULL,
+                archived_at INTEGER,
+                current_workspace_config_revision_ref TEXT,
+                current_policy_context_revision_ref TEXT,
+                current_environment_binding_revision_ref TEXT,
+                CHECK ((state = 'ARCHIVED') = (archived_at IS NOT NULL)),
+                CHECK (parent_workspace_ref IS NULL OR parent_workspace_ref != workspace_ref),
+                FOREIGN KEY (project_ref) REFERENCES pwp_projects(project_ref),
+                FOREIGN KEY (parent_workspace_ref) REFERENCES pwp_workspaces(workspace_ref),
+                FOREIGN KEY (current_workspace_config_revision_ref)
+                    REFERENCES pwp_workspace_config_revisions(revision_ref),
+                FOREIGN KEY (current_policy_context_revision_ref)
+                    REFERENCES pwp_policy_context_revisions(revision_ref),
+                FOREIGN KEY (current_environment_binding_revision_ref)
+                    REFERENCES pwp_environment_binding_revisions(revision_ref)
+            );
+
+            CREATE TABLE IF NOT EXISTS pwp_project_config_revisions (
+                revision_ref TEXT PRIMARY KEY,
+                subject_ref TEXT NOT NULL,
+                revision_seq INTEGER NOT NULL CHECK (revision_seq > 0),
+                previous_revision_ref TEXT UNIQUE,
+                payload_json TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                caused_by_ref TEXT NOT NULL,
+                UNIQUE(subject_ref, revision_seq),
+                FOREIGN KEY (subject_ref) REFERENCES pwp_projects(project_ref),
+                FOREIGN KEY (previous_revision_ref)
+                    REFERENCES pwp_project_config_revisions(revision_ref)
+            );
+
+            CREATE TABLE IF NOT EXISTS pwp_workspace_config_revisions (
+                revision_ref TEXT PRIMARY KEY,
+                subject_ref TEXT NOT NULL,
+                revision_seq INTEGER NOT NULL CHECK (revision_seq > 0),
+                previous_revision_ref TEXT UNIQUE,
+                payload_json TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                caused_by_ref TEXT NOT NULL,
+                UNIQUE(subject_ref, revision_seq),
+                FOREIGN KEY (subject_ref) REFERENCES pwp_workspaces(workspace_ref),
+                FOREIGN KEY (previous_revision_ref)
+                    REFERENCES pwp_workspace_config_revisions(revision_ref)
+            );
+
+            CREATE TABLE IF NOT EXISTS pwp_policy_context_revisions (
+                revision_ref TEXT PRIMARY KEY,
+                subject_kind TEXT NOT NULL CHECK (subject_kind IN ('PROJECT','WORKSPACE')),
+                subject_ref TEXT NOT NULL,
+                revision_seq INTEGER NOT NULL CHECK (revision_seq > 0),
+                previous_revision_ref TEXT UNIQUE,
+                payload_json TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                caused_by_ref TEXT NOT NULL,
+                UNIQUE(subject_kind, subject_ref, revision_seq),
+                FOREIGN KEY (previous_revision_ref)
+                    REFERENCES pwp_policy_context_revisions(revision_ref)
+            );
+
+            CREATE TABLE IF NOT EXISTS pwp_environment_binding_revisions (
+                revision_ref TEXT PRIMARY KEY,
+                subject_ref TEXT NOT NULL,
+                revision_seq INTEGER NOT NULL CHECK (revision_seq > 0),
+                previous_revision_ref TEXT UNIQUE,
+                payload_json TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                caused_by_ref TEXT NOT NULL,
+                UNIQUE(subject_ref, revision_seq),
+                FOREIGN KEY (subject_ref) REFERENCES pwp_workspaces(workspace_ref),
+                FOREIGN KEY (previous_revision_ref)
+                    REFERENCES pwp_environment_binding_revisions(revision_ref)
+            );
+
+            CREATE TABLE IF NOT EXISTS pwp_ingress_routes (
+                ingress_route_ref TEXT PRIMARY KEY,
+                project_ref TEXT NOT NULL,
+                workspace_ref TEXT,
+                state TEXT NOT NULL CHECK (state IN ('ACTIVE','DISABLED','DEPRECATED','ARCHIVED')),
+                current_ingress_route_revision_ref TEXT,
+                created_at INTEGER NOT NULL,
+                archived_at INTEGER,
+                CHECK ((state = 'ARCHIVED') = (archived_at IS NOT NULL)),
+                FOREIGN KEY (project_ref) REFERENCES pwp_projects(project_ref),
+                FOREIGN KEY (workspace_ref) REFERENCES pwp_workspaces(workspace_ref),
+                FOREIGN KEY (current_ingress_route_revision_ref)
+                    REFERENCES pwp_ingress_route_revisions(revision_ref)
+            );
+
+            CREATE TABLE IF NOT EXISTS pwp_ingress_route_revisions (
+                revision_ref TEXT PRIMARY KEY,
+                subject_ref TEXT NOT NULL,
+                revision_seq INTEGER NOT NULL CHECK (revision_seq > 0),
+                previous_revision_ref TEXT UNIQUE,
+                payload_json TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                caused_by_ref TEXT NOT NULL,
+                UNIQUE(subject_ref, revision_seq),
+                FOREIGN KEY (subject_ref) REFERENCES pwp_ingress_routes(ingress_route_ref),
+                FOREIGN KEY (previous_revision_ref)
+                    REFERENCES pwp_ingress_route_revisions(revision_ref)
+            );
+
+            CREATE TRIGGER IF NOT EXISTS pwp_project_identity_immutable
+            BEFORE UPDATE OF project_ref, created_at ON pwp_projects
+            BEGIN SELECT RAISE(ABORT, 'project identity immutable'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_project_no_delete
+            BEFORE DELETE ON pwp_projects
+            BEGIN SELECT RAISE(ABORT, 'project history retained'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_project_state_transition
+            BEFORE UPDATE OF state ON pwp_projects
+            WHEN NOT (
+                NEW.state = OLD.state
+                OR (OLD.state = 'ACTIVE' AND NEW.state IN ('DEPRECATED','ARCHIVED'))
+                OR (OLD.state = 'DEPRECATED' AND NEW.state = 'ARCHIVED')
+            )
+            BEGIN SELECT RAISE(ABORT, 'invalid project state transition'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_workspace_identity_immutable
+            BEFORE UPDATE OF workspace_ref, project_ref, parent_workspace_ref, created_at
+            ON pwp_workspaces
+            BEGIN SELECT RAISE(ABORT, 'workspace identity immutable'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_workspace_no_delete
+            BEFORE DELETE ON pwp_workspaces
+            BEGIN SELECT RAISE(ABORT, 'workspace history retained'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_workspace_parent_same_project
+            BEFORE INSERT ON pwp_workspaces
+            WHEN NEW.parent_workspace_ref IS NOT NULL AND NOT EXISTS (
+                SELECT 1 FROM pwp_workspaces parent
+                WHERE parent.workspace_ref = NEW.parent_workspace_ref
+                  AND parent.project_ref = NEW.project_ref
+            )
+            BEGIN SELECT RAISE(ABORT, 'workspace parent project mismatch'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_workspace_state_transition
+            BEFORE UPDATE OF state ON pwp_workspaces
+            WHEN NOT (
+                NEW.state = OLD.state
+                OR (OLD.state = 'ACTIVE' AND NEW.state IN ('DEPRECATED','ARCHIVED'))
+                OR (OLD.state = 'DEPRECATED' AND NEW.state = 'ARCHIVED')
+            )
+            BEGIN SELECT RAISE(ABORT, 'invalid workspace state transition'); END;
+
+            CREATE TRIGGER IF NOT EXISTS pwp_project_config_pointer_advance
+            BEFORE UPDATE OF current_project_config_revision_ref ON pwp_projects
+            WHEN NEW.current_project_config_revision_ref IS NOT OLD.current_project_config_revision_ref
+             AND NOT EXISTS (
+                SELECT 1 FROM pwp_project_config_revisions revision
+                WHERE revision.revision_ref = NEW.current_project_config_revision_ref
+                  AND revision.subject_ref = OLD.project_ref
+                  AND revision.previous_revision_ref IS OLD.current_project_config_revision_ref
+                  AND revision.revision_seq = CASE
+                      WHEN OLD.current_project_config_revision_ref IS NULL THEN 1
+                      ELSE (SELECT revision_seq + 1 FROM pwp_project_config_revisions
+                            WHERE revision_ref = OLD.current_project_config_revision_ref)
+                  END
+             )
+            BEGIN SELECT RAISE(ABORT, 'invalid project config pointer advance'); END;
+
+            CREATE TRIGGER IF NOT EXISTS pwp_workspace_config_pointer_advance
+            BEFORE UPDATE OF current_workspace_config_revision_ref ON pwp_workspaces
+            WHEN NEW.current_workspace_config_revision_ref IS NOT OLD.current_workspace_config_revision_ref
+             AND NOT EXISTS (
+                SELECT 1 FROM pwp_workspace_config_revisions revision
+                WHERE revision.revision_ref = NEW.current_workspace_config_revision_ref
+                  AND revision.subject_ref = OLD.workspace_ref
+                  AND revision.previous_revision_ref IS OLD.current_workspace_config_revision_ref
+                  AND revision.revision_seq = CASE
+                      WHEN OLD.current_workspace_config_revision_ref IS NULL THEN 1
+                      ELSE (SELECT revision_seq + 1 FROM pwp_workspace_config_revisions
+                            WHERE revision_ref = OLD.current_workspace_config_revision_ref)
+                  END
+             )
+            BEGIN SELECT RAISE(ABORT, 'invalid workspace config pointer advance'); END;
+
+            CREATE TRIGGER IF NOT EXISTS pwp_project_policy_pointer_advance
+            BEFORE UPDATE OF current_policy_context_revision_ref ON pwp_projects
+            WHEN NEW.current_policy_context_revision_ref IS NOT OLD.current_policy_context_revision_ref
+             AND NOT EXISTS (
+                SELECT 1 FROM pwp_policy_context_revisions revision
+                WHERE revision.revision_ref = NEW.current_policy_context_revision_ref
+                  AND revision.subject_kind = 'PROJECT'
+                  AND revision.subject_ref = OLD.project_ref
+                  AND revision.previous_revision_ref IS OLD.current_policy_context_revision_ref
+                  AND revision.revision_seq = CASE
+                      WHEN OLD.current_policy_context_revision_ref IS NULL THEN 1
+                      ELSE (SELECT revision_seq + 1 FROM pwp_policy_context_revisions
+                            WHERE revision_ref = OLD.current_policy_context_revision_ref)
+                  END
+             )
+            BEGIN SELECT RAISE(ABORT, 'invalid project policy pointer advance'); END;
+
+            CREATE TRIGGER IF NOT EXISTS pwp_workspace_policy_pointer_advance
+            BEFORE UPDATE OF current_policy_context_revision_ref ON pwp_workspaces
+            WHEN NEW.current_policy_context_revision_ref IS NOT OLD.current_policy_context_revision_ref
+             AND NOT EXISTS (
+                SELECT 1 FROM pwp_policy_context_revisions revision
+                WHERE revision.revision_ref = NEW.current_policy_context_revision_ref
+                  AND revision.subject_kind = 'WORKSPACE'
+                  AND revision.subject_ref = OLD.workspace_ref
+                  AND revision.previous_revision_ref IS OLD.current_policy_context_revision_ref
+                  AND revision.revision_seq = CASE
+                      WHEN OLD.current_policy_context_revision_ref IS NULL THEN 1
+                      ELSE (SELECT revision_seq + 1 FROM pwp_policy_context_revisions
+                            WHERE revision_ref = OLD.current_policy_context_revision_ref)
+                  END
+             )
+            BEGIN SELECT RAISE(ABORT, 'invalid workspace policy pointer advance'); END;
+
+            CREATE TRIGGER IF NOT EXISTS pwp_environment_pointer_advance
+            BEFORE UPDATE OF current_environment_binding_revision_ref ON pwp_workspaces
+            WHEN NEW.current_environment_binding_revision_ref IS NOT OLD.current_environment_binding_revision_ref
+             AND NOT EXISTS (
+                SELECT 1 FROM pwp_environment_binding_revisions revision
+                WHERE revision.revision_ref = NEW.current_environment_binding_revision_ref
+                  AND revision.subject_ref = OLD.workspace_ref
+                  AND revision.previous_revision_ref IS OLD.current_environment_binding_revision_ref
+                  AND revision.revision_seq = CASE
+                      WHEN OLD.current_environment_binding_revision_ref IS NULL THEN 1
+                      ELSE (SELECT revision_seq + 1 FROM pwp_environment_binding_revisions
+                            WHERE revision_ref = OLD.current_environment_binding_revision_ref)
+                  END
+             )
+            BEGIN SELECT RAISE(ABORT, 'invalid environment binding pointer advance'); END;
+
+            CREATE TRIGGER IF NOT EXISTS pwp_ingress_route_identity_immutable
+            BEFORE UPDATE OF ingress_route_ref, project_ref, workspace_ref, created_at
+            ON pwp_ingress_routes
+            BEGIN SELECT RAISE(ABORT, 'ingress route identity immutable'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_ingress_route_no_delete
+            BEFORE DELETE ON pwp_ingress_routes
+            BEGIN SELECT RAISE(ABORT, 'ingress route history retained'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_ingress_route_workspace_same_project
+            BEFORE INSERT ON pwp_ingress_routes
+            WHEN NEW.workspace_ref IS NOT NULL AND NOT EXISTS (
+                SELECT 1 FROM pwp_workspaces workspace
+                WHERE workspace.workspace_ref = NEW.workspace_ref
+                  AND workspace.project_ref = NEW.project_ref
+            )
+            BEGIN SELECT RAISE(ABORT, 'ingress route workspace project mismatch'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_ingress_route_state_transition
+            BEFORE UPDATE OF state ON pwp_ingress_routes
+            WHEN NOT (
+                NEW.state = OLD.state
+                OR (OLD.state = 'ACTIVE' AND NEW.state IN ('DISABLED','DEPRECATED','ARCHIVED'))
+                OR (OLD.state = 'DISABLED' AND NEW.state IN ('ACTIVE','DEPRECATED','ARCHIVED'))
+                OR (OLD.state = 'DEPRECATED' AND NEW.state = 'ARCHIVED')
+            )
+            BEGIN SELECT RAISE(ABORT, 'invalid ingress route state transition'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_ingress_route_pointer_advance
+            BEFORE UPDATE OF current_ingress_route_revision_ref ON pwp_ingress_routes
+            WHEN NEW.current_ingress_route_revision_ref IS NOT OLD.current_ingress_route_revision_ref
+             AND NOT EXISTS (
+                SELECT 1 FROM pwp_ingress_route_revisions revision
+                WHERE revision.revision_ref = NEW.current_ingress_route_revision_ref
+                  AND revision.subject_ref = OLD.ingress_route_ref
+                  AND revision.previous_revision_ref IS OLD.current_ingress_route_revision_ref
+                  AND revision.revision_seq = CASE
+                      WHEN OLD.current_ingress_route_revision_ref IS NULL THEN 1
+                      ELSE (SELECT revision_seq + 1 FROM pwp_ingress_route_revisions
+                            WHERE revision_ref = OLD.current_ingress_route_revision_ref)
+                  END
+             )
+            BEGIN SELECT RAISE(ABORT, 'invalid ingress route pointer advance'); END;
+
+            CREATE TRIGGER IF NOT EXISTS pwp_project_config_immutable
+            BEFORE UPDATE ON pwp_project_config_revisions
+            BEGIN SELECT RAISE(ABORT, 'PWP revision immutable'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_project_config_no_delete
+            BEFORE DELETE ON pwp_project_config_revisions
+            BEGIN SELECT RAISE(ABORT, 'PWP revision retained'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_workspace_config_immutable
+            BEFORE UPDATE ON pwp_workspace_config_revisions
+            BEGIN SELECT RAISE(ABORT, 'PWP revision immutable'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_workspace_config_no_delete
+            BEFORE DELETE ON pwp_workspace_config_revisions
+            BEGIN SELECT RAISE(ABORT, 'PWP revision retained'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_policy_context_immutable
+            BEFORE UPDATE ON pwp_policy_context_revisions
+            BEGIN SELECT RAISE(ABORT, 'PWP revision immutable'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_policy_context_no_delete
+            BEFORE DELETE ON pwp_policy_context_revisions
+            BEGIN SELECT RAISE(ABORT, 'PWP revision retained'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_environment_binding_immutable
+            BEFORE UPDATE ON pwp_environment_binding_revisions
+            BEGIN SELECT RAISE(ABORT, 'PWP revision immutable'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_environment_binding_no_delete
+            BEFORE DELETE ON pwp_environment_binding_revisions
+            BEGIN SELECT RAISE(ABORT, 'PWP revision retained'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_ingress_route_revision_immutable
+            BEFORE UPDATE ON pwp_ingress_route_revisions
+            BEGIN SELECT RAISE(ABORT, 'PWP revision immutable'); END;
+            CREATE TRIGGER IF NOT EXISTS pwp_ingress_route_revision_no_delete
+            BEFORE DELETE ON pwp_ingress_route_revisions
+            BEGIN SELECT RAISE(ABORT, 'PWP revision retained'); END;
             """
         )
 

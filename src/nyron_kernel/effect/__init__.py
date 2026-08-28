@@ -5,6 +5,7 @@ from .authority import (
     EffectError,
     EffectOperation,
     EffectRequest,
+    HistoricalOutcome,
 )
 
 __all__ = [
@@ -12,4 +13,5 @@ __all__ = [
     "EffectError",
     "EffectOperation",
     "EffectRequest",
+    "HistoricalOutcome",
 ]

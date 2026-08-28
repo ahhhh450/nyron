@@ -16,6 +16,13 @@ from .attempt import AttemptAuthority, RunAttempt
 from .authority import RuntimeAuthorityResolver
 from .delivery import Delivery, DeliveryError, DeliveryProjector
 from .packet import Packet, PacketError, PacketRepository
+from .ingress import (
+    EXECUTION_INGRESS_EVENT_TYPE,
+    RUNTIME_TARGET_OWNER,
+    ExecutionIngressError,
+    ExecutionIngressFact,
+    ExecutionIngressRepository,
+)
 from .executor import AttemptExecutionError, AttemptExecutor
 from .run import Run, RunError, RunRepository
 from .replacement import (
@@ -40,6 +47,10 @@ __all__ = [
     "DurableValueRepository",
     "ExecutionAdmission",
     "ExecutionAdmissionGate",
+    "ExecutionIngressError",
+    "ExecutionIngressFact",
+    "ExecutionIngressRepository",
+    "EXECUTION_INGRESS_EVENT_TYPE",
     "InputBinding",
     "Packet",
     "PacketError",
@@ -52,5 +63,6 @@ __all__ = [
     "ReplacementCleanupError",
     "ReplacementCleanupResult",
     "RuntimeAuthorityResolver",
+    "RUNTIME_TARGET_OWNER",
     "WorkflowExecution",
 ]
