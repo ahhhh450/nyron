@@ -26,8 +26,8 @@ def concat_definition(**changes: object) -> ModuleDefinition:
         "module_ref": "builtin.text.concat",
         "version": "1",
         "input_port_definitions": (
-            PortDefinition("a", {"type": "string"}, "REQUIRED_LATEST"),
-            PortDefinition("b", {"type": "string"}, "TRIGGER"),
+            PortDefinition("a", {"type": "string"}, "REQUIRED_LATEST", "SINGLE_SOURCE"),
+            PortDefinition("b", {"type": "string"}, "TRIGGER", "SINGLE_SOURCE"),
         ),
         "output_port_definitions": (
             PortDefinition("text", {"type": "string"}),
@@ -139,13 +139,13 @@ class PortValidationTest(unittest.TestCase):
     def test_port_names_must_be_non_empty_and_unique(self) -> None:
         with self.assertRaises(ValueError):
             validate_ports(
-                (PortDefinition("", {"type": "string"}, "TRIGGER"),), inputs=True
+                (PortDefinition("", {"type": "string"}, "TRIGGER", "SINGLE_SOURCE"),), inputs=True
             )
         with self.assertRaises(ValueError):
             validate_ports(
                 (
-                    PortDefinition("a", {"type": "string"}, "TRIGGER"),
-                    PortDefinition("a", {"type": "string"}, "TRIGGER"),
+                    PortDefinition("a", {"type": "string"}, "TRIGGER", "SINGLE_SOURCE"),
+                    PortDefinition("a", {"type": "string"}, "TRIGGER", "SINGLE_SOURCE"),
                 ),
                 inputs=True,
             )
@@ -153,13 +153,20 @@ class PortValidationTest(unittest.TestCase):
     def test_input_port_must_declare_known_activation_mode(self) -> None:
         with self.assertRaises(ValueError):
             validate_ports(
-                (PortDefinition("a", {"type": "string"}, "BOGUS"),), inputs=True
+                (PortDefinition("a", {"type": "string"}, "BOGUS", "SINGLE_SOURCE"),), inputs=True
             )
 
     def test_output_port_cannot_declare_activation_mode(self) -> None:
         with self.assertRaises(ValueError):
             validate_ports(
                 (PortDefinition("a", {"type": "string"}, "TRIGGER"),), inputs=False
+            )
+
+    def test_input_port_must_declare_known_connection_policy(self) -> None:
+        with self.assertRaises(ValueError):
+            validate_ports(
+                (PortDefinition("a", {"type": "string"}, "TRIGGER", "BOGUS"),),
+                inputs=True,
             )
 
 

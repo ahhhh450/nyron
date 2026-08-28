@@ -20,8 +20,8 @@ def concat_definition(**changes: object) -> ModuleDefinition:
         "module_ref": "builtin.text.concat",
         "version": "1",
         "input_port_definitions": (
-            PortDefinition("a", {"type": "string"}, "REQUIRED_LATEST"),
-            PortDefinition("b", {"type": "string"}, "TRIGGER"),
+            PortDefinition("a", {"type": "string"}, "REQUIRED_LATEST", "SINGLE_SOURCE"),
+            PortDefinition("b", {"type": "string"}, "TRIGGER", "SINGLE_SOURCE"),
         ),
         "output_port_definitions": (
             PortDefinition("text", {"type": "string"}),
@@ -122,7 +122,7 @@ class SegmentATest(unittest.TestCase):
             "PORT_SCHEMA_INVALID",
             concat_definition(
                 input_port_definitions=(
-                    PortDefinition("a", {"type": "unknown"}, "TRIGGER"),
+                    PortDefinition("a", {"type": "unknown"}, "TRIGGER", "SINGLE_SOURCE"),
                 )
             ),
         )

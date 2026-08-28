@@ -28,7 +28,7 @@ def definition() -> ModuleDefinition:
         module_ref=MODULE_REF,
         version=MODULE_VERSION,
         input_port_definitions=(
-            PortDefinition("text", {"type": "string"}, "TRIGGER"),
+            PortDefinition("text", {"type": "string"}, "TRIGGER", "SINGLE_SOURCE"),
         ),
         output_port_definitions=(
             PortDefinition("text", {"type": "string"}),

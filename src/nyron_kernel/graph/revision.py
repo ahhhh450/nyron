@@ -19,15 +19,6 @@ from nyron_kernel.store import SQLiteStore
 
 EDGE_ROLES = frozenset({"NORMAL", "FEEDBACK"})
 
-# Cardinality is derived from the frozen input activation-mode set (no new
-# Module/Graph field is introduced): a consumptive mode (TRIGGER,
-# REQUIRED_NEXT) expects exactly one authored source edge per port so a
-# single Activation's consumption is unambiguous; a latest-of-many mode
-# (REQUIRED_LATEST, OPTIONAL_LATEST) already tolerates multiple deliveries
-# at the ActivationRepository selection layer, so it is MULTI_SOURCE.
-_SINGLE_SOURCE_MODES = frozenset({"TRIGGER", "REQUIRED_NEXT"})
-
-
 class GraphError(RuntimeError):
     def __init__(self, code: str, **context: object) -> None:
         super().__init__(code)
@@ -478,12 +469,12 @@ class GraphRepository:
             instance_ref = revision_ref_to_instance_ref[target_revision_ref]
             definition = definitions[instance_ref]
             assert definition is not None
-            mode = next(
-                port.activation_mode
+            connection_policy = next(
+                port.connection_policy
                 for port in definition.input_port_definitions
                 if port.name == target_port_ref
             )
-            if mode in _SINGLE_SOURCE_MODES and len(group) > 1:
+            if connection_policy == "SINGLE_SOURCE" and len(group) > 1:
                 raise GraphError(
                     "EDGE_CARDINALITY_VIOLATION",
                     target_module_instance_revision_ref=target_revision_ref,

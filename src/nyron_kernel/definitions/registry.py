@@ -53,6 +53,7 @@ class ModuleDefinition:
                 "name": port.name,
                 "value_schema": port.value_schema,
                 "activation_mode": port.activation_mode,
+                "connection_policy": port.connection_policy,
             }
 
         return {
@@ -78,6 +79,7 @@ class ModuleDefinition:
                 name=value["name"],
                 value_schema=value["value_schema"],
                 activation_mode=value["activation_mode"],
+                connection_policy=value["connection_policy"],
             )
 
         return cls(

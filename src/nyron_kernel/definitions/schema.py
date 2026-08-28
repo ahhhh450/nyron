@@ -9,6 +9,7 @@ from typing import Any
 INPUT_ACTIVATION_MODES = frozenset(
     {"TRIGGER", "REQUIRED_NEXT", "REQUIRED_LATEST", "OPTIONAL_LATEST"}
 )
+INPUT_CONNECTION_POLICIES = frozenset({"SINGLE_SOURCE", "MULTI_SOURCE"})
 SCHEMA_TYPES = frozenset(
     {"array", "boolean", "integer", "null", "number", "object", "string"}
 )
@@ -19,6 +20,7 @@ class PortDefinition:
     name: str
     value_schema: dict[str, Any]
     activation_mode: str | None = None
+    connection_policy: str | None = None
 
 
 def validate_json_schema(schema: object) -> None:
@@ -65,5 +67,9 @@ def validate_ports(ports: tuple[PortDefinition, ...], *, inputs: bool) -> None:
         validate_json_schema(port.value_schema)
         if inputs and port.activation_mode not in INPUT_ACTIVATION_MODES:
             raise ValueError("input port must declare a known activation mode")
+        if inputs and port.connection_policy not in INPUT_CONNECTION_POLICIES:
+            raise ValueError("input port must declare a known connection policy")
         if not inputs and port.activation_mode is not None:
             raise ValueError("output port cannot declare an activation mode")
+        if not inputs and port.connection_policy is not None:
+            raise ValueError("output port cannot declare a connection policy")

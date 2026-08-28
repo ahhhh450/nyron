@@ -154,6 +154,16 @@ class SQLiteStore:
             """
         )
 
+        graph_edge_columns = {
+            row["name"]
+            for row in self.connection.execute("PRAGMA table_info(graph_edges)")
+        }
+        if "role" not in graph_edge_columns:
+            self.connection.execute(
+                "ALTER TABLE graph_edges "
+                "ADD COLUMN role TEXT NOT NULL DEFAULT 'NORMAL'"
+            )
+
     def create_activation_schema(self) -> None:
         """Install the Task-scoped Runtime Activation canonical tables."""
 

@@ -35,7 +35,7 @@ def other_definition(
         module_ref=module_ref,
         version=version,
         input_port_definitions=(
-            PortDefinition("x", {"type": "string"}, "TRIGGER"),
+            PortDefinition("x", {"type": "string"}, "TRIGGER", "SINGLE_SOURCE"),
         ),
         output_port_definitions=(
             PortDefinition("text", {"type": "string"}),
@@ -73,8 +73,8 @@ class TrustedHostBuiltinConcatTest(unittest.TestCase):
         )
         self.assertEqual(
             (
-                PortDefinition("a", {"type": "string"}, "REQUIRED_LATEST"),
-                PortDefinition("b", {"type": "string"}, "TRIGGER"),
+                PortDefinition("a", {"type": "string"}, "REQUIRED_LATEST", "SINGLE_SOURCE"),
+                PortDefinition("b", {"type": "string"}, "TRIGGER", "SINGLE_SOURCE"),
             ),
             definition.input_port_definitions,
         )
@@ -237,8 +237,8 @@ class TrustedHostBuiltinConcatTest(unittest.TestCase):
         canonical = builtin_text_concat.definition()
         conflicting_variants = {
             "input_port_definitions": (
-                PortDefinition("a", {"type": "string"}, "TRIGGER"),
-                PortDefinition("b", {"type": "string"}, "TRIGGER"),
+                PortDefinition("a", {"type": "string"}, "TRIGGER", "SINGLE_SOURCE"),
+                PortDefinition("b", {"type": "string"}, "TRIGGER", "SINGLE_SOURCE"),
             ),
             "output_port_definitions": (
                 PortDefinition("different", {"type": "string"}),

@@ -29,8 +29,8 @@ def concat_definition() -> ModuleDefinition:
         module_ref="builtin.text.concat",
         version="1",
         input_port_definitions=(
-            PortDefinition("a", {"type": "string"}, "REQUIRED_LATEST"),
-            PortDefinition("b", {"type": "string"}, "TRIGGER"),
+            PortDefinition("a", {"type": "string"}, "REQUIRED_LATEST", "SINGLE_SOURCE"),
+            PortDefinition("b", {"type": "string"}, "TRIGGER", "SINGLE_SOURCE"),
         ),
         output_port_definitions=(
             PortDefinition("text", {"type": "string"}),

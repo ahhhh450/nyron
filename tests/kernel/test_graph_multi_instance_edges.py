@@ -24,11 +24,13 @@ GRAPH = "graph:multi@1"
 
 
 def module_x() -> ModuleDefinition:
-    """One TRIGGER (SINGLE_SOURCE-derived) input, one string output."""
+    """One independent SINGLE_SOURCE/TRIGGER input, one string output."""
     return ModuleDefinition(
         module_ref="test.graph.x",
         version="1",
-        input_port_definitions=(PortDefinition("in", {"type": "string"}, "TRIGGER"),),
+        input_port_definitions=(
+            PortDefinition("in", {"type": "string"}, "TRIGGER", "SINGLE_SOURCE"),
+        ),
         output_port_definitions=(PortDefinition("out", {"type": "string"}),),
         config_schema={"type": "object", "properties": {}, "required": [], "additionalProperties": False},
         effect_classes=("PURE",),
@@ -38,12 +40,12 @@ def module_x() -> ModuleDefinition:
 
 
 def module_y() -> ModuleDefinition:
-    """One REQUIRED_LATEST (MULTI_SOURCE-derived) input, one string output."""
+    """One independent MULTI_SOURCE/TRIGGER input, one string output."""
     return ModuleDefinition(
         module_ref="test.graph.y",
         version="1",
         input_port_definitions=(
-            PortDefinition("in", {"type": "string"}, "REQUIRED_LATEST"),
+            PortDefinition("in", {"type": "string"}, "TRIGGER", "MULTI_SOURCE"),
         ),
         output_port_definitions=(PortDefinition("out", {"type": "string"}),),
         config_schema={"type": "object", "properties": {}, "required": [], "additionalProperties": False},
@@ -58,7 +60,9 @@ def module_z() -> ModuleDefinition:
     return ModuleDefinition(
         module_ref="test.graph.z",
         version="1",
-        input_port_definitions=(PortDefinition("in", {"type": "integer"}, "TRIGGER"),),
+        input_port_definitions=(
+            PortDefinition("in", {"type": "integer"}, "TRIGGER", "SINGLE_SOURCE"),
+        ),
         output_port_definitions=(PortDefinition("out", {"type": "integer"}),),
         config_schema={"type": "object", "properties": {}, "required": [], "additionalProperties": False},
         effect_classes=("PURE",),
@@ -229,7 +233,7 @@ class GraphMultiInstanceEdgeTest(unittest.TestCase):
         self.assertEqual("DUPLICATE_EDGE", raised.exception.code)
 
     def test_single_source_cardinality_overflow_fails_closed(self) -> None:
-        # "b".in is TRIGGER (SINGLE_SOURCE-derived): two distinct sources
+        # "b".in is explicitly SINGLE_SOURCE: two distinct sources
         # feeding it is a cardinality violation.
         with self.assertRaises(GraphError) as raised:
             self.graphs.publish(
@@ -242,8 +246,8 @@ class GraphMultiInstanceEdgeTest(unittest.TestCase):
             )
         self.assertEqual("EDGE_CARDINALITY_VIOLATION", raised.exception.code)
 
-    def test_multi_source_latest_mode_tolerates_multiple_edges(self) -> None:
-        # "y".in is REQUIRED_LATEST (MULTI_SOURCE-derived): two sources is legal.
+    def test_multi_source_trigger_tolerates_multiple_edges(self) -> None:
+        # "y".in is MULTI_SOURCE TRIGGER: two sources is frozen-legal.
         published = self.graphs.publish(
             GRAPH,
             (instance("a"), instance("c"), instance("y", module_ref="test.graph.y")),
