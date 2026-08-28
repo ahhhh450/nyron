@@ -35,11 +35,11 @@ The Operator may continue the **same Task ID and Scope** in Work mode. A Chat �
 
 ## Current Controlled-Parallelism Priority
 
-1. `NYRON-T-20260828-170` is the current P0 Product-mainline Task: Claude Track-E Module Assembly Node / Visual Workflow Core Readiness;
-2. `NYRON-T-20260828-168` remains `PAUSED — PRODUCT-VERTICAL-SLICE HOLD`; restored Codex capacity does not by itself authorize resuming it;
-3. `NYRON-T-20260828-169` remains `DEFERRED / NOT STARTED`; resume only when Human Approval Product Node creates the concrete need;
-4. if Task 170 returns `GO_BOUNDED_IMPLEMENTATION`, prefer Codex for the bounded Product Node foundation implementation unless the Development Director has a stronger reason to assign Claude;
-5. any HIGH-risk Product implementation must be followed by an independent exact-SHA review using an independent Claude/Codex session;
+1. `NYRON-T-20260828-171` is the current P0 Product-mainline Task: Codex `NODE FOUNDATION v0.1` bounded Production implementation;
+2. Task 171 owns the bounded Graph multi-instance/Edge publish completion plus Product Node/Workflow persistence/compiler and the pure/mock `Text Input → Mock LLM → Text Output` proof;
+3. after Task 171 delivers an exact Production SHA, reserve an independent Claude session for the mandatory HIGH-risk exact-SHA Review unless the Development Director explicitly chooses another independent Codex-class reviewer;
+4. `NYRON-T-20260828-168` remains `PAUSED — PRODUCT-VERTICAL-SLICE HOLD`; restored Codex capacity does not by itself authorize resuming it;
+5. `NYRON-T-20260828-169` remains `DEFERRED / NOT STARTED`; resume only when Human Approval Product Node creates the concrete need;
 6. lower-level Track A/B/C/D work opens or resumes only when a concrete Product Node requires a missing capability or a true blocker demands it.
 
 ## Parallelism Rule
