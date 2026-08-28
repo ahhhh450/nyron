@@ -7,13 +7,14 @@
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Development Director: `ACTIVE — Global Development Coordination Authority`
 - Coordination Epoch: `3`
-- Coordination Revision: `139`
-- Revision CAS Basis: `Expected Epoch 3 / Expected Revision 138 — MATCHED`; intervening Task-183 acceptance and Task-184 creation commits were coordination-only.
+- Coordination Revision: `140`
+- Revision CAS Basis: `Expected Epoch 3 / Expected Revision 139 — MATCHED`
 - Last Accepted Production Commit: `a48a7e3005943f6a4e65844faaf6b0aeaad7b431`
 - Accepted Product Foundation: `NODE FOUNDATION v0.1 + TRACK-D FOUNDATIONS @ a48a7e3005943f6a4e65844faaf6b0aeaad7b431`
+- Delivered Runtime/Effect Candidate: `103a47324807f01c76990df7b5bca9d3668cb552`
 - Development Gate: `PRODUCT NODE / VISUAL WORKFLOW DEVELOPMENT — OPEN`
-- Current Gate: `LLM PRODUCT NODE SUPPORT — RUNTIME/EFFECT EXECUTION SEAM`
-- Current Mode: `TASK 184 P0 PRODUCTION IMPLEMENTATION / REAL PROVIDER+NETWORK CONSEQUENTIAL DISPATCH CLOSED`
+- Current Gate: `LLM PRODUCT NODE SUPPORT — RUNTIME/EFFECT EXACT-SHA REVIEW`
+- Current Mode: `TASK 185 P0 INDEPENDENT REVIEW / REAL PROVIDER+NETWORK CONSEQUENTIAL DISPATCH CLOSED`
 - Primary Milestone: `USER-FACING PRODUCT NODE VERTICAL SLICES`
 - Current Target: `LLM PRODUCT NODE v0.1 — REAL-PROVIDER-CAPABLE SUPPORT CHAIN`
 - Latest Handoff Pointer: `coordination/handoffs/LATEST.md`
@@ -56,23 +57,7 @@ GraphRevision
 Execution Runtime
 ```
 
-Product Nodes remain user-facing abstractions. Runtime/Graph canonical truth remains owned by existing Runtime/Graph authorities.
-
-Development ordering:
-
-```text
-Product requirement
-      ↓
-Product Node / vertical slice
-      ↓
-identify exact missing system capability
-      ↓
-open smallest support slice
-      ↓
-independent review + acceptance
-      ↓
-return to Product Node
-```
+Product Nodes remain user-facing abstractions. Runtime/Graph/Effect canonical truth remains owned by existing Runtime/Graph/Effect authorities.
 
 ## Current Track Board
 
@@ -81,22 +66,22 @@ return to Product Node
 | `Track A — PWP / Context Backbone` | `STABLE / DOWNSTREAM USABLE` | Product/Runtime admission-context support. |
 | `Track B — Distribution / Module Ecosystem` | `STABLE / DOWNSTREAM USABLE` | Exact Module identity/resolution available; further ecosystem work remains Product-demand driven. |
 | `Track C — Human Interaction / Approval` | `STABLE CORE / SUPPORT DEFERRED` | Suspension/resume and external HumanResponse ingress deferred until concrete Product need. |
-| `Track D — External Interfaces / Workspace Boundary` | `BOUNDED FOUNDATIONS IN ACCEPTED PRODUCT-USABLE LINEAGE / CONSEQUENTIAL PRODUCTION CLOSED` | Provider/Credential/Network foundations are present in the accepted base; Task 184 adds bounded Runtime/Effect support only. |
-| `Track E — Product / Visual Workflow` | `PRIMARY / NODE FOUNDATION ACCEPTED` | LLM Product Node support chain active; Product implementation waits for reviewed support slices. |
+| `Track D — External Interfaces / Workspace Boundary` | `BOUNDED FOUNDATIONS ACCEPTED / RUNTIME-EFFECT CANDIDATE UNDER REVIEW / CONSEQUENTIAL PRODUCTION CLOSED` | Provider/Credential/Network foundations are in accepted lineage; Task 184 added bounded RuntimeContext + MODEL_INVOKE Effect support and awaits Task 185 review. |
+| `Track E — Product / Visual Workflow` | `PRIMARY / NODE FOUNDATION ACCEPTED` | LLM Product Node support chain active; real Product implementation waits for reviewed support slices. |
 
 ## Current Live Task Table
 
 | State | Task | Meaning |
 |---|---|---|
-| `ACTIVE / READY` | `NYRON-T-20260828-184` | Codex HIGH-risk bounded RuntimeContext + MODEL_INVOKE Effect execution-seam implementation from accepted base `a48a7e3...`; owns Task-180 F-002 only. |
-| `COMPLETED / PASS` | `NYRON-T-20260828-183` | Independent exact-SHA Review PASS of Task-181 convergence; Findings NONE. |
+| `ACTIVE / READY` | `NYRON-T-20260828-185` | Claude independent exact-SHA Review of Task-184 delivery `103a47324807f01c76990df7b5bca9d3668cb552`. |
+| `DELIVERED / PENDING INDEPENDENT REVIEW` | `NYRON-T-20260828-184` | Codex bounded RuntimeContext + MODEL_INVOKE Effect execution-seam SUCCESS at `103a47324807f01c76990df7b5bca9d3668cb552`; claims Task-180 F-002 closure. |
+| `COMPLETED / PASS` | `NYRON-T-20260828-183` | Independent exact-SHA Review PASS of Product + Track-D convergence. |
 | `ACCEPTED` | `NYRON-T-20260828-181` | Product + Track-D convergence accepted at `a48a7e3005943f6a4e65844faaf6b0aeaad7b431`. |
 | `COMPLETED / GO_BOUNDED_MODEL_INVOKE_EFFECT_IMPLEMENTATION` | `NYRON-T-20260828-182` | Frozen Effect-contract verification; Task-180 F-005 CLOSED. |
 | `COMPLETED / GO_BOUNDED_SUPPORT_TASKS` | `NYRON-T-20260828-180` | LLM Product Node readiness/gap analysis. |
-| `ACCEPTED` | `NYRON-T-20260828-178` | Node Foundation v0.1 original Product lineage. |
 | `DEFERRED / NOT STARTED` | `NYRON-T-20260828-169` | Human suspension/resume + response ingress; resume only for concrete Product need. |
 
-## Accepted Product-Usable Cross-Track Base
+## Accepted Product-Usable Base
 
 Exact accepted Production SHA:
 
@@ -105,49 +90,74 @@ Exact accepted Production SHA:
 Acceptance evidence:
 
 - Task 181 convergence: `SUCCESS`.
-- Exact parents:
-  - Product/Node Foundation: `1a741c5c7370f50f9efbc3087c67359cebdd8b27`.
-  - Provider+Credential+Network foundation: `276432c1706d6f41900ef6d5cebcf5fc1e36cf5f`.
-- Task 183 independent exact-SHA Review: `PASS`, Findings `NONE`.
-- Reviewer independently recomputed the merge tree and matched the reviewed tree exactly.
-- Combined on-disk SQLite coexistence/restart reproduction: PASS.
+- Task 183 independent Review: `PASS`, Findings `NONE`.
+- Combined SQLite coexistence/restart: PASS.
 - Full regression independently reproduced: `626 passed, 2 skipped, 393 subtests passed`.
 - Product persisted/restarted `Text Input → Mock LLM → Text Output`: PASS.
-- `ResolvedCredentialHandle` remains host-side.
-- No live RuntimeContext/MODEL_INVOKE Effect path was introduced by the merge.
 - Director Acceptance: `coordination/checkpoints/NYRON-T-20260828-183-DIRECTOR-ACCEPTANCE.md`.
 
-## Task 182 — Effect Contract Verification
+## Task 184 — RuntimeContext + MODEL_INVOKE Effect Candidate
 
-Principal Disposition:
+Exact base:
 
-`GO_BOUNDED_MODEL_INVOKE_EFFECT_IMPLEMENTATION`
+`a48a7e3005943f6a4e65844faaf6b0aeaad7b431`
 
-Frozen-contract conclusions:
+Delivery SHA:
 
-- Effect authority is a generic multi-class mechanism.
-- `MODEL_INVOKE` belongs to the frozen initial vocabulary.
-- Current single filesystem `EffectAuthority.EFFECT_CLASS` is a narrow implementation limitation, not an architecture limitation.
-- No Architecture Amendment is required for bounded MODEL_INVOKE Effect support.
-- Effect Authority remains sole canonical owner of `EffectOperation`.
-- Provider adapters do not own Attempt, CapabilityGrant, ResourceLease, EffectOperation or Accounting truth.
-- PREPARED / fencing / historical-outcome / UNKNOWN / FENCED semantics remain mandatory.
-- `FENCED != retry clearance` remains unchanged.
-- Every Effect class must define or deterministically derive its own machine-checkable conflict scope.
+`103a47324807f01c76990df7b5bca9d3668cb552`
 
-## Task 184 — RuntimeContext + MODEL_INVOKE Effect Support
+Result:
 
-- Exact base: `a48a7e3005943f6a4e65844faaf6b0aeaad7b431`.
-- Branch: `feature/NYRON-T-20260828-184-runtime-model-invoke-effect`.
-- Type: `HIGH-RISK PRODUCTION IMPLEMENTATION`.
-- Scope: make bounded RuntimeContext reachable for legitimately effect-capable trusted Modules and add the smallest frozen-contract-compliant MODEL_INVOKE Effect path.
-- Owns: `NYRON-T-20260828-180-F-002`.
-- Must preserve PURE Module behavior and prevent ambient authority.
-- Must keep `ResolvedCredentialHandle`, credential values, StateStore/SQLite, raw OS/network objects and real provider clients outside Module/Product low-trust code.
-- No real HTTP/socket/TLS/SDK dispatch.
-- No real Provider/Network Production opening.
-- No retry/streaming/tool-calling/Product LLM Node implementation.
-- Mandatory independent exact-SHA Review after delivery.
+`SUCCESS`
+
+Implementation claims:
+
+- PURE Modules preserve `runtime_context=None`.
+- Effect-capable Modules receive bounded RuntimeContext only from canonical current authority.
+- Module/Product code does not receive StateStore, SQLite, raw CapabilityGrant/ResourceLease authority objects, credential values, `ResolvedCredentialHandle`, socket/client/session objects or raw OS/network authority.
+- Effect Authority remains sole owner of EffectOperation canonical truth.
+- MODEL_INVOKE PREPARED is durable before dispatch admission.
+- Attempt/fencing and exact CapabilityGrant scope are revalidated transactionally.
+- MODEL_INVOKE uses bounded local simulation only; no real Provider/Network transport exists.
+- Identical replay is idempotent; changed identity conflicts fail closed.
+- MODEL_INVOKE uses deterministic provider/model/caller conflict scope.
+- Crash after ACTIVE without completion evidence recovers UNKNOWN.
+- FENCED is not retry/redispatch clearance.
+- Existing filesystem Effect behavior remains green.
+- Full suite: `632 passed, 2 skipped, 393 subtests passed`.
+- `git diff --check`: PASS.
+- Findings: NONE.
+- Blockers: NONE.
+
+Task-180 F-002 is only **claimed closed** until Task 185 independently reviews this exact SHA and Director accepts it.
+
+## Task 185 — Independent Runtime/Effect Review Gate
+
+Review target:
+
+`103a47324807f01c76990df7b5bca9d3668cb552`
+
+Reviewer:
+
+`Claude — Independent Runtime/Effect Review Session`
+
+Review must independently challenge:
+
+- PURE vs effect-capable RuntimeContext authority separation;
+- no ambient/raw authority leakage;
+- stale/revoked/fabricated authority fail-closed behavior;
+- PREPARED-before-dispatch and ACTIVE sequencing;
+- exact MODEL_INVOKE provider/model scope;
+- optional ResourceLease contract;
+- deterministic per-class conflict scope;
+- replay vs conflicting replay;
+- UNKNOWN/FENCED/historical-outcome semantics;
+- no retry-clearance inference;
+- existing filesystem Effect regression;
+- no real Provider/Network transport opening;
+- persistence/restart and full regression.
+
+If PASS, `NYRON-T-20260828-180-F-002` may be closed and `103a47324807f01c76990df7b5bca9d3668cb552` may enter Director acceptance as the next Product-usable support base.
 
 ## Task 180 Findings
 
@@ -156,8 +166,8 @@ Frozen-contract conclusions:
 
 ### `NYRON-T-20260828-180-F-002`
 - Type: `ARCHITECTURE / NON_BLOCKING`.
-- State: `OPEN / OWNED BY TASK 184`.
-- Issue: live RuntimeContext/host-mediated Module effect path is currently unreachable.
+- State: `PENDING TASK 185 REVIEW / DIRECTOR ACCEPTANCE`.
+- Task 184 delivered the bounded RuntimeContext + MODEL_INVOKE Effect candidate.
 
 ### `NYRON-T-20260828-180-F-003`
 - Type: `SECURITY / NON_BLOCKING`, carries Task-136 F01.
@@ -176,10 +186,10 @@ Frozen-contract conclusions:
 
 1. Product + Track-D convergence — `ACCEPTED @ a48a7e3...`.
 2. Effect contract verification — `COMPLETED / GO`.
-3. Task 184 bounded RuntimeContext + MODEL_INVOKE Effect implementation — `ACTIVE`.
-4. Independent exact-SHA Review of Task 184 — create only after exact delivery SHA exists.
-5. Real Provider transport + real Network dispatch + explicit credential backend — only with explicit Director gate-opening authorization and Task-136 security closure.
-6. Independent adversarial security Review.
+3. RuntimeContext + bounded MODEL_INVOKE Effect — `DELIVERED @ 103a4732...`.
+4. Task 185 independent exact-SHA Review — `ACTIVE`.
+5. On Task 185 PASS + Director Acceptance: real Provider transport + real Network dispatch + explicit credential backend may be scoped only with separate explicit Director gate-opening authorization and Task-136 security closure.
+6. Independent adversarial security Review of any real consequential dispatch slice.
 7. Real single-turn LLM Product Node implementation.
 8. Independent Product Review.
 9. Persisted/restarted real-provider E2E proof.
@@ -222,7 +232,7 @@ Task-136 status remains:
 
 ## Open Non-Blocking Debt / Standing Interlocks
 
-- `NYRON-T-20260828-180-F-002` — RuntimeContext/Effect execution seam; Task 184.
+- `NYRON-T-20260828-180-F-002` — pending Task 185 Review/acceptance.
 - `NYRON-T-20260828-180-F-003` / Task-136 F01 — raw-network bypass/isolation posture.
 - `NYRON-T-20260828-180-F-004` — Network Effect-class validation gap before real dispatch.
 - `NYRON-T-20260828-173-F-001` — real-connection-origin reuse evidence absent until real transport exists.
@@ -237,16 +247,16 @@ Task-136 status remains:
 
 ## Revision Decisions
 
-### Revision 138 / Epoch 3
-- Task 181 delivered its integrated candidate.
-- Task 182 completed Effect contract verification with `GO_BOUNDED_MODEL_INVOKE_EFFECT_IMPLEMENTATION`.
-- Task 183 opened as mandatory independent Review.
-
 ### Revision 139 / Epoch 3
-- CAS against `Epoch 3 / Revision 138` succeeded.
-- Task 183 completed `PASS` with Findings `NONE` against exact SHA `a48a7e3005943f6a4e65844faaf6b0aeaad7b431`.
-- Development Director accepts `a48a7e3005943f6a4e65844faaf6b0aeaad7b431` as the new Product-usable Production base and closes Task-180 F-001.
-- Task 184 opened as the next bounded support slice for Task-180 F-002 and frozen-contract-permitted MODEL_INVOKE Effect support.
+- Task 183 PASS accepted `a48a7e3005943f6a4e65844faaf6b0aeaad7b431` as Product-usable base.
+- Task 184 opened for bounded RuntimeContext + MODEL_INVOKE Effect support.
+
+### Revision 140 / Epoch 3
+- CAS against `Epoch 3 / Revision 139` succeeded.
+- Task 184 delivered `SUCCESS` at exact SHA `103a47324807f01c76990df7b5bca9d3668cb552` with full suite `632 passed, 2 skipped, 393 subtests passed` and no reported Findings/Blockers.
+- Task 185 opened as mandatory independent exact-SHA Review of Task 184.
+- Last Accepted Production Commit remains `a48a7e3005943f6a4e65844faaf6b0aeaad7b431` until Task 185 PASS and Director Acceptance.
+- Task-180 F-002 remains pending review; F-003/F-004 remain open; F-005 remains closed.
 - Real Provider/Network consequential Production remains CLOSED; Task-136 F01/F02/F03 states are unchanged.
 
 Historical decisions remain available in Git history.
