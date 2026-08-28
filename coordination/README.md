@@ -10,9 +10,13 @@
 
 ### Orchestrator
 1. `STATUS.md`
-2. `WORKFLOW.md`
-3. 当前 Task / Result / Checkpoint
-4. 必要的设计与代码
+2. `AGENT_AVAILABILITY.md`
+3. `WORKFLOW.md`
+4. 当前 Task / Result / Checkpoint
+5. 如为新窗口接管，读取 `handoffs/LATEST.md` 作为恢复辅助
+6. 必要的设计与代码
+
+> Handoff 只是恢复辅助，不是 Repository Truth。Handoff 与当前 STATUS / Task / Result / Checkpoint / Frozen Architecture 冲突时，以当前 Repository 权威状态为准。
 
 ### Executor
 1. 根目录 `AGENTS.md`
@@ -26,10 +30,14 @@
 coordination/
 ├─ README.md
 ├─ STATUS.md
+├─ AGENT_AVAILABILITY.md
 ├─ WORKFLOW.md
 ├─ TASK_PROTOCOL.md
 ├─ REVIEW_PROTOCOL.md
 ├─ OUTPUT_FORMAT.md
+├─ handoffs/
+│  ├─ LATEST.md
+│  └─ <dated handoff>.md
 ├─ templates/
 │  ├─ TASK_TEMPLATE.md
 │  ├─ RESULT_TEMPLATE.md
