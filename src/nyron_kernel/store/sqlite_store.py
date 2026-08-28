@@ -1085,6 +1085,149 @@ class SQLiteStore:
             """
         )
 
+    def create_provider_schema(self) -> None:
+        """Install immutable unary Provider identity/profile/evidence records."""
+
+        self.create_effect_schema()
+        self.create_budget_schema()
+        self.connection.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS provider_profile_revisions (
+                profile_revision_ref TEXT PRIMARY KEY,
+                profile_ref TEXT NOT NULL,
+                adapter_ref TEXT NOT NULL,
+                provider_scope_ref TEXT NOT NULL,
+                account_scope_ref TEXT NOT NULL,
+                endpoint_scope_ref TEXT NOT NULL,
+                model_scope_ref TEXT NOT NULL,
+                usage_source_namespace TEXT NOT NULL,
+                operation_class TEXT NOT NULL CHECK (operation_class = 'MODEL_INVOKE'),
+                idempotent_same_key INTEGER NOT NULL CHECK (idempotent_same_key IN (0,1)),
+                authoritative_lookup INTEGER NOT NULL CHECK (authoritative_lookup IN (0,1)),
+                lookup_not_found_proves_absence INTEGER NOT NULL CHECK (lookup_not_found_proves_absence IN (0,1)),
+                cancellation_request INTEGER NOT NULL CHECK (cancellation_request IN (0,1)),
+                terminal_cancel_confirmation INTEGER NOT NULL CHECK (terminal_cancel_confirmation IN (0,1)),
+                external_identity_recovery INTEGER NOT NULL CHECK (external_identity_recovery IN (0,1)),
+                continuation_resume INTEGER NOT NULL CHECK (continuation_resume = 0),
+                streaming INTEGER NOT NULL CHECK (streaming = 0),
+                UNIQUE (profile_ref, profile_revision_ref)
+            );
+            CREATE TRIGGER IF NOT EXISTS provider_profile_revisions_immutable
+            BEFORE UPDATE ON provider_profile_revisions BEGIN
+                SELECT RAISE(ABORT, 'provider profile revision is immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS provider_profile_revisions_no_delete
+            BEFORE DELETE ON provider_profile_revisions BEGIN
+                SELECT RAISE(ABORT, 'provider profile revision is immutable');
+            END;
+
+            CREATE TABLE IF NOT EXISTS provider_operations (
+                operation_ref TEXT PRIMARY KEY,
+                semantic_request_hash TEXT NOT NULL,
+                profile_revision_ref TEXT NOT NULL,
+                idempotency_key TEXT,
+                dispatch_admission_ref TEXT NOT NULL,
+                run_ref TEXT NOT NULL,
+                attempt_seq INTEGER NOT NULL CHECK (attempt_seq > 0),
+                capability_grant_ref TEXT NOT NULL,
+                resource_lease_ref TEXT NOT NULL,
+                reservation_ref TEXT NOT NULL,
+                usage_source_namespace TEXT NOT NULL,
+                external_request_id TEXT,
+                created_at INTEGER NOT NULL,
+                UNIQUE (profile_revision_ref, usage_source_namespace, idempotency_key),
+                FOREIGN KEY (profile_revision_ref) REFERENCES provider_profile_revisions(profile_revision_ref),
+                FOREIGN KEY (operation_ref) REFERENCES effect_operations(operation_ref),
+                FOREIGN KEY (reservation_ref) REFERENCES budget_reservations(reservation_ref)
+            );
+            CREATE TRIGGER IF NOT EXISTS provider_operations_immutable
+            BEFORE UPDATE ON provider_operations
+            WHEN NEW.operation_ref != OLD.operation_ref
+              OR NEW.semantic_request_hash != OLD.semantic_request_hash
+              OR NEW.profile_revision_ref != OLD.profile_revision_ref
+              OR NEW.idempotency_key IS NOT OLD.idempotency_key
+              OR NEW.dispatch_admission_ref != OLD.dispatch_admission_ref
+              OR NEW.run_ref != OLD.run_ref OR NEW.attempt_seq != OLD.attempt_seq
+              OR NEW.capability_grant_ref != OLD.capability_grant_ref
+              OR NEW.resource_lease_ref != OLD.resource_lease_ref
+              OR NEW.reservation_ref != OLD.reservation_ref
+              OR NEW.usage_source_namespace != OLD.usage_source_namespace
+              OR NEW.created_at != OLD.created_at
+              OR (OLD.external_request_id IS NOT NULL AND NEW.external_request_id IS NOT OLD.external_request_id)
+            BEGIN SELECT RAISE(ABORT, 'provider operation identity is immutable'); END;
+            CREATE TRIGGER IF NOT EXISTS provider_operations_no_delete
+            BEFORE DELETE ON provider_operations BEGIN
+                SELECT RAISE(ABORT, 'provider operation is immutable');
+            END;
+
+            CREATE TABLE IF NOT EXISTS provider_evidence (
+                evidence_ref TEXT PRIMARY KEY,
+                operation_ref TEXT NOT NULL,
+                evidence_kind TEXT NOT NULL CHECK (evidence_kind IN (
+                    'ACKNOWLEDGEMENT','LOOKUP','CANCEL_REQUEST','CANCEL_CONFIRMATION'
+                )),
+                evidence_semantics TEXT NOT NULL,
+                authoritative INTEGER NOT NULL CHECK (authoritative IN (0,1)),
+                historical_outcome TEXT NOT NULL CHECK (historical_outcome IN ('UNKNOWN','PARTIAL','KNOWN')),
+                recorded_at INTEGER NOT NULL,
+                FOREIGN KEY (operation_ref) REFERENCES provider_operations(operation_ref)
+            );
+            CREATE TRIGGER IF NOT EXISTS provider_evidence_immutable
+            BEFORE UPDATE ON provider_evidence BEGIN
+                SELECT RAISE(ABORT, 'provider evidence is immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS provider_evidence_no_delete
+            BEFORE DELETE ON provider_evidence BEGIN
+                SELECT RAISE(ABORT, 'provider evidence is immutable');
+            END;
+            """
+        )
+
+    def create_provider_reconciliation_schema(self) -> None:
+        """Install Accounting-owned Provider ambiguity and resolution evidence."""
+
+        self.create_provider_schema()
+        self.create_budget_settlement_schema()
+        self.connection.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS provider_accounting_reconciliations (
+                reconciliation_ref TEXT PRIMARY KEY,
+                reservation_ref TEXT NOT NULL UNIQUE,
+                operation_ref TEXT NOT NULL,
+                provider_usage_source_ref TEXT NOT NULL,
+                ambiguity_outcome TEXT NOT NULL CHECK (ambiguity_outcome IN ('UNKNOWN','PARTIAL')),
+                evidence_ref TEXT NOT NULL,
+                caused_by_ref TEXT NOT NULL,
+                entered_at INTEGER NOT NULL,
+                FOREIGN KEY (reservation_ref) REFERENCES budget_reservations(reservation_ref)
+            );
+            CREATE TRIGGER IF NOT EXISTS provider_accounting_reconciliations_immutable
+            BEFORE UPDATE ON provider_accounting_reconciliations BEGIN
+                SELECT RAISE(ABORT, 'provider reconciliation is immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS provider_accounting_reconciliations_no_delete
+            BEFORE DELETE ON provider_accounting_reconciliations BEGIN
+                SELECT RAISE(ABORT, 'provider reconciliation is immutable');
+            END;
+            CREATE TABLE IF NOT EXISTS provider_accounting_reconciliation_resolutions (
+                reconciliation_ref TEXT PRIMARY KEY,
+                settlement_ref TEXT NOT NULL UNIQUE,
+                resulting_state TEXT NOT NULL CHECK (resulting_state IN ('COMMITTED','RELEASED')),
+                resolved_at INTEGER NOT NULL,
+                FOREIGN KEY (reconciliation_ref) REFERENCES provider_accounting_reconciliations(reconciliation_ref),
+                FOREIGN KEY (settlement_ref) REFERENCES budget_settlements(settlement_ref)
+            );
+            CREATE TRIGGER IF NOT EXISTS provider_accounting_reconciliation_resolutions_immutable
+            BEFORE UPDATE ON provider_accounting_reconciliation_resolutions BEGIN
+                SELECT RAISE(ABORT, 'provider reconciliation resolution is immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS provider_accounting_reconciliation_resolutions_no_delete
+            BEFORE DELETE ON provider_accounting_reconciliation_resolutions BEGIN
+                SELECT RAISE(ABORT, 'provider reconciliation resolution is immutable');
+            END;
+            """
+        )
+
     def create_pwp_schema(self) -> None:
         """Install only PWP-owned identity and immutable revision tables."""
 

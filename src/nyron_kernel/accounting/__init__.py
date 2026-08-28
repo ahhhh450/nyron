@@ -19,7 +19,10 @@ from .scope_resolver import (
     compute_ancestry_hash,
 )
 from .settlement_authority import (
+    AccountingReconciliationAuthority,
     BudgetSettlement,
+    ProviderReconciliation,
+    ProviderReconciliationRequest,
     SettlementAuthority,
     SettlementAuthorityError,
     SettlementRequest,
@@ -34,6 +37,7 @@ from .usage_ledger import (
 )
 
 __all__ = [
+    "AccountingReconciliationAuthority",
     "AccountingScope",
     "AccountingScopeError",
     "AccountingScopeResolution",
@@ -46,6 +50,8 @@ __all__ = [
     "BudgetReservationRequest",
     "BudgetRule",
     "BudgetSettlement",
+    "ProviderReconciliation",
+    "ProviderReconciliationRequest",
     "SettlementAuthority",
     "SettlementAuthorityError",
     "SettlementRequest",

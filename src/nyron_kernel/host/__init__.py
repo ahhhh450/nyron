@@ -15,6 +15,16 @@ from .trusted_host import (
     TrustedHostError,
     TrustedModuleHost,
 )
+from .provider import (
+    ProviderDispatchAdmission,
+    ProviderEvidence,
+    ProviderFoundationError,
+    ProviderOperation,
+    ProviderOperationRequest,
+    ProviderProfileRevision,
+    ProviderRepository,
+    TrustedUnaryProviderBroker,
+)
 
 _RUNTIME_EXPORTS = frozenset(
     {
@@ -42,6 +52,14 @@ def __getattr__(name: str):
 
 
 __all__ = [
+    "ProviderDispatchAdmission",
+    "ProviderEvidence",
+    "ProviderFoundationError",
+    "ProviderOperation",
+    "ProviderOperationRequest",
+    "ProviderProfileRevision",
+    "ProviderRepository",
+    "TrustedUnaryProviderBroker",
     "BoundaryEnforcementClaim",
     "Completed",
     "CredentialExposureClaim",

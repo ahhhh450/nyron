@@ -43,6 +43,118 @@ class BudgetSettlement:
     caused_by_ref: str
 
 
+@dataclass(frozen=True)
+class ProviderReconciliationRequest:
+    reconciliation_ref: str
+    reservation_ref: str
+    operation_ref: str
+    provider_usage_source_ref: str
+    ambiguity_outcome: str
+    evidence_ref: str
+    caused_by_ref: str
+
+
+@dataclass(frozen=True)
+class ProviderReconciliation:
+    reconciliation_ref: str
+    reservation_ref: str
+    operation_ref: str
+    provider_usage_source_ref: str
+    ambiguity_outcome: str
+    evidence_ref: str
+    caused_by_ref: str
+    entered_at: int
+
+
+class AccountingReconciliationAuthority:
+    """Accounting-owned entry into RECONCILING; exposure remains reserved."""
+
+    def __init__(self, store: SQLiteStore, clock: Callable[[], int]) -> None:
+        self._store = store
+        self._clock = clock
+        store.create_provider_reconciliation_schema()
+
+    def enter_provider_ambiguity(
+        self, request: ProviderReconciliationRequest
+    ) -> ProviderReconciliation:
+        self._validate(request)
+        existing = self.resolve(request.reconciliation_ref)
+        if existing is not None:
+            if tuple(existing.__dict__.values())[:-1] == tuple(request.__dict__.values()):
+                return existing
+            raise SettlementAuthorityError("RECONCILIATION_IDENTITY_CONFLICT")
+        now = self._now()
+        try:
+            with self._store.transaction() as connection:
+                provider_operation = connection.execute(
+                    "SELECT reservation_ref, usage_source_namespace FROM provider_operations WHERE operation_ref=?",
+                    (request.operation_ref,),
+                ).fetchone()
+                if provider_operation is None or (
+                    provider_operation["reservation_ref"],
+                    provider_operation["usage_source_namespace"],
+                ) != (request.reservation_ref, request.provider_usage_source_ref):
+                    raise SettlementAuthorityError(
+                        "RECONCILIATION_PROVIDER_BINDING_INVALID"
+                    )
+                provider_evidence = connection.execute(
+                    "SELECT operation_ref, historical_outcome FROM provider_evidence WHERE evidence_ref=?",
+                    (request.evidence_ref,),
+                ).fetchone()
+                if provider_evidence is None or (
+                    provider_evidence["operation_ref"],
+                    provider_evidence["historical_outcome"],
+                ) != (request.operation_ref, request.ambiguity_outcome):
+                    raise SettlementAuthorityError(
+                        "RECONCILIATION_PROVIDER_EVIDENCE_INVALID"
+                    )
+                reservation = connection.execute(
+                    "SELECT state FROM budget_reservations WHERE reservation_ref=?",
+                    (request.reservation_ref,),
+                ).fetchone()
+                if reservation is None:
+                    raise SettlementAuthorityError("RECONCILIATION_RESERVATION_UNRESOLVED")
+                if reservation["state"] not in ("RESERVED", "RECONCILING"):
+                    raise SettlementAuthorityError(
+                        "RECONCILIATION_RESERVATION_INVALID", state=reservation["state"]
+                    )
+                connection.execute(
+                    "INSERT INTO provider_accounting_reconciliations VALUES (?,?,?,?,?,?,?,?)",
+                    tuple(request.__dict__.values()) + (now,),
+                )
+                connection.execute(
+                    "UPDATE budget_reservations SET state='RECONCILING', updated_at=? WHERE reservation_ref=?",
+                    (now, request.reservation_ref),
+                )
+        except sqlite3.IntegrityError as error:
+            raise SettlementAuthorityError("RECONCILIATION_IDENTITY_CONFLICT") from error
+        result = self.resolve(request.reconciliation_ref)
+        assert result is not None
+        return result
+
+    def resolve(self, reconciliation_ref: str) -> ProviderReconciliation | None:
+        row = self._store.connection.execute(
+            "SELECT * FROM provider_accounting_reconciliations WHERE reconciliation_ref=?",
+            (reconciliation_ref,),
+        ).fetchone()
+        return ProviderReconciliation(**dict(row)) if row else None
+
+    def _now(self) -> int:
+        value = self._clock()
+        if type(value) is not int:
+            raise SettlementAuthorityError("RECONCILIATION_CLOCK_INVALID")
+        return value
+
+    @staticmethod
+    def _validate(request: ProviderReconciliationRequest) -> None:
+        if not isinstance(request, ProviderReconciliationRequest):
+            raise SettlementAuthorityError("RECONCILIATION_REQUEST_INVALID")
+        if any(not isinstance(value, str) or not value for value in request.__dict__.values()):
+            raise SettlementAuthorityError("RECONCILIATION_REQUEST_INVALID")
+        if request.ambiguity_outcome not in ("UNKNOWN", "PARTIAL"):
+            raise SettlementAuthorityError("RECONCILIATION_OUTCOME_INVALID")
+
+
 class SettlementAuthority:
     """Atomically convert reserved exposure to known committed exposure."""
 
@@ -80,7 +192,7 @@ class SettlementAuthority:
                         "SETTLEMENT_RESERVATION_UNRESOLVED",
                         reservation_ref=request.reservation_ref,
                     )
-                if reservation["state"] != "RESERVED":
+                if reservation["state"] not in ("RESERVED", "RECONCILING"):
                     raise SettlementAuthorityError(
                         "SETTLEMENT_RESERVATION_NOT_RESERVED",
                         reservation_ref=request.reservation_ref,
@@ -102,6 +214,26 @@ class SettlementAuthority:
                         "SETTLEMENT_EVIDENCE_REQUIRED",
                         reservation_ref=request.reservation_ref,
                     )
+
+                reconciliation = None
+                if reservation["state"] == "RECONCILING":
+                    reconciliation = connection.execute(
+                        "SELECT * FROM provider_accounting_reconciliations WHERE reservation_ref=?",
+                        (request.reservation_ref,),
+                    ).fetchone()
+                    if reconciliation is None:
+                        raise SettlementAuthorityError(
+                            "SETTLEMENT_RECONCILIATION_EVIDENCE_REQUIRED"
+                        )
+                    if any(
+                        row["source_authority_ref"]
+                        != reconciliation["provider_usage_source_ref"]
+                        or row["operation_ref"] != reconciliation["operation_ref"]
+                        for row in usage_rows
+                    ):
+                        raise SettlementAuthorityError(
+                            "SETTLEMENT_PROVIDER_USAGE_BINDING_CONFLICT"
+                        )
 
                 actual = self._actual_dimensions(
                     reservation,
@@ -211,6 +343,17 @@ class SettlementAuthority:
                         request.caused_by_ref,
                     ),
                 )
+                if reservation["state"] == "RECONCILING":
+                    assert reconciliation is not None
+                    connection.execute(
+                        "INSERT INTO provider_accounting_reconciliation_resolutions VALUES (?,?,?,?)",
+                        (
+                            reconciliation["reconciliation_ref"],
+                            settlement_ref,
+                            resulting_state,
+                            now,
+                        ),
+                    )
         except sqlite3.IntegrityError as error:
             existing = self._load_by_request_ref(request.request_ref)
             if existing is not None:
