@@ -4,58 +4,88 @@ Status: `ACTIVE OPERATIONAL COORDINATION STATE`
 Authority: `Development Director / Global Development Coordination Authority`
 Date: `2026-08-28`
 
-This file records current operational availability only. It does not define permanent model capability and does not amend architecture.
+This file records current operational availability and routing only. It does not define permanent model capability and does not amend frozen Product/Runtime architecture.
 
 ## Current Availability
 
 | Agent | Availability | Default Use While State Applies |
 |---|---|---|
-| `Claude` | `AVAILABLE — OPERATOR-CONFIRMED RESTORED / HIGH-VALUE PRIORITY` | Reserve primarily for highest-value complex architecture/core implementation and adversarial high-risk review/re-review. Do not spend Claude capacity on routine mechanical work when Codex or DeepSeek is sufficient. |
-| `Codex` | `AVAILABLE — FULL WEEKLY WINDOW / CONTROLLED PARALLELISM` | Weekly quota has been operator-confirmed reset. May be used for high-risk review, core implementation, blocking fixes, integration/regression, and selected bounded next-slice work. Do not saturate all lanes merely because capacity exists. |
-| `DeepSeek` | `AVAILABLE` | Preferred lane for bounded non-production contract tracing, low-risk implementation, localization work, mechanical/schema consistency, regression and targeted verification where risk permits. DeepSeek may provide supplementary/pre-review evidence for high-risk work, but does not by itself satisfy final high-risk acceptance review where `REVIEW_PROTOCOL.md` requires Codex/Claude-class review. |
-| `GPT / Web GPT` | `AVAILABLE FOR ORCHESTRATION` | Development Director / Track coordination; not default production implementation or substitute high-risk final reviewer. |
+| `Claude` | `AVAILABLE — ACTIVE PRIMARY LANE` | May perform complex/core Production implementation, architecture/readiness, blocking fixes, integration, regression, exact-SHA review and re-review. No fixed "review-only" role. |
+| `Codex` | `TEMPORARILY RATE-LIMITED — OPERATOR-REPORTED RESPONSE CAPACITY EXPECTED TO RETURN IN ~1 HOUR` | When available, may perform the same classes of core implementation and independent review work as Claude. Do not hold an immediately executable critical task solely to wait for Codex if Claude is available and suitable. |
+| `DeepSeek` | `AVAILABLE` | Preferred for simple/mechanical/low-risk implementation, schema consistency, test/regression work, bounded tracing, localization and targeted verification. May provide supplementary review evidence; use Claude/Codex-class review where the Task/risk requires it. |
+| `GPT / Web GPT` | `AVAILABLE FOR ORCHESTRATION` | Development Director / Track coordination; not default Production implementation or substitute final reviewer. |
 
-## Mandatory Routing Rule
+## Role-Neutral Claude / Codex Rule
 
-With Claude restored and Codex in a fresh weekly window:
+Claude and Codex are both development and review agents. Do **not** encode a permanent split such as:
 
-- controlled parallelism is authorized where dependencies and write surfaces are disjoint;
-- high-risk `Implementation Agent != Independent Reviewer` remains mandatory;
-- prefer Claude for highest-value adversarial review, complex cross-owner/core work, or cases where architectural judgment materially improves confidence;
-- use Codex for core implementation, exact-SHA review, integration/regression, replay/recovery/persistence correctness, and bounded blocking fixes;
-- DeepSeek remains preferred for Language/Localization and other low-risk/mechanical work;
-- avoid filling every available lane with speculative work; each concurrent lane must have a clear dependency/write-surface reason;
-- architecture/security/Owner-boundary/stale/exact-SHA/independent-review requirements are unchanged.
+```text
+Codex = implementation
+Claude = review
+```
 
-## Execution Mode Failover
+or the reverse.
 
-Codex assignments may begin in Chat mode. If a Codex session encounters tool execution, repository-write, workspace, or environment errors and there is no durable Task-scoped technical/architecture blocker evidence, treat that signal first as an execution-mode failure rather than a Product blocker.
+Assignment is chosen dynamically from:
 
-The Operator may continue the **same Task ID and Scope** in Work mode. A Chat → Work mode switch does not create a new Task, does not reset the required base/SHA, and does not waive Result/checkpoint/review requirements. Only durable Repository evidence may establish a substantive blocker.
+- current availability / quota;
+- task complexity and model suitability;
+- dependency readiness;
+- mutable write-surface isolation;
+- review independence;
+- integration/convergence cost.
 
-## Current Controlled-Parallelism Priority
+A model may implement one Task and review another Task. A separate independent session of the same model may also review another session's delivery when it did not participate in that implementation and the Review Task does not explicitly require cross-model independence.
 
-1. `NYRON-T-20260828-171` is the current P0 Product-mainline Task: Codex `NODE FOUNDATION v0.1` bounded Production implementation;
-2. Task 171 owns the bounded Graph multi-instance/Edge publish completion plus Product Node/Workflow persistence/compiler and the pure/mock `Text Input → Mock LLM → Text Output` proof;
-3. after Task 171 delivers an exact Production SHA, reserve an independent Claude session for the mandatory HIGH-risk exact-SHA Review unless the Development Director explicitly chooses another independent Codex-class reviewer;
-4. `NYRON-T-20260828-168` remains `PAUSED — PRODUCT-VERTICAL-SLICE HOLD`; restored Codex capacity does not by itself authorize resuming it;
-5. `NYRON-T-20260828-169` remains `DEFERRED / NOT STARTED`; resume only when Human Approval Product Node creates the concrete need;
-6. lower-level Track A/B/C/D work opens or resumes only when a concrete Product Node requires a missing capability or a true blocker demands it.
+## Review Independence Identity
 
-## Parallelism Rule
+For coordination purposes, `Implementation Agent != Independent Reviewer` means the **implementing execution session/identity must differ from the reviewing execution session/identity**. It does not by itself require a different model family.
 
-A fresh quota window permits multiple lanes, but concurrency remains dependency-driven:
+Allowed examples, subject to the Task's own stricter requirements:
 
-- `Review lane` may run alongside disjoint low-risk Product-support work;
-- `Implementation lane` may run alongside review only when it does not mutate the exact SHA under review and has a disjoint write surface;
-- final integration/convergence must wait for all required dependency reviews whose content is intended to be included;
-- avoid simultaneous high-risk edits to shared persistence/authority surfaces unless separately isolated and integration order is explicit;
-- do not create speculative work merely to occupy available Agent capacity.
+```text
+Claude session A implements → Claude session B independently reviews
+Claude implements → Codex reviews
+Codex implements → Claude reviews
+Codex session A implements → Codex session B independently reviews
+```
 
-## Temporary Window Rule
+The independent reviewer must not share the implementation session's mutable workspace, hidden implementation context, or self-review role. Review remains exact-SHA/read-only unless the Review Task explicitly authorizes otherwise.
 
-Codex and Claude are both currently available. This does not imply unlimited useful parallelism. The Development Director may expand or reduce active lanes according to dependency, write-surface isolation, review independence and integration load.
+## Controlled Parallelism Rule
+
+Parallel work is allowed and encouraged when useful, but must be dependency- and write-surface-driven rather than quota-filling.
+
+- Claude and Codex may both perform Production implementation concurrently on separate Formal Tasks when dependencies and mutable write surfaces are disjoint or an explicit integration order exists.
+- Multiple sessions of the same model may also run concurrently under the same isolation rules.
+- Review may run in parallel with unrelated implementation when the exact SHA under review is immutable and the implementation lane cannot mutate it.
+- Do not have two tasks concurrently mutate the same high-risk persistence/authority surface without explicit ownership split and convergence plan.
+- Do not create speculative tasks merely because an Agent has free capacity.
+- DeepSeek should absorb simple/mechanical work where doing so frees Claude/Codex for higher-value work.
+
+## Execution Mode / Capacity Failover
+
+Temporary quota, rate-limit, tool, workspace or mode failure is operational, not automatically a Product blocker.
+
+For a Task that has already materially started:
+
+```text
+PAUSE / HANDOFF SAME TASK
+→ preserve Task ID + scope + base/fence
+→ resume in a capable isolated session when authorized
+```
+
+For a Task that is still unstarted, the Development Director may rebind the same Task to another capable Claude/Codex session without creating a duplicate technical Task. Rebinding does not change scope, dependency, Production fence, required Result or Review obligations.
+
+## Current Controlled Priority
+
+1. `NYRON-T-20260828-171` is the P0 Product-mainline Task and is currently assigned to Claude for `NODE FOUNDATION v0.1` bounded Production implementation.
+2. Task 171 owns the bounded Graph multi-instance/Edge publish completion, Product Node/Workflow persistence/compiler, and pure/mock `Text Input → Mock LLM → Text Output` proof.
+3. Codex is temporarily rate-limited; once capacity returns, it may be assigned to a disjoint implementation Task if a real dependency/product need exists, or to an independent exact-SHA Review after a delivery is available. It is not reserved to either role.
+4. `NYRON-T-20260828-168` remains `PAUSED — PRODUCT-VERTICAL-SLICE HOLD`; capacity restoration alone does not resume it.
+5. `NYRON-T-20260828-169` remains `DEFERRED / NOT STARTED`; resume only when Human Approval Product Node creates the concrete need.
+6. Lower Track A/B/C/D work opens or resumes only when a concrete Product Node requires a missing capability or a true blocker demands it.
 
 ## Change Rule
 
-Agent availability remains operational state and may be superseded only by later explicit Operator / Development Director instruction.
+Agent availability and routing are operational state and may be superseded by later explicit Operator / Development Director instruction.
