@@ -2,17 +2,17 @@
 
 Status: `ACTIVE OPERATIONAL COORDINATION STATE`
 Authority: `Development Director / Global Development Coordination Authority`
-Date: `2026-08-28`
+Date: `2026-08-29`
 
 This file records current operational availability and routing only. It does not define permanent model capability and does not amend frozen Product/Runtime architecture.
 
 ## Current Availability
 
-| Agent | Availability | Default Use While State Applies |
+| Agent | Availability | Current / Default Use While State Applies |
 |---|---|---|
-| `Claude` | `AVAILABLE — DEVELOPMENT / REVIEW` | Complex/core implementation, architecture/readiness, integration, blocking fixes, regression, exact-SHA review and re-review. No fixed role. |
-| `Codex` | `AVAILABLE — ACTIVE P0 INTEGRATION LANE` | Current primary assignment: Task 181 cross-track integration. Also eligible for implementation/review generally. No fixed role. |
-| `DeepSeek` | `AVAILABLE` | Preferred for simple/mechanical/low-risk implementation, schema consistency, test/regression, bounded tracing and targeted verification. |
+| `Claude` | `AVAILABLE — ACTIVE READINESS LANE` | Current assignment: `NYRON-T-20260828-186` real Provider/Network HIGH-risk security readiness. Also eligible for complex implementation/review generally after dependency-safe handoff. |
+| `Codex` | `AVAILABLE — ACTIVE P0 PRODUCT READINESS LANE` | Current primary assignment: `NYRON-T-20260829-188` General Node Contract / Multi-Agent Orchestration readiness. Also eligible for implementation/review/integration generally. |
+| `DeepSeek` | `AVAILABLE — ACTIVE MECHANICAL SUPPORT LANE` | Current assignment: `NYRON-T-20260828-187` Provider/Credential/Network/Effect mechanical inventory/test matrix. Preferred for simple/mechanical/low-risk tracing, regression and schema consistency. |
 | `GPT / Web GPT` | `AVAILABLE FOR ORCHESTRATION` | Development Director / coordination; not default Production implementer or final reviewer. |
 
 ## Role-Neutral Claude / Codex Rule
@@ -29,15 +29,17 @@ Parallel work is allowed only when dependencies and mutable write surfaces justi
 
 Two HIGH-risk tasks must not concurrently mutate the same persistence/authority surface unless an explicit ownership split and convergence plan exists.
 
+Current Tasks 186, 187 and 188 are all read-only and may run in parallel from the same accepted Production base.
+
 ## Current Controlled Priority
 
-1. `NYRON-T-20260828-181` is P0: converge accepted Product foundation `1a741c5c7370f50f9efbc3087c67359cebdd8b27` with accepted Provider/Credential/Network tip `276432c1706d6f41900ef6d5cebcf5fc1e36cf5f`.
-2. Task 181 owns only `NYRON-T-20260828-180-F-001`; real Network/Provider dispatch remains CLOSED.
-3. `NYRON-T-20260828-180-F-002` Runtime/Effect seam work waits for Task 181 delivery + independent Review acceptance.
-4. Task-180 F-003/F-004/F-005 and Task-136 F01/F02/F03 remain open; no real external-effect gate may be opened by Task 181.
-5. No LLM Product Node Production implementation begins until the dependency-ordered support chain reaches the Product step.
-6. Claude remains available for the mandatory independent review of Task 181 or other dependency-safe work; do not pre-start downstream high-risk support Tasks before the exact integrated SHA exists.
-7. DeepSeek remains available for low-risk mechanical/regression work when explicitly useful.
+1. `NYRON-T-20260829-188` is the Product P0 mainline: determine the safe General NodeDefinition / NodeExecutionBinding generalization and Multi-Agent orchestration Runtime boundaries.
+2. `NYRON-T-20260828-186` continues in parallel as HIGH-risk Track-D security readiness for future real Provider/Network dispatch.
+3. `NYRON-T-20260828-187` continues in parallel as mechanical evidence for Task 186/future real Provider implementation.
+4. Tasks 186/187 are not global prerequisites for pure/control/general Node development; they gate only capabilities requiring real external Network/Provider I/O.
+5. No General Node Production refactor begins until Task 188 returns a permitted disposition and the Development Director creates a bounded implementation Task.
+6. No real Provider/Network Production implementation begins merely because Task 186/187 complete; their Result and required review/acceptance chain still apply.
+7. Preserve independent Review for any later HIGH-risk Production implementation.
 
 ## Execution Mode / Capacity Failover
 
