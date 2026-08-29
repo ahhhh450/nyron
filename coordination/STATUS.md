@@ -7,15 +7,16 @@
 - Active Orchestrator: `Web GPT — Development Orchestrator`
 - Development Director: `ACTIVE — Global Development Coordination Authority`
 - Coordination Epoch: `3`
-- Coordination Revision: `141`
-- Revision CAS Basis: `Expected Epoch 3 / Expected Revision 140 — MATCHED`; Task-185 acceptance and Task-186/187 creation commits were coordination-only.
+- Coordination Revision: `142`
+- Revision CAS Basis: `Expected Epoch 3 / Expected Revision 141 — MATCHED`; Node/Orchestration Product direction was recorded and Task 188 opened as a read-only Product-mainline readiness task.
 - Last Accepted Production Commit: `103a47324807f01c76990df7b5bca9d3668cb552`
-- Accepted Product-Usable Base: `NODE FOUNDATION v0.1 + TRACK-D FOUNDATIONS + BOUNDED RUNTIME/EFFECT SUPPORT @ 103a47324807f01c76990df7b5bca9d3668cb552`
+- Accepted Product-Usable Base: `MODULE-BACKED NODE FOUNDATION v0.1 + TRACK-D FOUNDATIONS + BOUNDED RUNTIME/EFFECT SUPPORT @ 103a47324807f01c76990df7b5bca9d3668cb552`
 - Development Gate: `PRODUCT NODE / VISUAL WORKFLOW DEVELOPMENT — OPEN`
-- Current Gate: `REAL PROVIDER / NETWORK CONSEQUENTIAL SECURITY READINESS`
-- Current Mode: `TASK 186 P0 SECURITY READINESS + TASK 187 P1 MECHANICAL INVENTORY IN PARALLEL / REAL CONSEQUENTIAL DISPATCH CLOSED`
-- Primary Milestone: `USER-FACING PRODUCT NODE VERTICAL SLICES`
-- Current Target: `LLM PRODUCT NODE v0.1 — FIRST REAL SINGLE-TURN PROVIDER SLICE`
+- Current Gate: `GENERAL NODE CONTRACT / MULTI-AGENT ORCHESTRATION READINESS`
+- Current Mode: `TASK 188 P0 GENERAL NODE READINESS + TASKS 186/187 REAL-PROVIDER SUPPORT READINESS IN PARALLEL / NO NEW PRODUCTION MUTATION YET`
+- Primary Milestone: `GENERAL EXTENSIBLE NODE SYSTEM + DURABLE MULTI-AGENT ORCHESTRATION`
+- Current Target: `GENERAL NODE DEFINITION / EXECUTION BINDING — MODULE IS OPTIONAL CAPABILITY SOURCE`
+- Product Direction Record: `coordination/plans/NODE_VISUAL_WORKFLOW_ORCHESTRATION_DIRECTION_v0.1.md`
 - Latest Handoff Pointer: `coordination/handoffs/LATEST.md`
 - Agent Availability: `coordination/AGENT_AVAILABILITY.md`
 - Parallelism Policy: `DYNAMIC / DEPENDENCY + WRITE-SURFACE + REVIEW + INTEGRATION CAPACITY DRIVEN`
@@ -33,9 +34,9 @@ fetch latest main
 
 ## Agent Routing
 
-- `Claude`: AVAILABLE for development/review/security/architecture verification.
-- `Codex`: AVAILABLE for development/review/integration.
-- `DeepSeek`: AVAILABLE; preferred for simple/mechanical/low-risk tracing, regression, schema consistency and targeted verification.
+- `Claude`: AVAILABLE for development/review/security/architecture verification; currently assigned Task 186.
+- `Codex`: AVAILABLE for development/review/integration; Task 188 is assigned to an independent Codex readiness session.
+- `DeepSeek`: AVAILABLE; currently assigned Task 187 for mechanical Provider/Network inventory.
 - `GPT / Web GPT`: orchestration only by default.
 
 Claude and Codex have no fixed developer/reviewer split. Review independence is session/execution-identity based unless a concrete Task explicitly requires stricter cross-model independence.
@@ -45,22 +46,64 @@ Claude and Codex have no fixed developer/reviewer split. Review independence is 
 | Track | State | Current Role / Gate |
 |---|---|---|
 | `Track A — PWP / Context Backbone` | `STABLE / DOWNSTREAM USABLE` | Product/Runtime admission-context support. |
-| `Track B — Distribution / Module Ecosystem` | `STABLE / DOWNSTREAM USABLE` | Exact Module identity/resolution available; further ecosystem work Product-demand driven. |
-| `Track C — Human Interaction / Approval` | `STABLE CORE / SUPPORT DEFERRED` | Suspension/resume and external HumanResponse ingress deferred until concrete Product need. |
-| `Track D — External Interfaces / Workspace Boundary` | `BOUNDED RUNTIME/EFFECT SUPPORT ACCEPTED / REAL CONSEQUENTIAL PRODUCTION CLOSED` | Provider/Credential/Network foundations and bounded MODEL_INVOKE Effect seam are accepted; Tasks 186/187 prepare the first real dispatch gate. |
-| `Track E — Product / Visual Workflow` | `PRIMARY / NODE FOUNDATION ACCEPTED` | Real LLM Product Node waits on reviewed/accepted real Provider/Network support. |
+| `Track B — Distribution / Module Ecosystem` | `STABLE / DOWNSTREAM USABLE` | Exact Module identity/resolution available; Module-backed Nodes consume this, but Node identity is no longer treated as equivalent to Module identity. |
+| `Track C — Human Interaction / Approval` | `STABLE CORE / SUPPORT DEFERRED` | Human support remains deferred until concrete Node/orchestration demand; Wait/Input/Approval requirements may reactivate the smallest required slice. |
+| `Track D — External Interfaces / Workspace Boundary` | `BOUNDED RUNTIME/EFFECT SUPPORT ACCEPTED / REAL CONSEQUENTIAL PRODUCTION CLOSED` | Tasks 186/187 continue as parallel support for future real LLM external I/O; they are not prerequisites for general Node/Orchestration work. |
+| `Track E — Product / Visual Workflow` | `PRIMARY / GENERALIZATION READINESS` | Accepted v0.1 is retained as a Module-backed Node subset; Task 188 determines the smallest safe general Node/ExecutionBinding generalization and orchestration Runtime gaps. |
 
 ## Current Live Task Table
 
 | State | Task | Meaning |
 |---|---|---|
-| `ACTIVE / READY` | `NYRON-T-20260828-186` | Claude HIGH-risk read-only security/architecture readiness for Task-136 F01/F02/F03, Task-180 F-004 and Task-173 F-001 disposition. |
-| `ACTIVE / READY` | `NYRON-T-20260828-187` | DeepSeek read-only mechanical Provider/Credential/Network/Effect implementation inventory and adversarial test matrix; runs in parallel with 186. |
+| `ACTIVE / READY` | `NYRON-T-20260829-188` | Codex HIGH-risk read-only General Node Contract / Multi-Agent Orchestration readiness; current Product P0. |
+| `ACTIVE / READY` | `NYRON-T-20260828-186` | Claude HIGH-risk read-only real Provider/Network security readiness; parallel Track-D support, not Product-wide gate. |
+| `ACTIVE / READY` | `NYRON-T-20260828-187` | DeepSeek read-only Provider/Credential/Network/Effect inventory and adversarial test matrix; parallel Track-D support. |
 | `COMPLETED / PASS` | `NYRON-T-20260828-185` | Independent exact-SHA Review PASS of Task-184 delivery; Findings NONE. |
 | `ACCEPTED` | `NYRON-T-20260828-184` | Bounded RuntimeContext + MODEL_INVOKE Effect support accepted at `103a47324807f01c76990df7b5bca9d3668cb552`. |
 | `ACCEPTED` | `NYRON-T-20260828-181` | Product + Track-D convergence accepted at `a48a7e3005943f6a4e65844faaf6b0aeaad7b431`. |
 | `COMPLETED / GO_BOUNDED_MODEL_INVOKE_EFFECT_IMPLEMENTATION` | `NYRON-T-20260828-182` | Frozen Effect-contract verification; Task-180 F-005 CLOSED. |
-| `DEFERRED / NOT STARTED` | `NYRON-T-20260828-169` | Human suspension/resume + response ingress; resume only for concrete Product need. |
+| `DEFERRED / NOT STARTED` | `NYRON-T-20260828-169` | Human suspension/resume + response ingress; resume only when a concrete orchestration/Human Node requirement needs it. |
+
+## Product Direction Correction — General Node System
+
+The previously accepted Node Foundation remains valid within its tested boundary, but its current Product contract requires every `ProductNodeDefinition` to bind one exact `ModuleDefinition@version`. That is now classified as a **Module-backed Node subset**, not the complete general Node abstraction.
+
+Current intended relationship:
+
+```text
+Node System
+  ├─ Built-in / Pure Node
+  ├─ System-backed Node
+  ├─ Module-backed Node
+  └─ Composite Node
+       ↓
+NodeInstance / Connections / VisualWorkflowRevision
+       ↓ deterministic compile / projection
+Graph / Runtime
+```
+
+Binding principles under readiness review:
+
+```text
+Node System != Module System
+Module is an optional capability source for a Node
+NodeDefinition != NodeInstance
+VisualWorkflowRevision != GraphRevision
+Agent decision != canonical State truth
+ordinary new Node should not require Workflow Core modification
+```
+
+The Development Director direction record is non-frozen and does not itself amend system architecture. Any required new cross-owner Runtime semantic must go through Architecture Finding -> Lead Design Authority.
+
+## Task 188 — General Node / Orchestration Readiness
+
+- Type: `HIGH-RISK READ-ONLY ARCHITECTURE / CONTRACT / IMPLEMENTATION READINESS`.
+- Assigned: `Codex` independent readiness session.
+- Exact accepted base: `103a47324807f01c76990df7b5bca9d3668cb552`.
+- Reviews reuse/generalization of accepted Product Node foundation and current mandatory Module coupling.
+- Must analyze General NodeDefinition, NodeExecutionBinding, Built-in/System/Module/Composite bindings, Graph/Runtime projection, Multi-Agent/child-session orchestration, hidden Runtime mechanisms, Retry/Loop/Concurrency/Cancel/Failure semantics, and the 31-node roadmap classification.
+- Must return exactly one of `GO_BOUNDED_GENERAL_NODE_IMPLEMENTATION`, `ESCALATION_REQUIRED_NODE_RUNTIME_CONTRACT`, `BLOCKED_BY_DEPENDENCY`, `NO_GO_DIRECTION_REQUIRES_REDESIGN`.
+- No Production mutation and no Frozen Architecture mutation.
 
 ## Accepted Product-Usable Runtime/Effect Base
 
@@ -73,6 +116,7 @@ Acceptance evidence:
 - Task 184 implementation: `SUCCESS`.
 - Task 185 independent exact-SHA Review: `PASS`, Findings `NONE`.
 - Full regression independently verified: `632 passed, 2 skipped, 393 subtests passed`.
+- Existing persisted Product Node/Workflow/Graph path remains accepted within its tested Module-backed boundary.
 - PURE Modules remain on `runtime_context=None`.
 - Effect-capable Modules receive bounded RuntimeContext only from canonical current authority.
 - Reviewer-originated test revoked a legitimate grant after RuntimeContext construction and proved dispatch revalidation fails closed.
@@ -107,7 +151,7 @@ Standing credential invariant:
 
 `ResolvedCredentialHandle` and secret values must never cross into low-trust plugin/module/Product/network-facing APIs.
 
-## Parallel Security Preparation
+## Parallel Track-D Security Preparation
 
 ### Task 186 — Real Provider/Network Security Gate Closure Readiness
 
@@ -127,31 +171,31 @@ Standing credential invariant:
 - Defers security/authority decisions to Task 186.
 - No Production mutation and no external I/O.
 
-Tasks 186 and 187 are intentionally parallel: both are read-only, share the same immutable accepted base, and have no mutable Production write-surface collision.
+Tasks 186/187 may continue in parallel with Task 188 because all three are read-only and share no mutable Production write surface.
 
-## Dependency-Ordered LLM Support Chain
+## Real LLM Support Chain — Parallel Product Capability, Not Global Node Gate
 
 1. Product + Track-D convergence — `ACCEPTED`.
 2. Bounded RuntimeContext + MODEL_INVOKE Effect — `ACCEPTED @ 103a4732...`.
-3. Task 186 security gate readiness + Task 187 mechanical implementation inventory — `ACTIVE IN PARALLEL`.
-4. If Task 186 permits: open the smallest bounded security-gate Production implementation from the exact accepted base, using Task 187 only as supporting mechanical evidence.
+3. Task 186 security readiness + Task 187 mechanical inventory — `ACTIVE IN PARALLEL`.
+4. If Task 186 permits: smallest bounded security-gate Production implementation.
 5. Mandatory independent adversarial exact-SHA security Review.
-6. Only after security closure: explicitly authorize and implement the first real Provider/Network consequential dispatch slice with no retry/streaming/tool calling.
-7. Mandatory independent adversarial security Review of real external I/O.
-8. Real single-turn LLM Product Node implementation.
-9. Independent Product Review.
-10. Persisted/restarted real-provider E2E proof.
+6. Real Provider/Network consequential dispatch implementation only after explicit authorization.
+7. Mandatory independent security Review of real external I/O.
+8. Real LLM Node may then consume that capability under the General Node contract available at that time.
 
-Do not skip dependencies and do not infer gate opening from readiness analysis alone.
+This chain does not block pure/control/system-backed Node design unless a specific Node actually requires external I/O.
 
 ## Product / Authority Guardrails
 
 ```text
-ModuleDefinition != ProductNodeDefinition
-ProductNodeDefinition != NodeInstance
+Node System != Module System
+ModuleDefinition != NodeDefinition
+NodeDefinition != NodeInstance
 VisualWorkflowRevision != GraphRevision
 Product config != CapabilityGrant
 Product declaration != execution authority
+Agent decision != State truth
 EffectOperation owner = Effect Authority
 FENCED != retry clearance
 ```
@@ -184,16 +228,18 @@ Still CLOSED unless separately implemented/reviewed/accepted:
 
 ## Revision Decisions
 
-### Revision 140 / Epoch 3
-- Task 184 delivered RuntimeContext + MODEL_INVOKE Effect candidate and Task 185 opened for independent Review.
-
 ### Revision 141 / Epoch 3
-- CAS against `Epoch 3 / Revision 140` succeeded.
 - Task 185 completed `PASS` with Findings `NONE` against exact SHA `103a47324807f01c76990df7b5bca9d3668cb552`.
-- Development Director accepts that SHA as the new Product-usable Runtime/Effect support base and closes Task-180 F-002.
-- Task 186 opened as HIGH-risk read-only real Provider/Network security-gate readiness.
-- Task 187 opened in parallel as DeepSeek mechanical adapter/credential/network inventory and adversarial test matrix.
-- Real Provider/Network consequential Production remains CLOSED; Task-136 F01/F02/F03 and Task-180 F-004 are not closed by this revision.
+- Development Director accepted that SHA as the Product-usable Runtime/Effect support base and closed Task-180 F-002.
+- Tasks 186/187 opened for real Provider/Network readiness/inventory.
+
+### Revision 142 / Epoch 3
+- CAS against `Epoch 3 / Revision 141` succeeded.
+- Product direction correction recorded at `coordination/plans/NODE_VISUAL_WORKFLOW_ORCHESTRATION_DIRECTION_v0.1.md`.
+- Existing accepted Node Foundation is retained but reclassified for roadmap purposes as a **Module-backed Node subset**, because current `ProductNodeDefinition` and compiler mandate exact Module binding.
+- Task 188 opened as P0 read-only General Node Contract / Multi-Agent Orchestration readiness.
+- Tasks 186/187 continue in parallel as Track-D support for future real LLM external I/O, but no longer act as the global Product/Node gate.
+- No Production acceptance was revoked; no Frozen Architecture was amended by this coordination change.
 
 Historical decisions remain available in Git history.
 
