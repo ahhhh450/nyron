@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Nyron /grill me — Round 01</title>
+  <style>
+    :root{
+      color-scheme:dark;
+      --bg:#0b0d10;--panel:#13171c;--panel2:#0f1318;--text:#edf2f7;--muted:#9aa7b4;
+      --line:#29313a;--ok:#3fb950;--warn:#d29922;--accent:#58a6ff;--danger:#f85149;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    .wrap{max-width:1080px;margin:0 auto;padding:28px 18px 80px}
+    h1{font-size:28px;margin:0 0 8px}
+    .sub{color:var(--muted);margin-bottom:22px}
+    .toolbar{position:sticky;top:0;z-index:10;background:rgba(11,13,16,.94);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:18px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .progress{margin-right:auto;color:var(--muted)}
+    button{border:1px solid var(--line);background:#1b222a;color:var(--text);padding:9px 13px;border-radius:9px;cursor:pointer;font-weight:650}
+    button:hover{border-color:#4a5663}
+    .primary{background:#1f6feb;border-color:#1f6feb}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin:14px 0}
+    .qtitle{font-weight:800;font-size:17px;margin-bottom:8px}
+    .question{white-space:pre-line}
+    .recommend{margin-top:12px;padding:12px 14px;border-left:3px solid var(--accent);background:var(--panel2);border-radius:8px}
+    .recommend b{color:#9ecbff}
+    .answer{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:14px}
+    label.choice{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:9px;padding:8px 10px;cursor:pointer}
+    input[type=radio]{accent-color:var(--accent)}
+    textarea{width:100%;min-height:90px;margin-top:10px;background:#0d1117;color:var(--text);border:1px solid var(--line);border-radius:9px;padding:10px 12px;resize:vertical}
+    textarea:disabled{opacity:.38}
+    .hint{font-size:13px;color:var(--muted);margin-top:6px}
+    .done{border-color:#2f7d3a}
+    .needs{border-color:#8a6d1d}
+    .footer{margin-top:26px;padding:16px;background:var(--panel);border:1px solid var(--line);border-radius:12px}
+    code{background:#171b21;padding:2px 5px;border-radius:5px}
+    .error{color:#ff8b86;margin-top:8px;display:none}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Nyron /grill me — Round 01</h1>
+  <div class="sub">
+    Frontier round：一次回答 10 个当前可决定问题。每题选择 <b>OK</b>（接受推荐）或 <b>补充/修改</b>。
+    页面会自动保存在当前浏览器。完成后提交为 GitHub Issue；然后回到 ChatGPT 告诉我“完成”。
+  </div>
+
+  <div class="toolbar">
+    <div class="progress" id="progress">0 / 10 已回答</div>
+    <button id="clearBtn" type="button">清空本轮</button>
+    <button id="copyBtn" type="button">复制结果</button>
+    <button id="submitBtn" class="primary" type="button">提交结果到 GitHub</button>
+  </div>
+
+  <div id="questions"></div>
+
+  <div class="footer">
+    <b>提交方式</b><br>
+    点击“提交结果到 GitHub”后，会打开 <code>ahhhh450/nyron</code> 的新 Issue 页面并自动填好本轮答案。
+    你只需要点击 GitHub 的 <b>Submit new issue</b>。提交后回来告诉我“完成”，我就会读取该 Issue，并按
+    <code>/grill me</code> 规则重新计算下一轮 frontier。
+    <div class="error" id="error"></div>
+  </div>
+</div>
+
+<script>
+const ROUND_ID = "NYRON-GRILL-R01";
+const STORAGE_KEY = "nyron-grill-r01";
+const REPO_ISSUE_URL = "https://github.com/ahhhh450/nyron/issues/new";
+
+const qs = [
+  {
+    id:"Q51",
+    title:"完成通知的双层合同",
+    question:"Subagent 完成工作后，详细结果和唤醒总监的消息，是否明确分成两层？",
+    rec:"是。Result Artifact 保存详细结果/证据；Wake-up Message 只携带 task_id、agent_id、status、result_ref、必要 blocker/feedback。最终 Task PASS 仍由负责总监验收。"
+  },
+  {
+    id:"Q52",
+    title:"返工时 Task / Revision / Attempt 怎么区分",
+    question:"Review 不通过或执行需要返工时，什么时候复用 task_id，什么时候增加 task_revision，什么时候创建新 Task？",
+    rec:"目标和验收条件没变：同一 task_id 新 attempt；目标/约束/验收条件发生变化：同一 task_id 新 task_revision；出现新的独立工作目标：创建新 task_id。"
+  },
+  {
+    id:"Q53",
+    title:"Track Director 向 Development Director 的升级协议",
+    question:"Track Director 自己解决不了阻塞时，应该怎样向 Development Director 升级？",
+    rec:"只发送结构化 escalation：track_id、task_id、blocker_code/summary、已尝试动作、需要上级做出的裁决/资源申请、相关 ref。Subagent 不直接越级。"
+  },
+  {
+    id:"Q54",
+    title:"Handoff 是否允许自动触发",
+    question:"Session 过长、质量下降、连续卡住等情况出现时，系统能不能自己执行 Handoff？",
+    rec:"系统默认只自动“建议 Handoff”；不静默切换。只有 Workflow/User Policy 明确允许 auto-handoff 时，Runtime 才可按规则自动执行。"
+  },
+  {
+    id:"Q55",
+    title:"Subagent 能不能自己创建 Subagent",
+    question:"一个执行 Agent 发现工作量变大时，能否自己 spawn 新 Agent？",
+    rec:"不能直接创建。Subagent 只能向直属 Track Director 提交“需要额外 Agent/能力”的请求；由 Director 根据预算、职责和依赖决定是否创建。这样通信树和资源控制不会被绕过。"
+  },
+  {
+    id:"Q56",
+    title:"跨 Track 依赖如何传递",
+    question:"Track A 的 Agent 需要 Track B 的结果时，信息应该怎么走？",
+    rec:"沿管理树传递：Subagent A → Track Director A → Development Director/协调层 → Track Director B（或直接返回已存在的 result_ref）→ 必要信息回注 A。底层 Agent 不跨 Track 私聊。"
+  },
+  {
+    id:"Q57",
+    title:"Track Director 自己卡住怎么办",
+    question:"Monitor/Stall 机制是否也覆盖 Track Director，而不只覆盖 Subagent？",
+    rec:"是。Track Director 超过无活动阈值时，由 Runtime 向 Development Director 发送同样的简短 stall notification；Development Director 决定 Monitor、Handoff、恢复、替换或终止。"
+  },
+  {
+    id:"Q58",
+    title:"取消 Task 的语义",
+    question:"Director 点击取消一个正在运行的 Task 时，系统应该保证什么？",
+    rec:"取消立即阻止新的执行步骤；已开始的副作用不能假装没发生，必须先确认 effect 状态，再做 fenced stop / compensate / mark partial。最终状态明确为 CANCELLED / PARTIAL，而不是简单 kill session。"
+  },
+  {
+    id:"Q59",
+    title:"多个 Track 抢资源时 Scheduler 怎么公平",
+    question:"多个 Track 同时有 READY 任务且 Agent/模型额度不足时，Scheduler 用什么原则避免某个 Track 长期饿死？",
+    rec:"中央 Scheduler 使用优先级 + 每 Track 最低公平份额/权重 + aging 防饥饿。Development Director 可以显式提升关键 Track 优先级，但仍受全局硬预算约束。"
+  },
+  {
+    id:"Q60",
+    title:"全局 AI 预算如何分给各 Track",
+    question:"用户只设置一个全局 Agent/额度上限时，各 Track Director 是否应该直接竞争这个池子？",
+    rec:"全局上限由 Runtime 硬执行；Development Director 可给各 Track 分配软预算/并发额度。Track 可在软预算内自治，超出则申请；未使用额度可由 Scheduler 动态借用，避免资源闲置。"
+  }
+];
+
+const root = document.getElementById("questions");
+const progress = document.getElementById("progress");
+const errorBox = document.getElementById("error");
+
+function loadState(){
+  try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}")}catch{return {}}
+}
+let state = loadState();
+
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  renderProgress();
+}
+function renderProgress(){
+  const n = qs.filter(q => state[q.id]?.choice).length;
+  progress.textContent = `${n} / ${qs.length} 已回答`;
+}
+
+function render(){
+  root.innerHTML = "";
+  qs.forEach(q => {
+    const s = state[q.id] || {};
+    const card = document.createElement("section");
+    card.className = "card" + (s.choice==="ok" ? " done" : s.choice==="edit" ? " needs" : "");
+    card.innerHTML = `
+      <div class="qtitle">❓ ${q.id} — ${q.title}</div>
+      <div class="question">${q.question}</div>
+      <div class="recommend"><b>➡️ 推荐：</b>${q.rec}</div>
+      <div class="answer">
+        <label class="choice"><input type="radio" name="${q.id}" value="ok" ${s.choice==="ok"?"checked":""}> OK，采用推荐</label>
+        <label class="choice"><input type="radio" name="${q.id}" value="edit" ${s.choice==="edit"?"checked":""}> 补充 / 修改</label>
+      </div>
+      <textarea id="text-${q.id}" placeholder="写你的补充、修改或反例……" ${s.choice==="edit"?"":"disabled"}>${(s.text||"").replace(/</g,"&lt;")}</textarea>
+      <div class="hint">选择“补充/修改”时，此处必填。</div>
+    `;
+    root.appendChild(card);
+
+    card.querySelectorAll(`input[name="${q.id}"]`).forEach(r => {
+      r.addEventListener("change", e => {
+        state[q.id] = state[q.id] || {};
+        state[q.id].choice = e.target.value;
+        const ta = card.querySelector("textarea");
+        ta.disabled = e.target.value !== "edit";
+        if(e.target.value === "ok") state[q.id].text = "";
+        save(); render();
+      });
+    });
+    card.querySelector("textarea").addEventListener("input", e => {
+      state[q.id] = state[q.id] || {};
+      state[q.id].text = e.target.value;
+      save();
+    });
+  });
+  renderProgress();
+}
+
+function validate(){
+  const missing = [];
+  qs.forEach(q => {
+    const s = state[q.id] || {};
+    if(!s.choice) missing.push(q.id);
+    if(s.choice==="edit" && !(s.text||"").trim()) missing.push(q.id+" 补充内容");
+  });
+  if(missing.length){
+    errorBox.style.display="block";
+    errorBox.textContent="还有未完成项：" + missing.join("、");
+    return false;
+  }
+  errorBox.style.display="none";
+  return true;
+}
+
+function buildBody(){
+  const lines = [
+    `# ${ROUND_ID} Results`,
+    "",
+    "- round_id: `"+ROUND_ID+"`",
+    "- source: `docs/grill-me/round-001.html`",
+    "- mode: `/grill me frontier round`",
+    ""
+  ];
+  qs.forEach(q => {
+    const s = state[q.id];
+    lines.push(`## ${q.id} — ${q.title}`);
+    if(s.choice==="ok"){
+      lines.push("**Decision:** OK — 接受推荐答案。");
+    } else {
+      lines.push("**Decision:** 补充 / 修改");
+      lines.push("");
+      lines.push((s.text||"").trim());
+    }
+    lines.push("");
+  });
+  lines.push("---");
+  lines.push("提交后，ChatGPT 应读取本 Issue，更新 design tree，并只询问重新计算后的下一轮 frontier。");
+  return lines.join("\n");
+}
+
+document.getElementById("submitBtn").addEventListener("click", () => {
+  if(!validate()) return;
+  const title = `[${ROUND_ID}] Grill round results`;
+  const body = buildBody();
+  const url = REPO_ISSUE_URL + "?title=" + encodeURIComponent(title) + "&body=" + encodeURIComponent(body);
+  window.open(url, "_blank", "noopener");
+});
+
+document.getElementById("copyBtn").addEventListener("click", async () => {
+  if(!validate()) return;
+  await navigator.clipboard.writeText(buildBody());
+  alert("结果已复制。");
+});
+
+document.getElementById("clearBtn").addEventListener("click", () => {
+  if(confirm("确定清空本轮所有答案？")){
+    state = {};
+    localStorage.removeItem(STORAGE_KEY);
+    render();
+  }
+});
+
+render();
+</script>
+</body>
+</html>
