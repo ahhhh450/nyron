@@ -143,7 +143,15 @@ D-006 remains outside the System Foundation freeze and may now proceed on top of
 
 Product work must consume the frozen generic Module / Graph / Runtime / Capability / Resource / Effect / Accounting / Human / PWP mechanisms. If Product design exposes a real expressiveness gap, raise an Architecture Finding instead of inventing a local Kernel primitive.
 
-## 9. Change Control
+## 9. Working Product / Collaboration Design
+
+Conversation-confirmed working product/orchestration decisions that do not supersede frozen architecture:
+
+- `design/Nyron_Automated_Visual_MultiAgent_Collaboration_Design_Decisions_v0.1.md`
+
+This record captures the automated visual multi-Agent collaboration direction, Agent lifecycle, plugin/capability model, scoped authority, runtime mutation/event sourcing, Handoff, Director/Subagent communication, Scheduler, Monitor and staged structured-state decisions. Open frontier items remain explicitly marked non-authoritative until decided.
+
+## 10. Change Control
 
 Implementation may refine storage, schemas, APIs, diagnostics and UX where observable frozen semantics do not change.
 
