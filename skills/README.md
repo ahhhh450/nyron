@@ -10,6 +10,7 @@ skills/
 ├─ code-review/SKILL.md
 ├─ testing/SKILL.md
 ├─ coordination-update/SKILL.md
+├─ grill-me/SKILL.md
 └─ release/SKILL.md
 ```
 
