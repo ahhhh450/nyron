@@ -640,6 +640,8 @@ Changes create a new `task_revision` so an Agent can determine that the task cha
 
 Subagent completion communication should be compact and structured.
 
+A Subagent may report execution completion and a status such as PASS/FAIL/BLOCKED with necessary evidence/feedback, but **final Task acceptance/PASS authority belongs to the responsible Director**. High-risk work may additionally require independent review according to policy.
+
 The detailed result/evidence belongs in a durable result artifact/file/reference.
 
 The wake-up message to the Director should contain only what is necessary to resume orchestration, for example:
@@ -845,7 +847,6 @@ If idempotency checking discovers a problem or inconsistency, the system must re
 
 The following questions were raised after the last confirmed round but were **not yet answered by the user** and therefore are not accepted decisions in this record:
 
-- whether Subagents may directly set final Task `PASS/FAIL` or only report execution completion while Track Director owns final acceptance;
 - exact two-layer completion/result notification contract beyond the already accepted compact structured feedback rule;
 - exact semantics for rework: same `task_id` new attempt vs new revision vs new Task in every case;
 - exact escalation contract from Track Director to Development Director;
